@@ -12,47 +12,51 @@ import { ApiService } from '../../services/api.service';
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="relative">
           <i class="fas fa-store absolute right-4 top-4 text-gray-500"></i>
-          <input [(ngModel)]="form.shop_name" name="shop_name" placeholder="اسم المحل" class="input-field pr-12" required />
+          <input [(ngModel)]="form.shop_name" name="shop_name" placeholder="اسم المحل" class="input-field pr-12" required>
         </div>
         <div class="relative">
-          <i class="fas fa-tags absolute right-4 top-4 text-gray-500"></i>
-          <input [(ngModel)]="form.category" name="category" placeholder="الفئة (مطاعم، كافيهات...)" class="input-field pr-12" required />
+          <i class="fas fa-tag absolute right-4 top-4 text-gray-500"></i>
+          <input [(ngModel)]="form.category" name="category" placeholder="الفئة" class="input-field pr-12" required>
         </div>
         <div class="relative">
           <i class="fas fa-map-marker-alt absolute right-4 top-4 text-gray-500"></i>
-          <input [(ngModel)]="form.governorate" name="governorate" placeholder="المحافظة" class="input-field pr-12" required />
+          <input [(ngModel)]="form.governorate" name="governorate" placeholder="المحافظة" class="input-field pr-12" required>
         </div>
         <div class="relative">
           <i class="fas fa-city absolute right-4 top-4 text-gray-500"></i>
-          <input [(ngModel)]="form.city" name="city" placeholder="المدينة" class="input-field pr-12" required />
-        </div>
-        <div class="md:col-span-2 relative">
-          <i class="fas fa-list absolute right-4 top-4 text-gray-500"></i>
-          <textarea [(ngModel)]="form.requirements" name="requirements" placeholder="المتطلبات" class="input-field min-h-[100px] pr-12" required></textarea>
-        </div>
-        <div class="relative">
-          <i class="fas fa-clock absolute right-4 top-4 text-gray-500"></i>
-          <input [(ngModel)]="form.working_hours" name="working_hours" placeholder="ساعات العمل" class="input-field pr-12" required />
-        </div>
-        <div class="relative">
-          <i class="fas fa-money-bill-wave absolute right-4 top-4 text-gray-500"></i>
-          <input [(ngModel)]="form.salary" name="salary" placeholder="الراتب" class="input-field pr-12" required />
+          <input [(ngModel)]="form.city" name="city" placeholder="المدينة" class="input-field pr-12" required>
         </div>
       </div>
-      <button type="submit" [disabled]="loading" class="btn-primary w-full py-4 ripple flex items-center justify-center md:col-span-2">
-        <ng-container *ngIf="!loading; else loadingSpinner">
-          <i class="fas fa-plus icon mr-2"></i>نشر الوظيفة
-        </ng-container>
-        <ng-template #loadingSpinner>
-          <i class="fas fa-spinner fa-spin icon mr-2"></i>جاري النشر...
-        </ng-template>
-      </button>
-      <p *ngIf="error" class="text-danger text-center flex items-center justify-center"><i class="fas fa-exclamation-triangle icon mr-2"></i>{{ error }}</p>
+
+      <div class="relative">
+        <i class="fas fa-list absolute right-4 top-4 text-gray-500"></i>
+        <textarea [(ngModel)]="form.requirements" name="requirements" placeholder="المتطلبات" rows="4" class="input-field pr-12" required></textarea>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="relative">
+          <i class="fas fa-clock absolute right-4 top-4 text-gray-500"></i>
+          <input [(ngModel)]="form.working_hours" name="working_hours" placeholder="ساعات العمل" class="input-field pr-12" required>
+        </div>
+        <div class="relative">
+          <i class="fas fa-money-bill absolute right-4 top-4 text-gray-500"></i>
+          <input [(ngModel)]="form.salary" name="salary" placeholder="الراتب (اختياري)" class="input-field pr-12">
+        </div>
+      </div>
+
+      <div class="text-center">
+        <button type="submit" [disabled]="loading" class="btn-primary px-12 py-4 rounded-full text-xl font-bold hover:scale-105 transition shadow-lg">
+          {{ loading ? 'جاري النشر...' : 'نشر الوظيفة' }}
+        </button>
+      </div>
+
+      <p *ngIf="error" class="text-danger text-center mt-4 font-medium">{{ error }}</p>
+      <p *ngIf="success" class="text-success text-center mt-4 font-medium">تم نشر الوظيفة بنجاح! هتظهر في القائمة دلوقتي</p>
     </form>
   `
 })
 export class JobFormComponent {
-  @Output() submitSuccess = new EventEmitter<void>();
+  @Output() submitSuccess = new EventEmitter<any>();
 
   form = {
     shop_name: '',
@@ -65,22 +69,55 @@ export class JobFormComponent {
   };
   loading = false;
   error = '';
+  success = false;
 
   constructor(private api: ApiService) {}
 
   onSubmit() {
     this.loading = true;
     this.error = '';
+    this.success = false;
+
     this.api.createJob(this.form).subscribe({
-      next: () => {
+      next: (response) => {
         this.loading = false;
-        this.form = { shop_name: '', category: '', governorate: '', city: '', requirements: '', working_hours: '', salary: '' };
-        this.submitSuccess.emit();
+        this.success = true;
+
+        // الحل الرئيسي: نتأكد إن الـ newJob هو object مش array
+        let newJob = response;
+
+        // لو الـ response array (حتى لو فيه element واحد)، ناخد الأول
+        if (Array.isArray(response) && response.length > 0) {
+          newJob = response[0];
+        } else if (Array.isArray(response)) {
+          console.error('الـ response array فاضي!', response);
+          this.loadMyJobsFallback();
+          return;
+        }
+
+        console.log('الوظيفة الجديدة المستقبلة:', newJob);
+
+        // نعمل reset للـ form
+        this.form = {
+          shop_name: '', category: '', governorate: '', city: '',
+          requirements: '', working_hours: '', salary: ''
+        };
+
+        // نبعت الوظيفة الصحيحة
+        this.submitSuccess.emit(newJob);
+
+        setTimeout(() => this.success = false, 5000);
       },
       error: (err) => {
         this.loading = false;
-        this.error = err.error.msg || 'خطأ في النشر';
+        this.error = err.error?.msg || 'خطأ في النشر';
+        console.error('خطأ في إنشاء الوظيفة:', err);
       }
     });
+  }
+
+  // fallback لو الـ emit فشل
+  private loadMyJobsFallback() {
+    this.submitSuccess.emit(null); // نبعت null عشان الـ parent يعمل reload
   }
 }

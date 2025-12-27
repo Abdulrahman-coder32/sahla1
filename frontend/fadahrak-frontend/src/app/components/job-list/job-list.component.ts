@@ -11,75 +11,148 @@ import { JobCardComponent } from '../job-card/job-card.component';
   template: `
     <div class="min-h-screen py-12 px-4 sm:py-16 sm:px-6 lg:py-20 lg:px-8 bg-gradient-to-br from-gray-50 to-indigo-50">
       <div class="max-w-7xl mx-auto">
-        <h1 class="section-title text-3xl sm:text-4xl lg:text-5xl">الوظائف المتاحة</h1>
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-center mb-12 text-gray-900">
+          الوظائف المتاحة
+        </h1>
 
-        <!-- الفلاتر - responsive -->
-        <div class="card p-6 sm:p-8 mb-8 lg:mb-12">
-          <form (ngSubmit)="applyFilters()" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <!-- الفلاتر -->
+        <div class="card p-6 sm:p-8 lg:p-10 mb-10 lg:mb-14">
+          <form (ngSubmit)="applyFilters()" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+
             <!-- المحافظة -->
             <div>
-              <label class="block text-gray-700 font-medium mb-2 flex items-center">
-                <i class="fas fa-map-marker-alt icon mr-2"></i> المحافظة
+              <label class="block text-gray-800 font-semibold mb-3 text-lg">
+                المحافظة
               </label>
-              <select [(ngModel)]="filters.governorate" name="governorate" class="input-field" (change)="onGovernorateChange()">
-                <option value="">كل المحافظات</option>
-                <option *ngFor="let gov of governorates" [value]="gov">{{ gov }}</option>
-              </select>
+              <div class="relative">
+                <select
+                  [(ngModel)]="filters.governorate"
+                  name="governorate"
+                  class="custom-select"
+                  (change)="onGovernorateChange()">
+                  <option value="">كل المحافظات</option>
+                  <option *ngFor="let gov of governorates" [value]="gov">{{ gov }}</option>
+                </select>
+                <!-- أيقونة السهم -->
+                <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-indigo-600 pointer-events-none transition-transform duration-300" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.584l3.71-4.354a.75.75 0 111.14.976l-4.25 5a.75.75 0 01-1.14 0l-4.25-5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                </svg>
+              </div>
             </div>
 
             <!-- المدينة -->
             <div>
-              <label class="block text-gray-700 font-medium mb-2 flex items-center">
-                <i class="fas fa-city icon mr-2"></i> المدينة
+              <label class="block text-gray-800 font-semibold mb-3 text-lg">
+                المدينة
               </label>
-              <select [(ngModel)]="filters.city" name="city" class="input-field">
-                <option value="">كل المدن</option>
-                <option *ngFor="let city of cities" [value]="city">{{ city }}</option>
-              </select>
+              <div class="relative">
+                <select [(ngModel)]="filters.city" name="city" class="custom-select">
+                  <option value="">كل المدن</option>
+                  <option *ngFor="let city of cities" [value]="city">{{ city }}</option>
+                </select>
+                <!-- أيقونة السهم -->
+                <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-indigo-600 pointer-events-none transition-transform duration-300" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.584l3.71-4.354a.75.75 0 111.14.976l-4.25 5a.75.75 0 01-1.14 0l-4.25-5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                </svg>
+              </div>
             </div>
 
             <!-- الفئة -->
             <div>
-              <label class="block text-gray-700 font-medium mb-2 flex items-center">
-                <i class="fas fa-tags icon mr-2"></i> الفئة
+              <label class="block text-gray-800 font-semibold mb-3 text-lg">
+                الفئة
               </label>
-              <select [(ngModel)]="filters.category" name="category" class="input-field">
-                <option value="">كل الفئات</option>
-                <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
-              </select>
+              <div class="relative">
+                <select [(ngModel)]="filters.category" name="category" class="custom-select">
+                  <option value="">كل الفئات</option>
+                  <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+                </select>
+                <!-- أيقونة السهم -->
+                <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-indigo-600 pointer-events-none transition-transform duration-300" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.584l3.71-4.354a.75.75 0 111.14.976l-4.25 5a.75.75 0 01-1.14 0l-4.25-5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                </svg>
+              </div>
             </div>
 
-            <!-- زر التصفية - ياخد العرض كامل على الموبايل -->
-            <div class="col-span-1 sm:col-span-2 lg:col-span-3 flex justify-center sm:justify-end mt-4">
-              <button type="submit" class="btn-primary px-8 py-4 rounded-full flex items-center gap-3 w-full sm:w-auto justify-center">
-                <i class="fas fa-filter icon"></i> تصفية النتائج
+            <!-- زر التصفية -->
+            <div class="flex items-end">
+              <button
+                type="submit"
+                class="btn-primary w-full py-4 text-lg font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+                تصفية النتائج
               </button>
             </div>
           </form>
         </div>
 
         <!-- Loading -->
-        <div *ngIf="loading" class="text-center py-20">
-          <i class="fas fa-spinner fa-spin text-5xl sm:text-6xl text-primary"></i>
-          <p class="mt-4 text-lg sm:text-xl">جاري تحميل الوظائف...</p>
+        <div *ngIf="loading" class="text-center py-32">
+          <div class="inline-block animate-spin rounded-full h-16 w-16 border-4 border-indigo-600 border-t-transparent"></div>
+          <p class="mt-6 text-xl text-gray-600">جاري تحميل الوظائف...</p>
         </div>
 
-        <!-- الوظائف - responsive grid -->
-        <div *ngIf="!loading && jobs.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          <app-job-card *ngFor="let job of jobs" [job]="job" [hasApplied]="appliedJobs.includes(job._id)" (applySuccess)="loadJobs()"></app-job-card>
+        <!-- الوظائف -->
+        <div *ngIf="!loading && jobs.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-10">
+          <app-job-card
+            *ngFor="let job of jobs"
+            [job]="job"
+            [hasApplied]="appliedJobs.includes(job._id)"
+            (applySuccess)="loadJobs()">
+          </app-job-card>
         </div>
 
         <!-- لا توجد وظائف -->
-        <div *ngIf="!loading && jobs.length === 0" class="text-center py-20">
-          <i class="fas fa-exclamation-triangle text-5xl sm:text-6xl text-warning mb-4"></i>
-          <p class="text-xl sm:text-2xl text-gray-600">لا توجد وظائف تطابق الفلاتر المختارة</p>
-          <button (click)="resetFilters()" class="btn-primary mt-6 px-8 py-4 rounded-full">
+        <div *ngIf="!loading && jobs.length === 0" class="text-center py-32">
+          <div class="text-6xl mb-6 text-gray-300">لا توجد وظائف</div>
+          <p class="text-xl text-gray-600 mb-8">لا توجد وظائف تطابق الفلاتر المختارة</p>
+          <button
+            (click)="resetFilters()"
+            class="btn-primary px-10 py-4 text-lg font-bold rounded-xl">
             إعادة تعيين الفلاتر
           </button>
         </div>
       </div>
     </div>
-  `
+  `,
+  styles: [`
+    /* تحسين مظهر الـ select - سهم جميل وموحد */
+    .custom-select {
+      @apply w-full px-5 py-4 rounded-xl border-2 border-gray-300 bg-white text-gray-900 text-base font-medium;
+      @apply focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100;
+      @apply transition-all duration-300 appearance-none cursor-pointer;
+      @apply hover:border-indigo-400 hover:shadow-md hover:scale-105;
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); /* خلفية gradient خفيفة */
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* shadow خفيف */
+      padding-left: 3.5rem; /* مسافة للأيقونة */
+      padding-right: 1.25rem;
+      text-align: right; /* RTL */
+    }
+
+    /* إخفاء السهم الافتراضي للمتصفح */
+    .custom-select::-ms-expand {
+      display: none;
+    }
+
+    /* للفايرفوكس */
+    .custom-select {
+      -moz-appearance: none;
+      -webkit-appearance: none;
+    }
+
+    /* تحسين الـ spinner بدون أيقونات */
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .animate-spin {
+      animation: spin 1s linear infinite;
+    }
+
+    /* تأثير على الأيقونة عند الـ hover/focus */
+    .custom-select:hover + svg,
+    .custom-select:focus + svg {
+      @apply text-indigo-700 transform scale-110;
+    }
+  `]
 })
 export class JobListComponent implements OnInit {
   jobs: any[] = [];
@@ -112,7 +185,6 @@ export class JobListComponent implements OnInit {
     'الإسكندرية': ['محرم بك', 'سموحة', 'سان ستيفانو', 'العجمي', 'ميامي', 'الرمل', 'سبورتنج', 'لوران', 'المنتزه'],
     'الدقهلية': ['المنصورة', 'ميت غمر', 'طلخا', 'دكرنس', 'بلقاس', 'شربين'],
     'الشرقية': ['الزقازيق', 'منيا القمح', 'بلبيس', 'فاقوس', 'أبو كبير', 'ههيا'],
-    // باقي المحافظات...
     '': []
   };
 
@@ -125,8 +197,7 @@ export class JobListComponent implements OnInit {
   onGovernorateChange() {
     this.filters.city = '';
     const selectedGov = this.filters.governorate;
-    const newCities = this.citiesMap[selectedGov] || [];
-    this.cities = [...newCities]; // reference جديد عشان Angular يحدث الـ view
+    this.cities = this.citiesMap[selectedGov] ? [...this.citiesMap[selectedGov]] : [];
   }
 
   applyFilters() {

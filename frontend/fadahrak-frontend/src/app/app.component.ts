@@ -3,8 +3,9 @@ import { RouterOutlet } from '@angular/router';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { AuthService } from './services/auth.service';
+import { NotificationService } from './services/notification.service'; // أضف ده
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router'; // أضفنا Router
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -22,15 +23,31 @@ import { Subscription } from 'rxjs';
 export class AppComponent implements OnInit, OnDestroy {
   currentUser: any = null;
   private userSubscription!: Subscription;
+  private authSub!: Subscription; // جديد للإشعارات
 
   constructor(
     private authService: AuthService,
-    private router: Router // أضفنا الـ Router
+    private notificationService: NotificationService, // inject هنا
+    private router: Router
   ) {}
 
   ngOnInit() {
+    // اشتراك لتحديث الـ currentUser في الـ Navbar (زي ما كان)
     this.userSubscription = this.authService.user$.subscribe((user: any) => {
       this.currentUser = user;
+    });
+
+    // اشتراك جديد للتحكم في الإشعارات والسوكت
+    this.authSub = this.authService.user$.subscribe(user => {
+      if (user) {
+        // في مستخدم → نتصل بالسوكت ونجيب الإشعارات
+        console.log('مستخدم مسجل دخول أو تم تحميله → تهيئة الإشعارات والسوكت');
+        this.notificationService.init();
+      } else {
+        // مفيش مستخدم → نفصل السوكت
+        console.log('تم تسجيل الخروج → فصل السوكت');
+        this.notificationService.disconnectSocket();
+      }
     });
   }
 
@@ -38,11 +55,14 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.userSubscription) {
       this.userSubscription.unsubscribe();
     }
+    if (this.authSub) {
+      this.authSub.unsubscribe();
+    }
   }
 
   onLogout() {
-    this.authService.logout(); // تنظيف الـ localStorage والـ subject
-    this.currentUser = null; // تنظيف الـ currentUser في الـ component
-    this.router.navigate(['/']); // رجوع للصفحة الرئيسية (أو '/login' لو عايز)
+    this.authService.logout(); // هيحذف التوكن واليوزر ويبعت null في user$
+    this.currentUser = null; // مش ضروري دلوقتي لأن الـ subscribe هيعمله، بس تمام
+    this.router.navigate(['/']);
   }
 }

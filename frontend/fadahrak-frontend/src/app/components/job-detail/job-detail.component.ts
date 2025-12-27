@@ -21,24 +21,22 @@ import { AsyncPipe } from '@angular/common';
 
     <ng-template #noUser></ng-template>
 
-    <div class="min-h-screen py-12 px-4 sm:py-16 lg:py-20 bg-gradient-to-br from-gray-50 to-indigo-50">
+    <div class="min-h-screen bg-gray-50 py-12 px-4 sm:py-16 lg:py-20">
       <div class="max-w-4xl sm:max-w-5xl mx-auto">
-        <div class="card p-6 sm:p-8 md:p-12 shadow-2xl rounded-2xl">
+        <div class="bg-white p-6 sm:p-8 md:p-12 shadow-2xl rounded-2xl border border-gray-100">
 
           <!-- زر الرجوع -->
           <button
-  (click)="goBack()"
-  class="mb-10 flex items-center gap-3 bg-blue-600 text-white px-6 py-3 rounded-xl
-         hover:bg-blue-700 transition text-lg font-semibold shadow-md">
-  <i class="fas fa-arrow-right text-2xl"></i>
-  رجوع للوظائف
-</button>
-
+            (click)="goBack()"
+            class="mb-10 flex items-center gap-3 bg-blue-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:bg-blue-700 transition text-lg sm:text-xl font-semibold shadow-md hover:shadow-lg">
+            <i class="fas fa-arrow-right text-2xl"></i>
+            رجوع للوظائف
+          </button>
 
           <!-- Loading -->
-          <div *ngIf="loading" class="text-center py-32">
-            <i class="fas fa-spinner fa-spin text-6xl text-primary mb-6"></i>
-            <p class="text-2xl text-gray-700">جاري تحميل تفاصيل الوظيفة...</p>
+          <div *ngIf="loading" class="flex flex-col items-center justify-center py-20">
+            <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 mb-6"></div>
+            <p class="text-xl text-gray-700 font-medium">جاري تحميل تفاصيل الوظيفة...</p>
           </div>
 
           <!-- تفاصيل الوظيفة -->
@@ -46,35 +44,35 @@ import { AsyncPipe } from '@angular/common';
 
             <!-- الهيدر -->
             <div class="text-center space-y-3">
-              <h1 class="text-4xl sm:text-5xl font-extrabold text-primary">{{ job.shop_name }}</h1>
+              <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900">{{ job.shop_name }}</h1>
               <p class="text-2xl sm:text-3xl text-gray-800 font-semibold">{{ job.category }}</p>
               <p class="text-xl sm:text-2xl text-gray-600 flex items-center justify-center gap-2">
-                <i class="fas fa-map-marker-alt text-primary"></i>
+                <i class="fas fa-map-marker-alt text-blue-500"></i>
                 {{ job.governorate }} - {{ job.city }}
               </p>
             </div>
 
             <!-- معلومات الوظيفة -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div class="bg-indigo-50 p-6 rounded-xl shadow-lg text-center">
-                <h3 class="text-xl font-bold mb-2 flex items-center justify-center gap-2 text-primary">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div class="bg-indigo-50 p-6 rounded-xl shadow-lg text-center hover:shadow-xl transition-shadow">
+                <h3 class="text-xl font-bold mb-2 flex items-center justify-center gap-2 text-blue-600">
                   <i class="fas fa-clock text-2xl"></i> ساعات العمل
                 </h3>
                 <p class="text-lg text-gray-800">{{ job.working_hours }}</p>
               </div>
 
-              <div class="bg-green-50 p-6 rounded-xl shadow-lg text-center">
-                <h3 class="text-xl font-bold mb-2 flex items-center justify-center gap-2 text-primary">
+              <div class="bg-green-50 p-6 rounded-xl shadow-lg text-center hover:shadow-xl transition-shadow">
+                <h3 class="text-xl font-bold mb-2 flex items-center justify-center gap-2 text-green-600">
                   <i class="fas fa-money-bill-wave text-2xl"></i> الراتب
                 </h3>
                 <p class="text-lg text-gray-800">{{ job.salary || 'حسب الاتفاق' }}</p>
               </div>
 
-              <div class="bg-blue-50 p-6 rounded-xl shadow-lg text-center">
-                <h3 class="text-xl font-bold mb-2 flex items-center justify-center gap-2 text-primary">
+              <div class="bg-blue-50 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow md:col-span-2 lg:col-span-1">
+                <h3 class="text-xl font-bold mb-2 flex items-center justify-center gap-2 text-blue-600">
                   <i class="fas fa-list-ul text-2xl"></i> المتطلبات
                 </h3>
-                <p class="text-lg text-gray-800 whitespace-pre-line">{{ job.requirements }}</p>
+                <p class="text-lg text-gray-800 leading-relaxed text-left break-words">{{ job.requirements }}</p>
               </div>
             </div>
 
@@ -86,7 +84,7 @@ import { AsyncPipe } from '@angular/common';
                   *ngIf="user.role === 'job_seeker' && !hasApplied"
                   (click)="openModal()"
                   [disabled]="applying"
-                  class="bg-blue-600 text-white px-12 py-4 rounded-full text-xl font-bold flex items-center justify-center gap-3 hover:bg-blue-700 transition shadow-lg">
+                  class="bg-blue-600 text-white px-10 sm:px-12 py-4 sm:py-5 rounded-full text-xl font-bold flex items-center justify-center gap-3 hover:bg-blue-700 transition shadow-lg hover:shadow-xl">
                   <i class="fas fa-file-alt" *ngIf="!applying"></i>
                   <i class="fas fa-spinner fa-spin" *ngIf="applying"></i>
                   {{ applying ? 'جاري التقديم...' : 'تقديم على الوظيفة الآن' }}
@@ -94,14 +92,14 @@ import { AsyncPipe } from '@angular/common';
 
                 <!-- تم التقديم -->
                 <div *ngIf="user.role === 'job_seeker' && hasApplied"
-                     class="inline-flex items-center gap-4 bg-green-100 text-green-800 px-12 py-4 rounded-full text-xl font-bold shadow-lg">
+                     class="inline-flex items-center gap-4 bg-green-100 text-green-800 px-10 sm:px-12 py-4 sm:py-5 rounded-full text-xl font-bold shadow-lg">
                   <i class="fas fa-check-circle text-3xl"></i>
                   تم التقديم بنجاح!
                 </div>
 
                 <!-- صاحب المحل -->
                 <div *ngIf="user.role === 'shop_owner'"
-                     class="inline-flex items-center gap-4 bg-indigo-100 text-indigo-800 px-12 py-4 rounded-full text-xl font-bold shadow-lg">
+                     class="inline-flex items-center gap-4 bg-indigo-100 text-indigo-800 px-10 sm:px-12 py-4 sm:py-5 rounded-full text-xl font-bold shadow-lg">
                   <i class="fas fa-building text-3xl"></i>
                   هذه إحدى وظائفك! تابع المتقدمين من لوحة التحكم
                 </div>
@@ -110,8 +108,8 @@ import { AsyncPipe } from '@angular/common';
               <!-- لغير المسجلين -->
               <p *ngIf="!(authService.user$ | async)" class="text-lg text-gray-600">
                 لازم
-                <a routerLink="/login" class="text-primary font-semibold hover:underline">تسجل دخول</a> أو
-                <a routerLink="/signup" class="text-primary font-semibold hover:underline"> تنشئ حساب</a>
+                <a routerLink="/login" class="text-blue-500 font-semibold hover:underline transition">تسجل دخول</a> أو
+                <a routerLink="/signup" class="text-blue-500 font-semibold hover:underline transition"> تنشئ حساب</a>
                 عشان تتقدم على الوظيفة
               </p>
             </div>
@@ -119,14 +117,23 @@ import { AsyncPipe } from '@angular/common';
           </div>
 
           <!-- الوظيفة غير موجودة -->
-          <div *ngIf="!loading && !job" class="text-center py-32">
-            <i class="fas fa-exclamation-triangle text-7xl text-gray-400 mb-4"></i>
-            <p class="text-2xl text-gray-600 font-medium">الوظيفة غير موجودة أو تم حذفها</p>
+          <div *ngIf="!loading && !job" class="text-center py-20">
+            <div class="inline-flex items-center justify-center w-24 h-24 bg-gray-100 rounded-full mb-6">
+              <i class="fas fa-exclamation-triangle text-5xl text-gray-400"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">الوظيفة غير موجودة أو تم حذفها</h3>
           </div>
         </div>
       </div>
     </div>
-  `
+  `,
+  styles: [`
+    .card {
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+  `]
 })
 export class JobDetailComponent implements OnInit {
   job: any = null;
