@@ -132,13 +132,13 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', (socket) => {
     console.log('مستخدم انفصل عن السوكت:', socket.user?.id);
   });
 });
 
 // ────────────────────────────────────────
-// خدمة Angular Frontend (النهائي الصحيح)
+// خدمة Angular Frontend (في الآخر تماماً)
 // ────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend')));
 
@@ -146,12 +146,12 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend/index.html'));
 });
 
-// Test route
+// Test route (للاختبار)
 app.get('/api/test', (req, res) => {
-  res.json({ message: 'Backend شغال تمام مع Socket.IO على Render!' });
+  res.json({ message: 'Backend شغال تمام مع Socket.IO على Koyeb!' });
 });
 
-// اتصال MongoDB
+// اتصال MongoDB (آخر حاجة)
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('✅ متصل بـ MongoDB Atlas');
