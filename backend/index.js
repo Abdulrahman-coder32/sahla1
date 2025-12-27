@@ -41,7 +41,7 @@ app.use('/api/messages', require('./routes/messages'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/notifications', require('./routes/notifications'));
 
-// Socket.IO Logic (محافظ عليه كامل زي ما هو)
+// Socket.IO Logic
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('لا يوجد توكن'));
@@ -132,26 +132,27 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('disconnect', (socket) => {
+  socket.on('disconnect', () => {
     console.log('مستخدم انفصل عن السوكت:', socket.user?.id);
   });
 });
 
 // ────────────────────────────────────────
-// خدمة Angular Frontend (في الآخر تماماً)
+// خدمة Angular Frontend (بعد التصليح)
 // ────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend')));
 
-app.get('*', (req, res) => {
+// التعديل المهم: غيّرنا * إلى /*
+app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend/index.html'));
 });
 
-// Test route (للاختبار)
+// Test route
 app.get('/api/test', (req, res) => {
-  res.json({ message: 'Backend شغال تمام مع Socket.IO على Koyeb!' });
+  res.json({ message: 'Backend شغال تمام مع Socket.IO على Render!' });
 });
 
-// اتصال MongoDB (آخر حاجة)
+// اتصال MongoDB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('✅ متصل بـ MongoDB Atlas');
