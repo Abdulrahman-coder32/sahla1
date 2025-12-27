@@ -41,7 +41,7 @@ app.use('/api/messages', require('./routes/messages'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/notifications', require('./routes/notifications'));
 
-// Socket.IO Logic
+// Socket.IO Logic (محافظ عليه كامل)
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('لا يوجد توكن'));
@@ -138,12 +138,12 @@ io.on('connection', (socket) => {
 });
 
 // ────────────────────────────────────────
-// خدمة Angular Frontend (بعد التصليح)
+// خدمة Angular Frontend (متوافق مع Express 5)
 // ────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend')));
 
-// التعديل المهم: غيّرنا * إلى /*
-app.get('/*', (req, res) => {
+// التعديل الجديد: named wildcard
+app.get('/*path', (req, res) => {
   res.sendFile(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend/index.html'));
 });
 
