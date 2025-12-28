@@ -10,150 +10,168 @@ import { Observable, Subject } from 'rxjs';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <nav class="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-200">
-      <div class="nav-container">
-        <div class="flex justify-between items-center h-16">
+  <nav class="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-200">
+  <div class="nav-container">
+    <div class="flex justify-between items-center h-16">
+      <!-- Logo -->
+      <div class="flex items-center">
+        <a routerLink="/" (click)="closeMobileMenu()">
+          <img src="assets/logo.png" alt="سَهلة" class="h-12 w-auto max-w-32 object-contain transition-transform duration-300 hover:scale-105 hover:translate-x-1 translate-x-4">
+        </a>
+      </div>
 
-          <!-- Logo -->
-          <div class="flex items-center">
-            <a routerLink="/" (click)="closeMobileMenu()">
-              <img src="assets/logo.png" alt="سَهلة"
-                   class="h-12 w-auto max-w-32 object-contain transition-transform duration-300 hover:scale-105 hover:translate-x-1 translate-x-4">
-            </a>
-          </div>
+      <!-- Desktop Navigation -->
+      <div class="hidden md:flex items-center gap-8">
+        <!-- الروابط الأساسية -->
+        <a routerLink="/" class="nav-link" routerLinkActive="active-link">الرئيسية</a>
+        <a routerLink="/jobs" class="nav-link" routerLinkActive="active-link">الوظائف</a>
+        <a routerLink="/about" class="nav-link" routerLinkActive="active-link">عننا</a>
+        <a routerLink="/contact" class="nav-link" routerLinkActive="active-link">اتصل بنا</a>
 
-          <!-- Desktop Navigation -->
-          <div class="hidden md:flex items-center gap-6">
-
-            <a routerLink="/" class="nav-link" routerLinkActive="active-link">الرئيسية</a>
-            <a routerLink="/jobs" class="nav-link" routerLinkActive="active-link">الوظائف</a>
-            <a routerLink="/about" class="nav-link" routerLinkActive="active-link">عننا</a>
-            <a routerLink="/contact" class="nav-link" routerLinkActive="active-link">اتصل بنا</a>
-
-            <ng-container *ngIf="user; else guestDesktop">
-              <!-- إشعارات -->
-              <div class="relative group">
-                <button class="nav-link flex items-center gap-1.5">
-                  الإشعارات
-                  <ng-container *ngIf="notificationCount$ | async as count">
-                    <span *ngIf="count > 0"
-                          class="absolute -top-1 -end-2 bg-red-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
-                      {{ count > 9 ? '9+' : count }}
-                    </span>
-                  </ng-container>
-                </button>
-                <div
-                  class="absolute end-0 mt-3 w-80 bg-white rounded-xl shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
-                  <div class="p-4 border-b border-gray-200 font-semibold text-lg">الإشعارات</div>
-                  <div class="max-h-80 overflow-y-auto scrollbar-hide">
-                    <ng-container *ngIf="notifications$ | async as notifications; else loading">
-                      <button *ngFor="let notif of notifications.slice(0,10)" (click)="navigateToNotification(notif)"
-                              class="w-full p-3 hover:bg-indigo-50 border-b border-gray-100 flex items-start gap-3 text-right"
-                              [class.font-semibold]="!notif.read" [class.bg-indigo-50]="!notif.read">
-                        <div class="w-2 h-2 rounded-full mt-2 flex-shrink-0"
-                             [class.bg-indigo-500]="!notif.read" [class.bg-gray-300]="notif.read"></div>
-                        <div>
-                          <p class="text-sm">{{ notif.message }}</p>
-                          <p class="text-xs text-gray-500 mt-1">{{ notif.createdAt | date:'short' }}</p>
-                        </div>
-                      </button>
-                      <div *ngIf="notifications.length === 0" class="p-6 text-center text-gray-500">
-                        لا توجد إشعارات جديدة
-                      </div>
-                    </ng-container>
-                    <ng-template #loading>
-                      <div class="p-6 text-center text-gray-400">جاري التحميل...</div>
-                    </ng-template>
-                  </div>
-                  <a routerLink="/notifications"
-                     class="block p-3 text-center bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-medium rounded-b-xl">
-                    عرض جميع الإشعارات
-                  </a>
-                </div>
-              </div>
-
-              <!-- الرسائل -->
-              <a routerLink="/inbox" class="nav-link" routerLinkActive="active-link">الرسائل</a>
-
-              <!-- الملف الشخصي: صورة دائرية -->
-              <a [routerLink]="user.role==='shop_owner'?'/owner-dashboard':'/seeker-dashboard'"
-                 class="nav-link flex items-center gap-2">
-                <img *ngIf="user.profileImage; else defaultAvatar"
-                     [src]="user.profileImage" alt="Avatar"
-                     class="w-8 h-8 rounded-full object-cover border-2 border-indigo-500">
-                <ng-template #defaultAvatar>
-                  <img src="assets/images/default-avatar.png" alt="Avatar"
-                       class="w-8 h-8 rounded-full object-cover border-2 border-gray-300">
-                </ng-template>
-                <span>{{ user.name }}</span>
-              </a>
-
-              <button (click)="onLogout()" class="nav-link text-red-600 hover:text-red-700 font-medium">خروج</button>
-            </ng-container>
-
-            <ng-template #guestDesktop>
-              <a routerLink="/login" class="nav-link" routerLinkActive="active-link">دخول</a>
-              <a routerLink="/signup" class="btn-primary">إنشاء حساب</a>
-            </ng-template>
-          </div>
-
-          <!-- Mobile Hamburger + Bell -->
-          <div class="md:hidden flex items-center gap-4">
-            <ng-container *ngIf="user">
-              <button (click)="mobileNotificationsOpen = !mobileNotificationsOpen" class="relative p-2">
-                <i class="fas fa-bell text-xl text-gray-700"></i>
-                <ng-container *ngIf="notificationCount$ | async as count">
-                  <span *ngIf="count>0"
-                        class="absolute -top-1 -end-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                    {{ count > 9 ? '9+' : count }}
-                  </span>
-                </ng-container>
-              </button>
-            </ng-container>
-
-            <button (click)="mobileMenuOpen = !mobileMenuOpen" class="p-2">
-              <div class="relative w-8 h-8 flex flex-col justify-between items-center">
-                <span [ngClass]="{'rotate-45 translate-y-3': mobileMenuOpen}" class="block h-1 w-8 bg-gray-800 rounded-full transition-all duration-300"></span>
-                <span [ngClass]="{'opacity-0': mobileMenuOpen}" class="block h-1 w-8 bg-gray-800 rounded-full transition-all duration-300"></span>
-                <span [ngClass]="{'-rotate-45 -translate-y-3': mobileMenuOpen}" class="block h-1 w-8 bg-gray-800 rounded-full transition-all duration-300"></span>
-              </div>
+        <!-- لو مسجل دخول -->
+        <ng-container *ngIf="user; else guestDesktop">
+          <!-- الإشعارات -->
+          <div class="relative group">
+            <button class="nav-link flex items-center gap-1.5">
+              الإشعارات
+              <ng-container *ngIf="notificationCount$ | async as count">
+                <span *ngIf="count > 0" class="absolute -top-1 -end-2 bg-red-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                  {{ count > 9 ? '9+' : count }}
+                </span>
+              </ng-container>
             </button>
-          </div>
-        </div>
-
-        <!-- Mobile Menu -->
-        <div [class.hidden]="!mobileMenuOpen" class="md:hidden bg-white border-t border-gray-200">
-          <div class="py-2">
-            <a routerLink="/" class="mobile-link" (click)="closeMobileMenu()">الرئيسية</a>
-            <a routerLink="/jobs" class="mobile-link" (click)="closeMobileMenu()">الوظائف</a>
-            <a routerLink="/about" class="mobile-link" (click)="closeMobileMenu()">عننا</a>
-            <a routerLink="/contact" class="mobile-link" (click)="closeMobileMenu()">اتصل بنا</a>
-
-            <ng-container *ngIf="user; else guestMobile">
-              <a routerLink="/inbox" class="mobile-link" (click)="closeMobileMenu()">الرسائل</a>
-              <a [routerLink]="user.role==='shop_owner'?'/owner-dashboard':'/seeker-dashboard'"
-                 class="mobile-link flex items-center gap-2" (click)="closeMobileMenu()">
-                <img *ngIf="user.profileImage; else defaultMobile"
-                     [src]="user.profileImage" alt="Avatar"
-                     class="w-6 h-6 rounded-full object-cover border-2 border-indigo-500">
-                <ng-template #defaultMobile>
-                  <img src="assets/images/default-avatar.png" alt="Avatar"
-                       class="w-6 h-6 rounded-full object-cover border-2 border-gray-300">
+            <!-- Dropdown الإشعارات -->
+            <div class="absolute end-0 mt-3 w-80 bg-white rounded-xl shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+              <div class="p-4 border-b border-gray-200 font-semibold text-lg">الإشعارات</div>
+              <div class="max-h-80 overflow-y-auto scrollbar-hide">
+                <ng-container *ngIf="notifications$ | async as notifications; else loading">
+                  <button *ngFor="let notif of notifications.slice(0, 10)" (click)="navigateToNotification(notif)"
+                          class="w-full p-3 hover:bg-indigo-50 border-b border-gray-100 flex items-start gap-3 text-right"
+                          [class.font-semibold]="!notif.read" [class.bg-indigo-50]="!notif.read">
+                    <div class="w-2 h-2 rounded-full mt-2 flex-shrink-0" [class.bg-indigo-500]="!notif.read" [class.bg-gray-300]="notif.read"></div>
+                    <div>
+                      <p class="text-sm">{{ notif.message }}</p>
+                      <p class="text-xs text-gray-500 mt-1">{{ notif.createdAt | date:'short' }}</p>
+                    </div>
+                  </button>
+                  <div *ngIf="notifications.length === 0" class="p-6 text-center text-gray-500">
+                    لا توجد إشعارات جديدة
+                  </div>
+                </ng-container>
+                <ng-template #loading>
+                  <div class="p-6 text-center text-gray-400">جاري التحميل...</div>
                 </ng-template>
+              </div>
+              <a routerLink="/notifications" class="block p-3 text-center bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-medium rounded-b-xl">
+                عرض جميع الإشعارات
+              </a>
+            </div>
+          </div>
+
+          <a routerLink="/inbox" class="nav-link" routerLinkActive="active-link">الرسائل</a>
+          <a [routerLink]="user.role === 'shop_owner' ? '/owner-dashboard' : '/seeker-dashboard'"
+             class="nav-link" routerLinkActive="active-link">لوحة التحكم</a>
+
+          <!-- جديد: Profile Dropdown مع الصورة -->
+          <div class="relative group">
+            <button class="flex items-center gap-2 rounded-full focus:outline-none">
+              <img 
+                [src]="user.profileImage || 'https://via.placeholder.com/40?text=' + (user.name?.charAt(0) || 'م')" 
+                alt="صورة المستخدم"
+                class="w-10 h-10 rounded-full object-cover ring-2 ring-gray-300">
+              <span class="text-gray-700 font-medium">{{ user.name }}</span>
+            </button>
+
+            <!-- Dropdown للـ Profile -->
+            <div class="absolute end-0 mt-3 w-56 bg-white rounded-xl shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+              <a routerLink="/profile" class="block px-5 py-3 hover:bg-gray-50 text-right font-medium text-gray-700 border-b border-gray-100">
                 الملف الشخصي
               </a>
-              <button (click)="onLogout(); closeMobileMenu()" class="mobile-link text-red-600 font-medium">خروج</button>
-            </ng-container>
-
-            <ng-template #guestMobile>
-              <a routerLink="/login" class="mobile-link" (click)="closeMobileMenu()">دخول</a>
-              <a routerLink="/signup" class="mobile-link bg-indigo-600 text-white font-medium rounded-none" (click)="closeMobileMenu()">إنشاء حساب</a>
-            </ng-template>
+              <button (click)="onLogout()" class="w-full text-right px-5 py-3 hover:bg-red-50 text-red-600 font-medium">
+                تسجيل الخروج
+              </button>
+            </div>
           </div>
-        </div>
+        </ng-container>
 
+        <!-- لو ضيف -->
+        <ng-template #guestDesktop>
+          <a routerLink="/login" class="nav-link" routerLinkActive="active-link">دخول</a>
+          <a routerLink="/signup" class="btn-primary">إنشاء حساب</a>
+        </ng-template>
       </div>
-    </nav>
+
+      <!-- Mobile: Bell + Hamburger -->
+      <div class="md:hidden flex items-center gap-4">
+        <ng-container *ngIf="user">
+          <button (click)="mobileNotificationsOpen = !mobileNotificationsOpen" class="relative p-2">
+            <i class="fas fa-bell text-xl text-gray-700"></i>
+            <ng-container *ngIf="notificationCount$ | async as count">
+              <span *ngIf="count > 0" class="absolute -top-1 -end-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                {{ count > 9 ? '9+' : count }}
+              </span>
+            </ng-container>
+          </button>
+        </ng-container>
+
+        <button (click)="mobileMenuOpen = !mobileMenuOpen" class="p-2">
+          <div class="relative w-8 h-8 flex flex-col justify-between items-center">
+            <span [ngClass]="{'rotate-45 translate-y-3': mobileMenuOpen}" class="block h-1 w-8 bg-gray-800 rounded-full transition-all duration-300"></span>
+            <span [ngClass]="{'opacity-0': mobileMenuOpen}" class="block h-1 w-8 bg-gray-800 rounded-full transition-all duration-300"></span>
+            <span [ngClass]="{'-rotate-45 -translate-y-3': mobileMenuOpen}" class="block h-1 w-8 bg-gray-800 rounded-full transition-all duration-300"></span>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div [class.hidden]="!mobileMenuOpen" class="md:hidden bg-white border-t border-gray-200">
+      <div class="py-2">
+        <a routerLink="/" class="mobile-link" (click)="closeMobileMenu()">الرئيسية</a>
+        <a routerLink="/jobs" class="mobile-link" (click)="closeMobileMenu()">الوظائف</a>
+        <a routerLink="/about" class="mobile-link" (click)="closeMobileMenu()">عننا</a>
+        <a routerLink="/contact" class="mobile-link" (click)="closeMobileMenu()">اتصل بنا</a>
+        <ng-container *ngIf="user; else guestMobile">
+          <a routerLink="/profile" class="mobile-link" (click)="closeMobileMenu()">الملف الشخصي</a>
+          <a routerLink="/inbox" class="mobile-link" (click)="closeMobileMenu()">الرسائل</a>
+          <a [routerLink]="user.role === 'shop_owner' ? '/owner-dashboard' : '/seeker-dashboard'" class="mobile-link" (click)="closeMobileMenu()">لوحة التحكم</a>
+          <button (click)="onLogout(); closeMobileMenu()" class="mobile-link text-red-600 font-medium">تسجيل الخروج</button>
+        </ng-container>
+        <ng-template #guestMobile>
+          <a routerLink="/login" class="mobile-link" (click)="closeMobileMenu()">دخول</a>
+          <a routerLink="/signup" class="mobile-link bg-indigo-600 text-white font-medium rounded-none" (click)="closeMobileMenu()">إنشاء حساب</a>
+        </ng-template>
+      </div>
+    </div>
+
+    <!-- Mobile Notifications Dropdown -->
+    <div [class.hidden]="!mobileNotificationsOpen" class="md:hidden fixed inset-x-0 top-16 h-1/2 bg-white shadow-2xl z-50 flex flex-col">
+      <div class="p-4 border-b border-gray-200 font-semibold text-lg text-right bg-gray-50">الإشعارات</div>
+      <div class="flex-1 overflow-y-auto scrollbar-hide">
+        <ng-container *ngIf="notifications$ | async as notifications; else loading">
+          <button *ngFor="let notif of notifications.slice(0, 10)" (click)="navigateToNotification(notif); mobileNotificationsOpen = false"
+                  class="w-full text-right p-3 hover:bg-indigo-50 border-b border-gray-100 flex items-start gap-3"
+                  [class.font-semibold]="!notif.read" [class.bg-indigo-50]="!notif.read">
+            <div class="w-2 h-2 rounded-full mt-2 flex-shrink-0" [class.bg-indigo-500]="!notif.read" [class.bg-gray-300]="notif.read"></div>
+            <div class="flex-1">
+              <p class="text-sm">{{ notif.message }}</p>
+              <p class="text-xs text-gray-500 mt-1">{{ notif.createdAt | date:'short' }}</p>
+            </div>
+          </button>
+          <div *ngIf="notifications.length === 0" class="p-6 text-center text-gray-500">
+            لا توجد إشعارات جديدة
+          </div>
+        </ng-container>
+        <ng-template #loading>
+          <div class="p-6 text-center text-gray-400">جاري التحميل...</div>
+        </ng-template>
+      </div>
+      <a routerLink="/notifications" (click)="mobileNotificationsOpen = false" class="p-4 text-center bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-medium border-t border-gray-200">
+        عرض جميع الإشعارات
+      </a>
+    </div>
+  </div>
+</nav>
   `,
   styles: [`
     .scrollbar-hide {-ms-overflow-style:none;scrollbar-width:none;}
