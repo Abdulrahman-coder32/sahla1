@@ -12,12 +12,13 @@ export class ApiService {
 
   constructor(private http: HttpClient) {
     const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
+    
+    // التعديل الرئيسي: دايمًا نستخدم /api سواء في الـ dev أو الـ production
+    this.apiUrl = '/api';
+    
     if (isDev) {
-      this.apiUrl = '/api';        // مهم جدًا في الـ dev عشان الـ proxy
-      this.imageBaseUrl = '';
+      this.imageBaseUrl = ''; // في الـ dev الصور relative
     } else {
-      this.apiUrl = '';            // في الـ production مفيش /api
       this.imageBaseUrl = 'https://positive-christiana-sahla-18a86cd2.koyeb.app';
     }
   }
@@ -38,15 +39,12 @@ export class ApiService {
 
   private fixImageUrl(data: any): any {
     if (!data) return data;
-
     if (data.profileImage && typeof data.profileImage === 'string' && !data.profileImage.startsWith('http')) {
       data.profileImage = this.prependBaseUrl(data.profileImage);
     }
-
     if (Array.isArray(data)) {
       return data.map(item => this.fixImageUrl(item));
     }
-
     Object.keys(data).forEach(key => {
       if (data[key] && typeof data[key] === 'object') {
         data[key] = this.fixImageUrl(data[key]);
@@ -54,7 +52,6 @@ export class ApiService {
         data[key] = this.prependBaseUrl(data[key]);
       }
     });
-
     return data;
   }
 
