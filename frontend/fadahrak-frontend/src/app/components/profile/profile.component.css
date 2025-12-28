@@ -1,67 +1,13 @@
-/* تحسينات عامة للصفحة */
-.min-h-screen {
-  min-height: 100vh;
-  min-height: -webkit-fill-available;
-}
+/* تأكد إن Font Awesome محمل في index.html أو angular.json */
+.min-h-screen { min-height: 100vh; }
 
-/* تأثيرات على الصورة */
-img {
-  transition: transform 0.3s ease;
-}
+button { transition: all 0.3s ease; }
+button:hover { transform: translateY(-4px); }
 
-.relative:hover img {
-  transform: scale(1.05);
-}
+.shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
 
-/* تحسين الـ inputs */
-input[disabled] {
-  cursor: not-allowed;
-  background-color: #f3f4f6 !important;
-}
-
-/* تأثيرات hover على الأزرار */
-button {
-  transition: all 0.3s ease;
-}
-
-button:hover {
-  transform: translateY(-2px);
-}
-
-/* ظلال جميلة */
-.shadow-2xl {
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-}
-
-/* تحسين الـ spinner */
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* لمسات إضافية للـ mobile */
 @media (max-width: 640px) {
-  .text-3xl {
-    font-size: 1.875rem;
-  }
-  
-  .w-32 {
-    width: 7rem;
-  }
-  
-  .h-32 {
-    height: 7rem;
-  }
-  
-  .p-6 {
-    padding: 1.5rem;
-  }
+  .w-40 { width: 9rem; height: 9rem; }
+  .text-4xl { font-size: 2.5rem; }
+  .px-8 { padding-left: 1.5rem; padding-right: 1.5rem; }
 }
