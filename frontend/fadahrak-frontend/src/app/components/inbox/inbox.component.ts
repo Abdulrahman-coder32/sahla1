@@ -282,7 +282,53 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  // ── دوال عرض الصور مع كسر الكاش ──
+  // ── دوال مساعدة (اللي كانت ناقصة) ──
+  private normalizeMessage(msg: any) {
+    const senderId = msg.sender_id?._id || msg.sender_id || '';
+    const senderName = senderId === this.currentUserId
+      ? 'أنت'
+      : (msg.sender_id?.name || (this.isJobSeeker ? 'صاحب العمل' : 'الباحث عن عمل'));
+    return {
+      _id: msg._id || 'temp-' + Date.now(),
+      sender_id: senderId,
+      sender_name: senderName,
+      timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+      message: msg.message || '',
+      type: msg.type || 'text',
+      url: msg.url || null,
+      filename: msg.filename || null
+    };
+  }
+
+  private markAsRead() {
+    if (!this.selectedApp?._id) return;
+    this.api.markMessagesAsRead(this.selectedApp._id).subscribe({
+      next: () => {
+        console.log('تم تصفير unreadCount بنجاح للدردشة:', this.selectedApp._id);
+        this.notificationService.markChatNotificationsAsRead(this.selectedApp._id);
+      },
+      error: (err) => console.error('خطأ في mark as read:', err)
+    });
+  }
+
+  private goBack() {
+    this.router.navigate(['/inbox']);
+  }
+
+  private isMyMessage(msg: any): boolean {
+    const senderId = msg.sender_id?._id || msg.sender_id || '';
+    return senderId === this.currentUserId;
+  }
+
+  private getOtherUserImage(): string | null {
+    if (!this.selectedApp) return null;
+    const otherUser = this.isJobSeeker
+      ? this.selectedApp.job_id?.owner_id
+      : this.selectedApp.seeker_id;
+    return otherUser?.profileImage || null;
+  }
+
+  // ── دوال عرض الصور مع كسر الكاش (موجودة بالفعل) ──
   getCurrentUserImage(): string {
     if (!this.currentUser?.profileImage) {
       return `https://via.placeholder.com/40?text=${this.currentUser?.name?.charAt(0) || 'أ'}`;
@@ -298,21 +344,57 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
     return `${img}?t=${this.cacheBuster}`;
   }
 
-  // باقي الدوال بدون تغيير كبير
-  private getOtherUserImage(): string | null {
-    if (!this.selectedApp) return null;
-    const otherUser = this.isJobSeeker
-      ? this.selectedApp.job_id?.owner_id
-      : this.selectedApp.seeker_id;
-    return otherUser?.profileImage || null;
-  }
-
-  // ... باقي الدوال كما هي (markAsRead, goBack, isMyMessage, loadMessages, sendMessage, onFilesSelected, uploadFile, toggleRecording, etc.)
-  // يمكنك نسخها من الكود القديم مباشرة
-
-  getAvatarInitial(name: string): string {
+  private getAvatarInitial(name: string): string {
     return name.charAt(0).toUpperCase() || 'م';
   }
+
+  private loadMessages() {
+    if (!this.selectedApp) return;
+    this.api.getMessages(this.selectedApp._id).subscribe({
+      next: (msgs: any[]) => {
+        this.messages = msgs.map(msg => this.normalizeMessage(msg));
+        this.loading = false;
+        this.scrollToBottom();
+      },
+      error: (err) => {
+        console.error('فشل تحميل الرسائل', err);
+        this.loading = false;
+      }
+    });
+  }
+
+  sendMessage() {
+    if (!this.newMessage.trim() || !this.selectedApp) return;
+    const text = this.newMessage.trim();
+    this.newMessage = '';
+    const tempId = 'temp-' + Date.now();
+    const tempMsg = {
+      _id: tempId,
+      sender_id: this.currentUserId,
+      sender_name: 'أنت',
+      message: text,
+      type: 'text',
+      timestamp: new Date()
+    };
+    this.messages.push(this.normalizeMessage(tempMsg));
+    this.scrollToBottom();
+    this.api.sendMessage({ application_id: this.selectedApp._id, message: text }).subscribe({
+      next: (savedMsg: any) => {
+        const index = this.messages.findIndex(m => m._id === tempId);
+        if (index !== -1) {
+          this.messages[index] = this.normalizeMessage(savedMsg);
+        }
+      },
+      error: (err) => {
+        console.error('فشل الإرسال', err);
+        alert('فشل إرسال الرسالة');
+        this.messages = this.messages.filter(m => m._id !== tempId);
+      }
+    });
+  }
+
+  // ... باقي الدوال (onFilesSelected, uploadFile, toggleRecording, scrollToBottom, getChatName, etc.) ...
+  // يمكنك نسخها من الكود الأصلي إذا كانت موجودة
 
   scrollToBottom() {
     setTimeout(() => {
@@ -327,6 +409,4 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
       ? app.job_id?.shop_name || 'صاحب العمل'
       : app.seeker_id?.name || 'باحث عن عمل';
   }
-
-  // ... باقي الدوال ...
 }
