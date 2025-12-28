@@ -110,7 +110,7 @@ export class ProfileComponent implements OnInit {
 
   showMessage(text: string, type: 'success' | 'error') {
     this.message = { text, type };
-    setTimeout(() => this.message = null, 3000); // تقليل الوقت لتجربة أفضل
+    setTimeout(() => this.message = null, 3000);
   }
 
   getTimestamp(): number {
