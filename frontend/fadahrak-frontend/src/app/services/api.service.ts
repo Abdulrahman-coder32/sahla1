@@ -7,14 +7,20 @@ import { map } from 'rxjs/operators';
   providedIn: 'root'
 })
 export class ApiService {
-  private apiUrl = '/api'; // proxy في الـ dev
-  // دومينك الحقيقي على Koyeb (بدون / في الآخر)
-  private imageBaseUrl = 'https://positive-christiana-sahla-18a86cd2.koyeb.app';
+  private apiUrl: string;
+  private imageBaseUrl: string;
 
   constructor(private http: HttpClient) {
-    // في الـ dev (localhost) → نستخدم المسار النسبي
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      this.imageBaseUrl = ''; // عشان يشتغل مع الـ proxy
+    const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+    if (isDev) {
+      // في التطوير المحلي: نستخدم /api عشان الـ proxy يحولها لـ localhost:5000
+      this.apiUrl = '/api';
+      this.imageBaseUrl = ''; // الصور تتحمل من الـ proxy كمان
+    } else {
+      // في الـ production على Koyeb: مفيش /api في الـ routes
+      this.apiUrl = '';
+      this.imageBaseUrl = 'https://positive-christiana-sahla-18a86cd2.koyeb.app';
     }
   }
 
@@ -35,14 +41,17 @@ export class ApiService {
   // ── دالة لإصلاح روابط الصور (تضيف الدومين لو المسار نسبي) ──
   private fixImageUrl(data: any): any {
     if (!data) return data;
+
     // لو object واحد
     if (data.profileImage && typeof data.profileImage === 'string' && !data.profileImage.startsWith('http')) {
       data.profileImage = this.prependBaseUrl(data.profileImage);
     }
+
     // لو array
     if (Array.isArray(data)) {
       return data.map(item => this.fixImageUrl(item));
     }
+
     // لو object nested (مثل owner_id.profileImage أو seeker_id.profileImage)
     Object.keys(data).forEach(key => {
       if (data[key] && typeof data[key] === 'object') {
@@ -51,6 +60,7 @@ export class ApiService {
         data[key] = this.prependBaseUrl(data[key]);
       }
     });
+
     return data;
   }
 
@@ -136,14 +146,12 @@ export class ApiService {
     );
   }
 
-  // *** الدالة الجديدة: جلب الطلبات لوظيفة معينة ***
   getApplicationsForJob(jobId: string): Observable<any> {
     return this.http.get(`${this.apiUrl}/applications/job/${jobId}`, { headers: this.getHeaders() }).pipe(
       map(res => this.fixImageUrl(res))
     );
   }
 
-  // *** الدالة الجديدة: تحديث حالة الطلب ***
   updateApplicationStatus(applicationId: string, status: string): Observable<any> {
     return this.http.patch(
       `${this.apiUrl}/applications/${applicationId}/status`,
