@@ -255,23 +255,41 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
 
         this.loadMessages();
 
-        // ← التعديل النهائي: استقبال الرسائل الجديدة في الوقت الفعلي داخل الشات
+        // ← تشخيص + حل نهائي لاستقبال الرسائل داخل الشات في الوقت الفعلي
         this.socketService.onNewMessage((msg: any) => {
-          // نتأكد إن الرسالة للدردشة الحالية
+          console.log('🔔 [InboxComponent] تلقيت event newMessage:', msg);
+          console.log('   application_id في الرسالة:', msg.application_id);
+          console.log('   selectedApp._id الحالي:', this.selectedApp?._id);
+          console.log('   هل متطابقين؟', msg.application_id === this.selectedApp?._id);
+
           if (this.selectedApp && msg.application_id === this.selectedApp._id) {
             const normalized = this.normalizeMessage(msg);
 
-            // نتأكد إن الرسالة مش مكررة
+            console.log('   الرسالة بعد normalize:', normalized);
+            console.log('   هل الـ _id موجود بالفعل في messages؟', this.messages.some(m => m._id === normalized._id));
+
             if (!this.messages.some(m => m._id === normalized._id)) {
-              this.messages.push(normalized);
-              this.scrollToBottom(); // scroll فوري لتحت
+              console.log('✅ هضيف الرسالة الجديدة للـ messages array دلوقتي');
+
+              // الحل المهم: نضيف الرسالة داخل NgZone عشان Angular يكتشف التغيير
+              import('@angular/core').then(({ NgZone }) => {
+                inject(NgZone).run(() => {
+                  this.messages.push(normalized);
+                  console.log('   تم إضافة الرسالة، عدد الرسائل الآن:', this.messages.length);
+                  this.scrollToBottom();
+                });
+              });
 
               // لو الرسالة من الطرف الآخر → نصفر الإشعارات والـ unreadCount
               if (normalized.sender_id !== this.currentUserId) {
                 this.notificationService.markChatNotificationsAsRead(this.selectedApp._id);
                 this.markAsRead();
               }
+            } else {
+              console.log('   الرسالة مكررة، مش هضيفها');
             }
+          } else {
+            console.log('   الرسالة لشات تاني، متجاهلها هنا');
           }
         });
       },
