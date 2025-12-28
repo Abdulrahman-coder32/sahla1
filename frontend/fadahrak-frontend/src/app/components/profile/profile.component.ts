@@ -21,12 +21,15 @@ export class ProfileComponent implements OnInit {
     role: '',
     profileImage: ''
   };
-
+  
   isEditing = false;
   selectedFile: File | null = null;
   previewUrl: string | null = null;
   loading = true;
   saving = false;
+
+  // لكسر الكاش - هنستخدم timestamp مختلف لكل صورة
+  private imageCacheBuster = Date.now();
 
   constructor(
     private api: ApiService,
@@ -44,15 +47,25 @@ export class ProfileComponent implements OnInit {
     this.api.getProfile().subscribe({
       next: (data: any) => {
         this.user = data;
-        this.previewUrl = data.profileImage || null;
+        this.updatePreviewUrl(data.profileImage);
         this.loading = false;
       },
       error: (err) => {
         console.error('فشل تحميل البروفايل', err);
-        alert('فشل تحميل البيانات، حاول مرة أخرى');
+        this.notification.showError('فشل تحميل البيانات، حاول مرة أخرى');
         this.loading = false;
       }
     });
+  }
+
+  private updatePreviewUrl(imageUrl: string | undefined) {
+    if (!imageUrl) {
+      this.previewUrl = null;
+      return;
+    }
+    // نضيف timestamp لكسر الكاش
+    this.previewUrl = `${imageUrl}?t=${this.imageCacheBuster}`;
+    this.imageCacheBuster = Date.now(); // نحدثه للمرة الجاية
   }
 
   onFileSelected(event: any) {
@@ -60,12 +73,11 @@ export class ProfileComponent implements OnInit {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('حجم الصورة كبير جدًا، الحد الأقصى 5 ميجا');
+      this.notification.showWarning('حجم الصورة كبير جدًا، الحد الأقصى 5 ميجا');
       return;
     }
 
     this.selectedFile = file;
-
     const reader = new FileReader();
     reader.onload = () => {
       this.previewUrl = reader.result as string;
@@ -79,7 +91,6 @@ export class ProfileComponent implements OnInit {
 
   saveProfile() {
     if (this.saving) return;
-
     this.saving = true;
 
     const formData = new FormData();
@@ -87,26 +98,28 @@ export class ProfileComponent implements OnInit {
     if (this.user.phone) {
       formData.append('phone', this.user.phone.trim());
     }
-
     if (this.selectedFile) {
       formData.append('profileImage', this.selectedFile);
     }
 
     this.api.updateProfile(formData).subscribe({
       next: (updatedUser: any) => {
+        // تحديث الـ auth service أولاً
         this.authService.updateCurrentUser(updatedUser);
-
+        
+        // ثم تحديث الواجهة
         this.user = updatedUser;
-        this.previewUrl = updatedUser.profileImage || null;
+        this.updatePreviewUrl(updatedUser.profileImage);
+        
         this.selectedFile = null;
         this.isEditing = false;
         this.saving = false;
-
-        alert('تم تحديث الملف الشخصي بنجاح');
+        
+        this.notification.showSuccess('تم تحديث الملف الشخصي بنجاح');
       },
       error: (err) => {
         console.error('فشل تحديث البروفايل', err);
-        alert('فشل حفظ التغييرات، حاول مرة أخرى');
+        this.notification.showError('فشل حفظ التغييرات، حاول مرة أخرى');
         this.saving = false;
       }
     });
@@ -115,13 +128,12 @@ export class ProfileComponent implements OnInit {
   cancelEdit() {
     this.loadProfile();
     this.selectedFile = null;
-    this.previewUrl = this.user.profileImage || null;
+    // الـ previewUrl هيتحدث تلقائياً لما يجيب البروفايل من جديد
     this.isEditing = false;
   }
 
-  // جديد: دالة لكسر الكاش في الصور
-  getTimestamp(): number {
-    return Date.now();
+  // دالة مساعدة للـ template لو عايز تستخدمها بدل this.previewUrl مباشرة
+  getProfileImageUrl(): string {
+    return this.previewUrl || 'assets/images/default-avatar.png'; // ضيف مسار الصورة الافتراضية هنا
   }
-  
 }
