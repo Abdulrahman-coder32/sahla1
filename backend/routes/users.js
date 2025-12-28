@@ -10,7 +10,6 @@ const router = express.Router();
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadPath = 'uploads/profile';
-    // تأكد من وجود المجلد
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath, { recursive: true });
     }
@@ -42,9 +41,10 @@ router.get('/me', auth, async (req, res) => {
     const user = await User.findById(req.user.id).select('-password');
     if (!user) return res.status(404).json({ msg: 'المستخدم غير موجود' });
 
-    // إضافة الـ full URL للصورة
-    if (user.profileImage && !user.profileImage.startsWith('http')) {
-      user.profileImage = `${req.protocol}://${req.get('host')}/uploads/profile/${user.profileImage}`;
+    // إضافة الـ full URL للصورة + كسر الكاش
+    if (user.profileImage) {
+      const baseUrl = `${req.protocol}://${req.get('host')}/uploads/profile/`;
+      user.profileImage = baseUrl + user.profileImage + '?t=' + Date.now();
     }
 
     res.json(user);
@@ -65,9 +65,10 @@ router.put('/profile', auth, upload.single('profileImage'), async (req, res) => 
     // لو في صورة جديدة
     if (req.file) {
       // احذف الصورة القديمة لو موجودة ومش default
-      const user = await User.findById(req.user.id);
-      if (user.profileImage && user.profileImage !== 'default.jpg') {
-        const oldPath = path.join(__dirname, '..', 'uploads', 'profile', path.basename(user.profileImage));
+      const oldUser = await User.findById(req.user.id);
+      if (oldUser.profileImage && oldUser.profileImage !== 'default.jpg') {
+        const oldFileName = path.basename(oldUser.profileImage.split('?')[0]); // نتجاهل ?t=...
+        const oldPath = path.join(__dirname, '..', 'uploads', 'profile', oldFileName);
         if (fs.existsSync(oldPath)) {
           fs.unlinkSync(oldPath);
         }
@@ -81,9 +82,10 @@ router.put('/profile', auth, upload.single('profileImage'), async (req, res) => 
       { new: true }
     ).select('-password');
 
-    // إضافة الـ full URL للصورة
-    if (updatedUser.profileImage && !updatedUser.profileImage.startsWith('http')) {
-      updatedUser.profileImage = `${req.protocol}://${req.get('host')}/uploads/profile/${updatedUser.profileImage}`;
+    // إضافة الـ full URL + كسر الكاش
+    if (updatedUser.profileImage) {
+      const baseUrl = `${req.protocol}://${req.get('host')}/uploads/profile/`;
+      updatedUser.profileImage = baseUrl + updatedUser.profileImage + '?t=' + Date.now();
     }
 
     res.json(updatedUser);
@@ -93,7 +95,7 @@ router.put('/profile', auth, upload.single('profileImage'), async (req, res) => 
   }
 });
 
-// الحفاظ على الـ route القديم لو حد بيستخدمه (اختياري)
+// الحفاظ على الـ route القديم (اختياري)
 router.patch('/:id', auth, async (req, res) => {
   if (req.params.id !== req.user.id) return res.status(403).json({ msg: 'غير مصرح' });
 
@@ -101,8 +103,9 @@ router.patch('/:id', auth, async (req, res) => {
     const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true }).select('-password');
     if (!user) return res.status(404).json({ msg: 'المستخدم غير موجود' });
 
-    if (user.profileImage && !user.profileImage.startsWith('http')) {
-      user.profileImage = `${req.protocol}://${req.get('host')}/uploads/profile/${user.profileImage}`;
+    if (user.profileImage) {
+      const baseUrl = `${req.protocol}://${req.get('host')}/uploads/profile/`;
+      user.profileImage = baseUrl + path.basename(user.profileImage.split('?')[0]) + '?t=' + Date.now();
     }
 
     res.json(user);
