@@ -113,7 +113,7 @@ export class JobCardComponent {
 
   apply(message: string) {
     this.api.applyToJob({
-      jobId: this.job._id,     // ← التعديل الرئيسي: job_id → jobId
+      job_id: this.job._id,  // ← التعديل المهم: غيرنا jobId إلى job_id عشان يطابق الباك إند
       message
     }).subscribe({
       next: () => {
