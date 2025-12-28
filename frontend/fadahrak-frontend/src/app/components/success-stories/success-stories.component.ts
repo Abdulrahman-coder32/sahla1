@@ -1,72 +1,160 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, AfterViewInit } from '@angular/core';  // ← أضفت AfterViewInit
 import { RouterLink } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
-  selector: 'app-success-stories',
+  selector: 'app-home',
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <div class="min-h-screen py-12 px-4 sm:py-16 lg:py-20 bg-gradient-to-br from-gray-50 to-indigo-50">
-      <div class="max-w-7xl mx-auto">
-        <h1 class="section-title text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-center">قصص نجاح عملائنا</h1>
+    <div class="min-h-screen bg-gray-100 p-2 sm:p-4 flex flex-col">  <!-- ← تحسين: أضفت flex flex-col للريسبونسفية -->
+      <section class="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-700 text-white py-16 md:py-20 lg:py-32 text-center relative overflow-hidden flex-1">  <!-- ← تحسين: غيرت py-20 إلى py-16 md:py-20 lg:py-32 للريسبونسفية -->
+        <div class="absolute inset-0 bg-black opacity-10"></div>
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 relative z-10">  <!-- ← تحسين: أضفت px-4 sm:px-6 للريسبونسفية -->
+          <h1 class="text-3xl md:text-4xl lg:text-6xl xl:text-7xl font-bold mb-4 md:mb-6 leading-tight flex items-center justify-center gap-2 md:gap-4">  <!-- ← تحسين: غيرت الحجم للريسبونسفية -->
+            مرحباً بك في سَهلة
+          </h1>
+          <p class="text-base md:text-lg lg:text-2xl xl:text-3xl mb-6 md:mb-10 max-w-3xl mx-auto px-2 md:px-4">  <!-- ← تحسين: غيرت الحجم للريسبونسفية -->
+            ابحث عن وظائف محلية في مصر أو انشر فرص عمل بسهولة. تواصل مباشر مع أصحاب العمل.
+          </p>
 
-        <!-- تحسين الـ Grid: إضافة breakpoint للأجهزة المتوسطة (xl) لتجنب الازدحام -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6 md:gap-8">
-          <div class="card p-6 sm:p-8 text-center hover:scale-105 transition-transform duration-300 ease-in-out shadow-lg hover:shadow-xl">
-            <div class="bg-gray-200 border-2 border-dashed rounded-xl w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 sm:mb-6"></div>
-            <p class="text-base sm:text-lg italic text-gray-700 mb-4 sm:mb-6 leading-relaxed">
-              "لقيت موظف ممتاز في نفس الشارع في أقل من يومين! سَهلة غيرت طريقة توظيفي تمامًا"
-            </p>
-            <p class="font-bold text-primary text-lg sm:text-xl">أحمد - صاحب سوبر ماركت، الجيزة</p>
-          </div>
+          <div class="flex flex-col sm:flex-row justify-center gap-4 md:gap-6 px-2 md:px-4">  <!-- ← تحسين: غيرت md:flex-row إلى sm:flex-row و gap للريسبونسفية -->
+            <ng-container *ngIf="isLoggedIn; else guestButtons">
+              <a [routerLink]="user?.role === 'shop_owner' ? '/owner-dashboard' : '/seeker-dashboard'"
+                 class="btn-primary text-base md:text-lg lg:text-xl px-4 md:px-6 lg:px-10 xl:px-12 py-2 md:py-3 lg:py-4 xl:py-5 rounded-full flex items-center justify-center gap-2 md:gap-3 transition hover:scale-105">  <!-- ← تحسين: غيرت الحجم للريسبونسفية -->
+                <i class="fas fa-tachometer-alt icon"></i>
+                لوحة التحكم
+              </a>
+              <a routerLink="/jobs" class="btn-secondary text-base md:text-lg lg:text-xl px-4 md:px-6 lg:px-10 xl:px-12 py-2 md:py-3 lg:py-4 xl:py-5 rounded-full flex items-center justify-center gap-2 md:gap-3 transition hover:scale-105">  <!-- ← تحسين: غيرت الحجم للريسبونسفية -->
+                <i class="fas fa-search icon"></i>
+                تصفح الوظائف
+              </a>
+            </ng-container>
 
-          <div class="card p-6 sm:p-8 text-center hover:scale-105 transition-transform duration-300 ease-in-out shadow-lg hover:shadow-xl">
-            <div class="bg-gray-200 border-2 border-dashed rounded-xl w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 sm:mb-6"></div>
-            <p class="text-base sm:text-lg italic text-gray-700 mb-4 sm:mb-6 leading-relaxed">
-              "كنت بدور على شغل قريب من البيت، ولقيت وظيفة مثالية في الكافيه تحت العمارة"
-            </p>
-            <p class="font-bold text-primary text-lg sm:text-xl">سارة - باحثة عن عمل، القاهرة</p>
-          </div>
-
-          <div class="card p-6 sm:p-8 text-center hover:scale-105 transition-transform duration-300 ease-in-out shadow-lg hover:shadow-xl">
-            <div class="bg-gray-200 border-2 border-dashed rounded-xl w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 sm:mb-6"></div>
-            <p class="text-base sm:text-lg italic text-gray-700 mb-4 sm:mb-6 leading-relaxed">
-              "التواصل المباشر ساعدني أختار أفضل المتقدمين بسرعة وكفاءة"
-            </p>
-            <p class="font-bold text-primary text-lg sm:text-xl">محمد - صاحب صيدلية، الإسكندرية</p>
+            <ng-template #guestButtons>
+              <a routerLink="/jobs" class="btn-primary text-base md:text-lg lg:text-xl px-4 md:px-6 lg:px-10 xl:px-12 py-2 md:py-3 lg:py-4 xl:py-5 rounded-full flex items-center justify-center gap-2 md:gap-3 transition hover:scale-105">  <!-- ← تحسين: غيرت الحجم للريسبونسفية -->
+                <i class="fas fa-search icon"></i>
+                ابحث عن وظائف
+              </a>
+              <a routerLink="/signup" class="btn-secondary text-base md:text-lg lg:text-xl px-4 md:px-6 lg:px-10 xl:px-12 py-2 md:py-3 lg:py-4 xl:py-5 rounded-full flex items-center justify-center gap-2 md:gap-3 transition hover:scale-105">  <!-- ← تحسين: غيرت الحجم للريسبونسفية -->
+                <i class="fas fa-user-plus icon"></i>
+                إنشاء حساب
+              </a>
+            </ng-template>
           </div>
         </div>
+      </section>
 
-        <div class="text-center mt-12 sm:mt-16">
-          <p class="text-xl sm:text-2xl md:text-3xl text-gray-800 mb-6 sm:mb-8">كن أنت القصة التالية!</p>
-          <!-- تحسين حجم الزر: أكبر على الموبايل، مع padding أفضل لسهولة الضغط -->
-          <a routerLink="/jobs" class="btn-primary px-8 py-4 sm:px-12 sm:py-5 rounded-full text-lg sm:text-xl inline-flex items-center gap-3 hover:bg-primary-dark transition-colors duration-200">
-            <i class="fas fa-rocket"></i> ابدأ رحلتك الآن
+      <!-- باقي الصفحة responsive -->
+      <section class="py-12 md:py-16 lg:py-24 bg-white flex-1">  <!-- ← تحسين: غيرت py-16 إلى py-12 md:py-16 lg:py-24 -->
+        <div class="max-w-6xl mx-auto px-4 sm:px-6">  <!-- ← تحسين: أضفت px-4 sm:px-6 -->
+          <h2 class="section-title text-2xl md:text-3xl lg:text-4xl xl:text-5xl">كيف تعمل سَهلة؟</h2>  <!-- ← تحسين: غيرت الحجم للريسبونسفية -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 lg:gap-12">  <!-- ← تحسين: أضفت sm:grid-cols-2 للريسبونسفية -->
+            <div class="card p-4 md:p-6 lg:p-8 xl:p-12 text-center transition hover:shadow-lg">  <!-- ← تحسين: غيرت p-6 إلى p-4 md:p-6 lg:p-8 xl:p-12 -->
+              <i class="fas fa-user-plus icon-lg text-primary mb-4"></i>
+              <h3 class="text-lg md:text-xl lg:text-2xl font-bold mb-4">1. أنشئ حسابك</h3>  <!-- ← تحسين: غيرت الحجم للريسبونسفية -->
+              <p class="text-gray-600 leading-relaxed text-sm md:text-base lg:text-lg">سجل كباحث عن عمل أو صاحب محل في ثواني.</p>  <!-- ← تحسين: غيرت الحجم للريسبونسفية -->
+            </div>
+            <div class="card p-4 md:p-6 lg:p-8 xl:p-12 text-center transition hover:shadow-lg">  <!-- ← تحسين: غيرت p-6 إلى p-4 md:p-6 lg:p-8 xl:p-12 -->
+              <i class="fas fa-briefcase icon-lg text-primary mb-4"></i>
+              <h3 class="text-lg md:text-xl lg:text-2xl font-bold mb-4">2. ابحث أو انشر</h3>  <!-- ← تحسين: غيرت الحجم للريسبونسفية -->
+              <p class="text-gray-600 leading-relaxed text-sm md:text-base lg:text-lg">اعرض مهاراتك أو انشر وظيفة محلية بسهولة.</p>  <!-- ← تحسين: غيرت الحجم للريسبونسفية -->
+            </div>
+            <div class="card p-4 md:p-6 lg:p-8 xl:p-12 text-center transition hover:shadow-lg">  <!-- ← تحسين: غيرت p-6 إلى p-4 md:p-6 lg:p-8 xl:p-12 -->
+              <i class="fas fa-comments icon-lg text-primary mb-4"></i>
+              <h3 class="text-lg md:text-xl lg:text-2xl font-bold mb-4">3. تواصل مباشر</h3>  <!-- ← تحسين: غيرت الحجم للريسبونسفية -->
+              <p class="text-gray-600 leading-relaxed text-sm md:text-base lg:text-lg">دردش فوراً مع صاحب العمل بعد القبول.</p>  <!-- ← تحسين: غيرت الحجم للريسبونسفية -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-gray-100 py-12 md:py-16 lg:py-24 flex-1">  <!-- ← تحسين: غيرت py-16 إلى py-12 md:py-16 lg:py-24 -->
+        <div class="max-w-4xl mx-auto text-center px-4 sm:px-6">  <!-- ← تحسين: أضفت px-4 sm:px-6 -->
+          <h2 class="section-title text-2xl md:text-3xl lg:text-4xl xl:text-5xl">قصص نجاح</h2>  <!-- ← تحسين: غيرت الحجم للريسبونسفية -->
+          <a routerLink="/success-stories" class="btn-primary text-base md:text-lg lg:text-xl px-6 md:px-8 lg:px-10 xl:px-12 py-2 md:py-3 lg:py-4 xl:py-5 rounded-full inline-flex items-center gap-2 md:gap-3 transition hover:scale-105">  <!-- ← تحسين: غيرت الحجم للريسبونسفية -->
+            <i class="fas fa-trophy icon"></i>
+            شوف قصص عملائنا
           </a>
         </div>
-      </div>
+      </section>
     </div>
   `,
   styles: [`
+    .icon {
+      color: #ffffff; /* لون الأيقونات في الأزرار */
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+      color: #4f46e5;
+      font-weight: bold;
+    }
+    .btn-secondary {
+      background: transparent;
+      border: 2px solid #ffffff;
+      color: #ffffff;
+    }
+    .btn-secondary:hover {
+      background: #ffffff;
+      color: #4f46e5;
+    }
     .card {
       background: white;
       border-radius: 1rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      font-weight: bold;
-    }
-    .btn-primary:hover {
-      background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     }
     .section-title {
       font-weight: bold;
-      color: #333;
+      color: #1f2937;
       margin-bottom: 2rem;
+    }
+    
+    /* إضافة لمنع الزوم على الموبايل */
+    * {
+      font-size: 16px !important;  /* فرض 16px على جميع العناصر لمنع الزوم */
+      -webkit-text-size-adjust: 100%;  /* منع تعديل حجم النص على iOS */
+    }
+    
+    /* تحسين الريسبونسفية للحاوي الرئيسي */
+    .min-h-screen {
+      min-height: 100vh;
+      min-height: -webkit-fill-available;  /* لـ Safari على iOS */
+    }
+    
+    /* تحسين الريسبونسفية للعناصر على الشاشات الصغيرة */
+    @media (max-width: 640px) {
+      .gap-4 {
+        gap: 1rem;
+      }
+      .p-4 {
+        padding: 1rem;
+      }
+      .text-3xl {
+        font-size: 1.5rem;
+      }
     }
   `]
 })
-export class SuccessStoriesComponent {}
+export class HomeComponent implements OnInit, AfterViewInit {  // ← أضفت AfterViewInit
+  isLoggedIn = false;
+  user: any = null;
+
+  constructor(private authService: AuthService) {}
+
+  ngOnInit() {
+    this.authService.user$.subscribe((user: any) => {
+      this.user = user;
+      this.isLoggedIn = !!user;
+    });
+  }
+
+  ngAfterViewInit() {
+    // ← جديد: فتح الصفحة من أولها (scroll to top) عند التحميل
+    this.scrollToTop();
+  }
+
+  private scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
