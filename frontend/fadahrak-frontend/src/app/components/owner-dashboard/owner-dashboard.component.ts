@@ -189,6 +189,7 @@ export class OwnerDashboardComponent implements OnInit {
       this.api.deleteJob(id).subscribe({
         next: () => {
           this.myJobs = this.myJobs.filter(job => job._id !== id);
+          alert('تم حذف الوظيفة بنجاح');
         },
         error: (err: any) => {
           console.error('خطأ في حذف الوظيفة:', err);
