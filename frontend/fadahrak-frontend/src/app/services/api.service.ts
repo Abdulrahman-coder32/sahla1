@@ -9,8 +9,8 @@ import { map } from 'rxjs/operators';
 export class ApiService {
   private apiUrl = '/api'; // proxy في الـ dev
 
-  // ← غيّر ده لدومين موقعك الحقيقي (بدون / في الآخر)
-  private imageBaseUrl = 'https://sahla1.com'; // مثال: https://your-real-domain.com
+  // دومينك الحقيقي على Koyeb (بدون / في الآخر)
+  private imageBaseUrl = 'https://positive-christiana-sahla-18a86cd2.koyeb.app';
 
   constructor(private http: HttpClient) {
     // في الـ dev (localhost) → نستخدم المسار النسبي
