@@ -19,7 +19,6 @@ import { AsyncPipe } from '@angular/common';
       (onSubmit)="apply($event)">
     </app-apply-modal>
     <ng-template #noUser></ng-template>
-
     <div class="min-h-screen bg-gray-50 py-12 px-4 sm:py-16 lg:py-20">
       <div class="max-w-4xl sm:max-w-5xl mx-auto">
         <div class="bg-white p-6 sm:p-8 md:p-12 shadow-2xl rounded-2xl border border-gray-100">
@@ -30,13 +29,11 @@ import { AsyncPipe } from '@angular/common';
             <i class="fas fa-arrow-right text-2xl"></i>
             رجوع للوظائف
           </button>
-
           <!-- Loading -->
           <div *ngIf="loading" class="flex flex-col items-center justify-center py-20">
             <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 mb-6"></div>
             <p class="text-xl text-gray-700 font-medium">جاري تحميل تفاصيل الوظيفة...</p>
           </div>
-
           <!-- تفاصيل الوظيفة -->
           <div *ngIf="!loading && job" class="space-y-10">
             <!-- الهيدر مع الصورة -->
@@ -58,7 +55,6 @@ import { AsyncPipe } from '@angular/common';
                 {{ job.governorate }} - {{ job.city }}
               </p>
             </div>
-
             <!-- معلومات الوظيفة -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div class="bg-indigo-50 p-6 rounded-xl shadow-lg text-center hover:shadow-xl transition-shadow">
@@ -80,7 +76,6 @@ import { AsyncPipe } from '@angular/common';
                 <p class="text-lg text-gray-800 leading-relaxed text-left break-words">{{ job.requirements }}</p>
               </div>
             </div>
-
             <!-- التقديم -->
             <div class="text-center mt-12 space-y-4">
               <div *ngIf="authService.user$ | async as user">
@@ -116,7 +111,6 @@ import { AsyncPipe } from '@angular/common';
               </p>
             </div>
           </div>
-
           <!-- الوظيفة غير موجودة -->
           <div *ngIf="!loading && !job" class="text-center py-20">
             <div class="inline-flex items-center justify-center w-24 h-24 bg-gray-100 rounded-full mb-6">
@@ -142,7 +136,6 @@ export class JobDetailComponent implements OnInit {
   hasApplied = false;
   modalOpen = false;
   applying = false;
-
   private cacheBuster = Date.now(); // لكسر الكاش
 
   constructor(
@@ -169,7 +162,7 @@ export class JobDetailComponent implements OnInit {
     }
   }
 
-  // دالة جديدة لعرض صورة صاحب الوظيفة
+  // دالة لعرض صورة صاحب الوظيفة مع كسر الكاش
   getOwnerImage(): string {
     const ownerImage = this.job?.owner_id?.profileImage;
     if (!ownerImage) {
@@ -189,7 +182,10 @@ export class JobDetailComponent implements OnInit {
           app.job_id === this.job._id || (app.job_id && app.job_id._id === this.job._id)
         );
       },
-      error: () => { this.hasApplied = false; }
+      error: (err: any) => {  // ← أضفنا type عشان نحل implicit any
+        console.error('خطأ في جلب حالة التقديم:', err);
+        this.hasApplied = false;
+      }
     });
   }
 
@@ -211,7 +207,11 @@ export class JobDetailComponent implements OnInit {
         this.hasApplied = true;
         this.applying = false;
       },
-      error: () => { this.applying = false; }
+      error: (err: any) => {  // ← أضفنا type
+        console.error('خطأ في التقديم:', err);
+        alert('فشل التقديم، حاول مرة أخرى');
+        this.applying = false;
+      }
     });
   }
 
