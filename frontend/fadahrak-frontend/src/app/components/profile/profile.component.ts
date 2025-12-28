@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
-import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-profile',
@@ -14,47 +13,38 @@ import { NotificationService } from '../../services/notification.service';
   styleUrls: ['./profile.component.css']
 })
 export class ProfileComponent implements OnInit {
-  user: any = {
-    name: '',
-    email: '',
-    phone: '',
-    role: '',
-    profileImage: ''
-  };
-
+  user: any = { name: '', email: '', phone: '', role: '', profileImage: '' };
+  originalUser: any = {}; // للإلغاء
   isEditing = false;
   selectedFile: File | null = null;
   previewUrl: string | null = null;
   loading = true;
   saving = false;
+  message: { text: string; type: 'success' | 'error' } | null = null;
+  cacheBuster = Date.now();
 
   constructor(
     private api: ApiService,
     private authService: AuthService,
-    private router: Router,
-    private notification: NotificationService
+    private router: Router
   ) {}
 
   ngOnInit(): void {
     this.loadProfile();
   }
 
-  private notify(message: string) {
-    // مؤقت: استخدام alert، يمكن استبداله بأي طريقة عرض إشعار داخل المشروع لاحقًا
-    alert(message);
-  }
-
   loadProfile() {
     this.loading = true;
     this.api.getProfile().subscribe({
       next: (data: any) => {
-        this.user = data;
-        this.previewUrl = data.profileImage || null;
+        this.user = { ...data };
+        this.originalUser = { ...data };
+        this.previewUrl = data.profileImage ? `${data.profileImage}?t=${this.cacheBuster}` : null;
         this.loading = false;
       },
       error: (err) => {
         console.error('فشل تحميل البروفايل', err);
-        this.notify('فشل تحميل البيانات، حاول مرة أخرى');
+        this.showMessage('فشل تحميل البيانات، حاول مرة أخرى', 'error');
         this.loading = false;
       }
     });
@@ -63,14 +53,11 @@ export class ProfileComponent implements OnInit {
   onFileSelected(event: any) {
     const file = event.target.files[0];
     if (!file) return;
-
     if (file.size > 5 * 1024 * 1024) {
-      this.notify('حجم الصورة كبير جدًا، الحد الأقصى 5 ميجا');
+      this.showMessage('حجم الصورة كبير جدًا، الحد الأقصى 5 ميجا', 'error');
       return;
     }
-
     this.selectedFile = file;
-
     const reader = new FileReader();
     reader.onload = () => {
       this.previewUrl = reader.result as string;
@@ -80,50 +67,53 @@ export class ProfileComponent implements OnInit {
 
   toggleEdit() {
     this.isEditing = !this.isEditing;
+    this.message = null;
   }
 
   saveProfile() {
     if (this.saving) return;
-
     this.saving = true;
+    this.message = null;
 
     const formData = new FormData();
     formData.append('name', this.user.name.trim());
-    if (this.user.phone) {
-      formData.append('phone', this.user.phone.trim());
-    }
-    if (this.selectedFile) {
-      formData.append('profileImage', this.selectedFile);
-    }
+    if (this.user.phone) formData.append('phone', this.user.phone.trim());
+    if (this.selectedFile) formData.append('profileImage', this.selectedFile);
 
     this.api.updateProfile(formData).subscribe({
       next: (updatedUser: any) => {
         this.authService.updateCurrentUser(updatedUser);
-
-        this.user = updatedUser;
-        this.previewUrl = updatedUser.profileImage || null;
+        this.user = { ...updatedUser };
+        this.originalUser = { ...updatedUser };
+        this.cacheBuster = Date.now();
+        this.previewUrl = updatedUser.profileImage ? `${updatedUser.profileImage}?t=${this.cacheBuster}` : null;
         this.selectedFile = null;
         this.isEditing = false;
         this.saving = false;
-
-        this.notify('تم تحديث الملف الشخصي بنجاح');
+        this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
       },
       error: (err) => {
         console.error('فشل تحديث البروفايل', err);
-        this.notify('فشل حفظ التغييرات، حاول مرة أخرى');
+        this.showMessage('فشل حفظ التغييرات، حاول مرة أخرى', 'error');
         this.saving = false;
       }
     });
   }
 
   cancelEdit() {
-    this.loadProfile();
+    this.user = { ...this.originalUser };
+    this.previewUrl = this.originalUser.profileImage ? `${this.originalUser.profileImage}?t=${this.cacheBuster}` : null;
     this.selectedFile = null;
-    this.previewUrl = this.user.profileImage || null;
     this.isEditing = false;
+    this.message = null;
+  }
+
+  showMessage(text: string, type: 'success' | 'error') {
+    this.message = { text, type };
+    setTimeout(() => this.message = null, 5000);
   }
 
   getTimestamp(): number {
-    return new Date().getTime();
+    return this.cacheBuster;
   }
 }
