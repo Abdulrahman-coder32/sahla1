@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { JobFormComponent } from '../job-form/job-form.component';
 import { ApplicationListComponent } from '../application-list/application-list.component';
-import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-owner-dashboard',
@@ -12,7 +12,6 @@ import { RouterLink } from '@angular/router';
   template: `
     <div class="min-h-screen bg-gray-50 py-12 sm:py-20 px-4 sm:px-6">
       <div class="max-w-7xl mx-auto">
-
         <!-- Header Section -->
         <div class="text-center mb-8 sm:mb-12">
           <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full mb-4 shadow-lg">
@@ -80,7 +79,6 @@ import { RouterLink } from '@angular/router';
           <div *ngIf="!loading && myJobs.length > 0" class="space-y-8">
             <div *ngFor="let job of myJobs"
               class="bg-gray-50 p-6 sm:p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.01] border border-gray-100">
-
               <div class="flex flex-col lg:flex-row justify-between items-start gap-6">
                 <div class="flex-1">
                   <div class="flex items-center gap-3 mb-4">
@@ -92,7 +90,6 @@ import { RouterLink } from '@angular/router';
                       {{ job.category || 'غير محدد' }}
                     </h3>
                   </div>
-
                   <!-- Job Details -->
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                     <div class="flex items-start gap-3">
@@ -102,7 +99,6 @@ import { RouterLink } from '@angular/router';
                         <p class="text-gray-700">{{ job.governorate || 'غير محدد' }} - {{ job.city || 'غير محدد' }}</p>
                       </div>
                     </div>
-
                     <div class="flex items-start gap-3">
                       <i class="fas fa-clock text-blue-500 mt-1"></i>
                       <div>
@@ -110,7 +106,6 @@ import { RouterLink } from '@angular/router';
                         <p class="text-gray-700">{{ job.working_hours || 'غير محدد' }}</p>
                       </div>
                     </div>
-
                     <div *ngIf="job.salary" class="flex items-start gap-3">
                       <i class="fas fa-money-bill text-blue-500 mt-1"></i>
                       <div>
@@ -119,7 +114,6 @@ import { RouterLink } from '@angular/router';
                       </div>
                     </div>
                   </div>
-
                   <div class="mb-6">
                     <p class="text-gray-800 font-semibold mb-3">المتطلبات:</p>
                     <div class="bg-white p-4 rounded-xl shadow-inner border border-gray-100">
@@ -129,7 +123,6 @@ import { RouterLink } from '@angular/router';
                     </div>
                   </div>
                 </div>
-
                 <!-- Delete Button -->
                 <button
                   (click)="deleteJob(job._id)"
@@ -139,7 +132,6 @@ import { RouterLink } from '@angular/router';
                   <span>حذف الوظيفة</span>
                 </button>
               </div>
-
               <!-- Applications Section -->
               <div class="mt-8 border-t border-gray-200 pt-8">
                 <div class="flex items-center gap-3 mb-6">
@@ -162,7 +154,6 @@ import { RouterLink } from '@angular/router';
 export class OwnerDashboardComponent implements OnInit {
   myJobs: any[] = [];
   loading = true;
-  notificationCount = 5;
 
   constructor(private api: ApiService) {}
 
@@ -173,11 +164,12 @@ export class OwnerDashboardComponent implements OnInit {
   loadMyJobs() {
     this.loading = true;
     this.api.getMyJobs().subscribe({
-      next: (res) => {
+      next: (res: any) => {
         this.myJobs = res || [];
         this.loading = false;
       },
-      error: () => {
+      error: (err: any) => {
+        console.error('خطأ في جلب الوظائف:', err);
         this.myJobs = [];
         this.loading = false;
       }
@@ -197,6 +189,10 @@ export class OwnerDashboardComponent implements OnInit {
       this.api.deleteJob(id).subscribe({
         next: () => {
           this.myJobs = this.myJobs.filter(job => job._id !== id);
+        },
+        error: (err: any) => {
+          console.error('خطأ في حذف الوظيفة:', err);
+          alert('فشل حذف الوظيفة، حاول مرة أخرى');
         }
       });
     }
