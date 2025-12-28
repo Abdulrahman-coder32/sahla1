@@ -138,12 +138,12 @@ io.on('connection', (socket) => {
 });
 
 // ────────────────────────────────────────
-// خدمة Angular Frontend (التعديل المهم لتفادي PathError)
+// خدمة Angular Frontend (الحل النهائي لـ Express 5+)
 // ────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend')));
 
-// تغيير * إلى /* لحل مشكلة path-to-regexp في الإصدارات الحديثة
-app.get('/*', (req, res) => {
+// Named wildcard route لخدمة index.html لكل المسارات غير الـ API
+app.get('/*splat', (req, res) => {
   res.sendFile(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend/index.html'));
 });
 
@@ -159,7 +159,7 @@ const connectWithRetry = () => {
   console.log('جاري محاولة الاتصال بـ MongoDB Atlas...');
   
   mongoose.connect(process.env.MONGO_URI, {
-    serverSelectionTimeoutMS: 30000, // 30 ثانية قبل timeout
+    serverSelectionTimeoutMS: 30000,
     socketTimeoutMS: 45000,
   })
   .then(() => {
@@ -173,9 +173,8 @@ const connectWithRetry = () => {
   .catch(err => {
     console.error('❌ فشل الاتصال بقاعدة البيانات:', err.message);
     console.log('إعادة المحاولة بعد 5 ثواني...');
-    setTimeout(connectWithRetry, 5000); // إعادة محاولة كل 5 ثواني
+    setTimeout(connectWithRetry, 5000);
   });
 };
 
-// بدء عملية الاتصال
 connectWithRetry();
