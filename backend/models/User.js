@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema({
   work_experience: String,
   desired_job_type: String,
   shop_name: String,
+  profileImage: { type: String, default: 'default.jpg' }, // ← الحقل الجديد
   createdAt: { type: Date, default: Date.now }
 });
 
