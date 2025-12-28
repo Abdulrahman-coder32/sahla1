@@ -12,10 +12,10 @@ export class ApiService {
 
   constructor(private http: HttpClient) {
     const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    
-    // التعديل الرئيسي: دايمًا نستخدم /api سواء في الـ dev أو الـ production
+   
+    // دايمًا نستخدم /api سواء في الـ dev أو الـ production
     this.apiUrl = '/api';
-    
+   
     if (isDev) {
       this.imageBaseUrl = ''; // في الـ dev الصور relative
     } else {
@@ -135,9 +135,10 @@ export class ApiService {
     );
   }
 
+  // التعديل المهم هنا: حذفنا /status من الـ URL
   updateApplicationStatus(applicationId: string, status: string): Observable<any> {
     return this.http.patch(
-      `${this.apiUrl}/applications/${applicationId}/status`,
+      `${this.apiUrl}/applications/${applicationId}`,
       { status },
       { headers: this.getHeaders() }
     );
