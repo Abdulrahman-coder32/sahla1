@@ -1,24 +1,35 @@
-/* تأكد إن Font Awesome محمل في index.html أو angular.json */
+/* تأكد من تحميل Font Awesome في index.html أو angular.json */
 .min-h-screen { min-height: 100vh; }
 
 button { transition: all 0.3s ease; }
-button:hover { transform: translateY(-4px); }
+button:hover { transform: translateY(-2px); }
 
-.shadow-xl { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+.shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
 
+.animate-fade-in { animation: fadeIn 0.5s ease-in-out; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive Adjustments */
 @media (max-width: 640px) {
-  .w-32 { width: 8rem; height: 8rem; }
-  .text-3xl { font-size: 1.875rem; }
-  .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
-  .py-8 { padding-top: 2rem; padding-bottom: 2rem; }
+  .w-24 { width: 6rem; height: 6rem; }
+  .text-2xl { font-size: 1.5rem; }
+  .px-4 { padding-left: 1rem; padding-right: 1rem; }
+  .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+  .space-y-6 > * + * { margin-top: 1.5rem; }
 }
 
 @media (min-width: 641px) and (max-width: 1023px) {
-  .w-40 { width: 10rem; height: 10rem; }
-  .text-4xl { font-size: 2.25rem; }
+  .w-32 { width: 8rem; height: 8rem; }
+  .text-3xl { font-size: 1.875rem; }
+  .space-y-8 > * + * { margin-top: 2rem; }
 }
 
 @media (min-width: 1024px) {
-  .w-48 { width: 12rem; height: 12rem; }
-  .text-5xl { font-size: 3rem; }
+  .w-40 { width: 10rem; height: 10rem; }
+  .text-4xl { font-size: 2.25rem; }
+  .space-y-10 > * + * { margin-top: 2.5rem; }
 }
