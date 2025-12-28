@@ -41,7 +41,7 @@ app.use('/api/messages', require('./routes/messages'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/notifications', require('./routes/notifications'));
 
-// Socket.IO Logic (محافظ عليه كامل)
+// Socket.IO Logic (محافظ عليه كامل زي ما هو)
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('لا يوجد توكن'));
@@ -138,29 +138,43 @@ io.on('connection', (socket) => {
 });
 
 // ────────────────────────────────────────
-// خدمة Angular Frontend (متوافق مع Express 5)
+// خدمة Angular Frontend
 // ────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend')));
 
-// التعديل الجديد: named wildcard
-app.get('/*path', (req, res) => {
+app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend/index.html'));
 });
 
 // Test route
 app.get('/api/test', (req, res) => {
-  res.json({ message: 'Backend شغال تمام مع Socket.IO على Render!' });
+  res.json({ message: 'Backend شغال تمام مع Socket.IO!' });
 });
 
-// اتصال MongoDB
-mongoose.connect(process.env.MONGO_URI)
+// ────────────────────────────────────────
+// اتصال MongoDB مع Retry Logic (التعديل الجديد)
+// ────────────────────────────────────────
+const connectWithRetry = () => {
+  console.log('جاري محاولة الاتصال بـ MongoDB Atlas...');
+  
+  mongoose.connect(process.env.MONGO_URI, {
+    serverSelectionTimeoutMS: 30000, // 30 ثانية قبل timeout
+    socketTimeoutMS: 45000,
+  })
   .then(() => {
-    console.log('✅ متصل بـ MongoDB Atlas');
+    console.log('✅ تم الاتصال بـ MongoDB Atlas بنجاح');
+    
     const PORT = process.env.PORT || 5000;
     server.listen(PORT, () => {
       console.log(`🚀 السيرفر شغال على البورت ${PORT}`);
     });
   })
   .catch(err => {
-    console.error('❌ خطأ في الاتصال بقاعدة البيانات:', err);
+    console.error('❌ فشل الاتصال بقاعدة البيانات:', err.message);
+    console.log('إعادة المحاولة بعد 5 ثواني...');
+    setTimeout(connectWithRetry, 5000); // إعادة محاولة كل 5 ثواني
   });
+};
+
+// بدء عملية الاتصال
+connectWithRetry();
