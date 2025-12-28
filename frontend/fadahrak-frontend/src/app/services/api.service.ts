@@ -14,12 +14,10 @@ export class ApiService {
     const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
     if (isDev) {
-      // في التطوير المحلي: نستخدم /api عشان الـ proxy يحولها لـ localhost:5000
-      this.apiUrl = '/api';
-      this.imageBaseUrl = ''; // الصور تتحمل من الـ proxy كمان
+      this.apiUrl = '/api';        // مهم جدًا في الـ dev عشان الـ proxy
+      this.imageBaseUrl = '';
     } else {
-      // في الـ production على Koyeb: مفيش /api في الـ routes
-      this.apiUrl = '';
+      this.apiUrl = '';            // في الـ production مفيش /api
       this.imageBaseUrl = 'https://positive-christiana-sahla-18a86cd2.koyeb.app';
     }
   }
@@ -38,21 +36,17 @@ export class ApiService {
     return headers;
   }
 
-  // ── دالة لإصلاح روابط الصور (تضيف الدومين لو المسار نسبي) ──
   private fixImageUrl(data: any): any {
     if (!data) return data;
 
-    // لو object واحد
     if (data.profileImage && typeof data.profileImage === 'string' && !data.profileImage.startsWith('http')) {
       data.profileImage = this.prependBaseUrl(data.profileImage);
     }
 
-    // لو array
     if (Array.isArray(data)) {
       return data.map(item => this.fixImageUrl(item));
     }
 
-    // لو object nested (مثل owner_id.profileImage أو seeker_id.profileImage)
     Object.keys(data).forEach(key => {
       if (data[key] && typeof data[key] === 'object') {
         data[key] = this.fixImageUrl(data[key]);
@@ -70,9 +64,7 @@ export class ApiService {
     return `${this.imageBaseUrl}/${path}`;
   }
 
-  // ──────────────────────────────────────────────────────────────
   // Auth
-  // ──────────────────────────────────────────────────────────────
   login(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/auth/login`, data);
   }
@@ -81,9 +73,7 @@ export class ApiService {
     return this.http.post(`${this.apiUrl}/auth/signup`, data);
   }
 
-  // ──────────────────────────────────────────────────────────────
   // Profile
-  // ──────────────────────────────────────────────────────────────
   getProfile(): Observable<any> {
     return this.http.get(`${this.apiUrl}/users/me`, { headers: this.getHeaders() }).pipe(
       map(res => this.fixImageUrl(res))
@@ -97,9 +87,7 @@ export class ApiService {
     );
   }
 
-  // ──────────────────────────────────────────────────────────────
   // Jobs
-  // ──────────────────────────────────────────────────────────────
   getJobs(filters?: any): Observable<any> {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     return this.http.post(`${this.apiUrl}/jobs`, filters || {}, { headers }).pipe(
@@ -127,9 +115,7 @@ export class ApiService {
     return this.http.delete(`${this.apiUrl}/jobs/${id}`, { headers: this.getHeaders() });
   }
 
-  // ──────────────────────────────────────────────────────────────
   // Applications
-  // ──────────────────────────────────────────────────────────────
   applyToJob(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/applications`, data, { headers: this.getHeaders() });
   }
@@ -160,9 +146,7 @@ export class ApiService {
     );
   }
 
-  // ──────────────────────────────────────────────────────────────
   // Messages
-  // ──────────────────────────────────────────────────────────────
   getMessages(appId: string): Observable<any> {
     return this.http.get(`${this.apiUrl}/messages/${appId}`, { headers: this.getHeaders() }).pipe(
       map(res => this.fixImageUrl(res))
@@ -193,9 +177,7 @@ export class ApiService {
     );
   }
 
-  // ──────────────────────────────────────────────────────────────
   // Notifications
-  // ──────────────────────────────────────────────────────────────
   getNotifications(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/notifications`, { headers: this.getHeaders() });
   }
