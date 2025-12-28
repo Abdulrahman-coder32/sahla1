@@ -32,7 +32,7 @@ export class ProfileComponent implements OnInit {
     private api: ApiService,
     private authService: AuthService,
     private router: Router,
-    private notification: NotificationService // سيبها موجودة، مش مشكلة
+    private notification: NotificationService
   ) {}
 
   ngOnInit(): void {
@@ -59,7 +59,6 @@ export class ProfileComponent implements OnInit {
     const file = event.target.files[0];
     if (!file) return;
 
-    // تحقق من الحجم (حد أقصى 5 ميجا)
     if (file.size > 5 * 1024 * 1024) {
       alert('حجم الصورة كبير جدًا، الحد الأقصى 5 ميجا');
       return;
@@ -67,7 +66,6 @@ export class ProfileComponent implements OnInit {
 
     this.selectedFile = file;
 
-    // عرض معاينة فورية
     const reader = new FileReader();
     reader.onload = () => {
       this.previewUrl = reader.result as string;
@@ -96,7 +94,6 @@ export class ProfileComponent implements OnInit {
 
     this.api.updateProfile(formData).subscribe({
       next: (updatedUser: any) => {
-        // تحديث البيانات المحلية في AuthService عشان الصورة تتغير في كل الأماكن فورًا
         this.authService.updateCurrentUser(updatedUser);
 
         this.user = updatedUser;
@@ -116,9 +113,14 @@ export class ProfileComponent implements OnInit {
   }
 
   cancelEdit() {
-    this.loadProfile(); // إعادة تحميل البيانات الأصلية
+    this.loadProfile();
     this.selectedFile = null;
     this.previewUrl = this.user.profileImage || null;
     this.isEditing = false;
+  }
+
+  // جديد: دالة لكسر الكاش في الصور
+  getTimestamp(): number {
+    return Date.now();
   }
 }
