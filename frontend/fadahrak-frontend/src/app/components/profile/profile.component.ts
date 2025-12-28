@@ -21,7 +21,7 @@ export class ProfileComponent implements OnInit {
     role: '',
     profileImage: ''
   };
-  
+
   isEditing = false;
   selectedFile: File | null = null;
   previewUrl: string | null = null;
@@ -42,6 +42,11 @@ export class ProfileComponent implements OnInit {
     this.loadProfile();
   }
 
+  // دالة لكسر الكاش (رجعناها)
+  getTimestamp(): number {
+    return Date.now();
+  }
+
   loadProfile() {
     this.loading = true;
     this.api.getProfile().subscribe({
@@ -52,7 +57,7 @@ export class ProfileComponent implements OnInit {
       },
       error: (err) => {
         console.error('فشل تحميل البروفايل', err);
-        this.notification.showError('فشل تحميل البيانات، حاول مرة أخرى');
+        alert('فشل تحميل البيانات، حاول مرة أخرى'); // ← حل مؤقت بدل showError
         this.loading = false;
       }
     });
@@ -64,8 +69,8 @@ export class ProfileComponent implements OnInit {
       return;
     }
     // نضيف timestamp لكسر الكاش
-    this.previewUrl = `${imageUrl}?t=${this.imageCacheBuster}`;
-    this.imageCacheBuster = Date.now(); // نحدثه للمرة الجاية
+    this.previewUrl = `${imageUrl}?t=${this.getTimestamp()}`;
+    this.imageCacheBuster = Date.now(); // تحديث للمرة الجاية
   }
 
   onFileSelected(event: any) {
@@ -73,7 +78,7 @@ export class ProfileComponent implements OnInit {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      this.notification.showWarning('حجم الصورة كبير جدًا، الحد الأقصى 5 ميجا');
+      alert('حجم الصورة كبير جدًا، الحد الأقصى 5 ميجا'); // ← حل مؤقت بدل showWarning
       return;
     }
 
@@ -104,22 +109,20 @@ export class ProfileComponent implements OnInit {
 
     this.api.updateProfile(formData).subscribe({
       next: (updatedUser: any) => {
-        // تحديث الـ auth service أولاً
         this.authService.updateCurrentUser(updatedUser);
-        
-        // ثم تحديث الواجهة
+
         this.user = updatedUser;
         this.updatePreviewUrl(updatedUser.profileImage);
-        
+
         this.selectedFile = null;
         this.isEditing = false;
         this.saving = false;
-        
-        this.notification.showSuccess('تم تحديث الملف الشخصي بنجاح');
+
+        alert('تم تحديث الملف الشخصي بنجاح'); // ← حل مؤقت بدل showSuccess
       },
       error: (err) => {
         console.error('فشل تحديث البروفايل', err);
-        this.notification.showError('فشل حفظ التغييرات، حاول مرة أخرى');
+        alert('فشل حفظ التغييرات، حاول مرة أخرى'); // ← حل مؤقت بدل showError
         this.saving = false;
       }
     });
@@ -128,12 +131,11 @@ export class ProfileComponent implements OnInit {
   cancelEdit() {
     this.loadProfile();
     this.selectedFile = null;
-    // الـ previewUrl هيتحدث تلقائياً لما يجيب البروفايل من جديد
     this.isEditing = false;
   }
 
-  // دالة مساعدة للـ template لو عايز تستخدمها بدل this.previewUrl مباشرة
+  // دالة مساعدة للـ template (لو عايز تستخدمها)
   getProfileImageUrl(): string {
-    return this.previewUrl || 'assets/images/default-avatar.png'; // ضيف مسار الصورة الافتراضية هنا
+    return this.previewUrl || 'assets/images/default-avatar.png'; // غيّر المسار للصورة الافتراضية عندك
   }
 }
