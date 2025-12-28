@@ -1,4 +1,4 @@
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -79,7 +79,7 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                     [src]="getProfileImageUrl()"
                     alt="صورة الملف الشخصي"
                     class="w-10 h-10 rounded-full object-cover ring-2 ring-gray-300 shadow-md">
-                  <span class="text-gray-700 font-medium hidden lg:block">{{ currentUser.name }}</span>
+                  <span class="text-gray-700 font-medium hidden lg:block">{{ currentUser.name || 'مستخدم' }}</span>
                 </button>
 
                 <!-- Dropdown للملف الشخصي والخروج -->
@@ -131,15 +131,14 @@ import { Observable, Subject, takeUntil } from 'rxjs';
   styles: [/* باقي الـ styles بدون تغيير */]
 })
 export class NavbarComponent implements OnInit, OnDestroy {
-  // @Input() user: any = null;    ← مش هنعتمد عليه كتير
   currentUser: any = null;
-  
+
   mobileMenuOpen = false;
   mobileNotificationsOpen = false;
-  
+
   notificationCount$!: Observable<number>;
   notifications$!: Observable<any[]>;
-  
+
   private destroy$ = new Subject<void>();
   private cacheBuster = Date.now();
 
@@ -153,12 +152,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    // نتابع المستخدم الحالي من AuthService
-    this.authService.currentUser$
+    // نتابع المستخدم الحالي من AuthService (بدل currentUser$ اللي كان ناقص)
+    this.authService.user$
       .pipe(takeUntil(this.destroy$))
       .subscribe(user => {
         this.currentUser = user;
-        // نحدث الـ cache busting لما يتغير المستخدم أو الصورة
         if (user?.profileImage) {
           this.cacheBuster = Date.now();
         }
@@ -169,7 +167,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
     if (!this.currentUser?.profileImage) {
       return `https://via.placeholder.com/40?text=${this.currentUser?.name?.charAt(0) || 'م'}`;
     }
-    // نضيف timestamp عشان نكسر الكاش
     return `${this.currentUser.profileImage}?t=${this.cacheBuster}`;
   }
 
@@ -189,7 +186,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.closeMobileMenu();
     let route: string[] = ['/notifications'];
     const appId = notification.application_id || null;
-    
+
     switch (notification.type) {
       case 'new_message':
         if (appId) route = ['/inbox', appId];
@@ -200,9 +197,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
         if (appId) route = ['/applications', appId];
         break;
     }
-    
+
     this.router.navigate(route);
-    
+
     if (!notification.read) {
       this.notificationService.markAsReadAndUpdate(notification._id);
     }
