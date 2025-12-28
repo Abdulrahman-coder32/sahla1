@@ -154,6 +154,15 @@ export class ApiService {
     return this.http.post(`${this.apiUrl}/messages`, data, { headers: this.getHeaders() });
   }
 
+  // **الدالة الجديدة اللي كانت ناقصة (حل خطأ markMessagesAsRead)**
+  markMessagesAsRead(applicationId: string): Observable<any> {
+    return this.http.patch(
+      `${this.apiUrl}/messages/${applicationId}/mark-read`,
+      {},
+      { headers: this.getHeaders() }
+    );
+  }
+
   // ──────────────────────────────────────────────────────────────
   // Notifications
   // ──────────────────────────────────────────────────────────────
