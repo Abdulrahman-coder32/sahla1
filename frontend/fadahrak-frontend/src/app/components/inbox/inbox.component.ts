@@ -111,7 +111,7 @@ import {
 
       <!-- Input Area -->
       <div class="flex-shrink-0 border-t border-gray-200 p-2 sm:p-3 bg-white">
-        <div class="flex items-end gap-1 sm:gap-2 h-10 sm:h-12">
+        <div class="flex items-end gap-1 sm:gap-2 h-auto sm:h-12">
 
           <!-- File Input -->
           <input #fileInput type="file" multiple accept="image/*,.pdf,.doc,.docx,.mp3,.wav"
@@ -135,7 +135,7 @@ import {
 
           <!-- Message Input -->
           <input [(ngModel)]="newMessage" (keyup.enter)="sendMessage()"
-                 placeholder="اكتب رسالتك هنا..." class="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-200 outline-none text-sm sm:text-base bg-white"
+                 placeholder="اكتب رسالتك هنا..." class="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-200 outline-none text-base bg-white"
                  [disabled]="isDisabledInput()" maxlength="1000">
 
           <!-- Send Button -->
@@ -171,6 +171,18 @@ import {
     .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
     .scrollbar-thin::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
     .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #2563eb; }
+    
+    /* إضافة لمنع الزوم على الموبايل */
+    input[type="text"] {
+      font-size: 16px !important;
+      -webkit-text-size-adjust: 100%;
+    }
+    
+    /* تحسين الريسبونسفية للحاوي الرئيسي */
+    .min-h-screen {
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
   `]
 })
 export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -403,6 +415,8 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
       alert('المتصفح لا يدعم التسجيل الصوتي أو يحتاج HTTPS');
       return;
     }
+
+  
 
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then(stream => {
