@@ -204,4 +204,85 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       @apply absolute bottom-[-6px] left-0 right-0 h-0.5 bg-slate-600 rounded-full;
     }
     .btn-primary {
-      @apply bg-slate-600
+      @apply bg-slate-600 text-white hover:bg-slate-700 font-medium transition-colors duration-200;
+    }
+  `]
+})
+export class NavbarComponent implements OnInit, OnDestroy {
+  @Input() user: any = null;
+  mobileMenuOpen = false;
+  mobileNotificationsOpen = false;
+  notificationCount$!: Observable<number>;
+  notifications$!: Observable<any[]>;
+  private destroy$ = new Subject<void>();
+  private cacheBuster = Date.now();
+
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private notificationService: NotificationService
+  ) {
+    this.notificationCount$ = this.notificationService.unreadCount$;
+    this.notifications$ = this.notificationService.getNotifications();
+  }
+
+  ngOnInit() {
+    this.authService.user$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(authUser => {
+        if (!this.user && authUser) {
+          this.user = authUser;
+        }
+        if (authUser?.profileImage) {
+          this.cacheBuster = Date.now();
+        }
+      });
+  }
+
+  getProfileImageUrl(): string {
+    if (!this.user?.profileImage) {
+      return `https://via.placeholder.com/40?text=${this.user?.name?.charAt(0) || 'م'}`;
+    }
+    return `${this.user.profileImage}?t=${this.cacheBuster}`;
+  }
+
+  onLogout() {
+    this.authService.logout();
+    this.closeMobileMenu();
+    this.router.navigate(['/']);
+  }
+
+  closeMobileMenu() {
+    this.mobileMenuOpen = false;
+    this.mobileNotificationsOpen = false;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  navigateToNotification(notification: any) {
+    this.closeMobileMenu();
+    let route: string[] = ['/notifications'];
+    const appId = notification.application_id || null;
+
+    switch (notification.type) {
+      case 'new_message':
+        if (appId) route = ['/inbox', appId];
+        break;
+      case 'application_accepted':
+      case 'application_rejected':
+      case 'new_application':
+        if (appId) route = ['/applications', appId];
+        break;
+    }
+
+    this.router.navigate(route);
+
+    if (!notification.read) {
+      this.notificationService.markAsReadAndUpdate(notification._id);
+    }
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+}
