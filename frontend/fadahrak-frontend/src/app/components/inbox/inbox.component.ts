@@ -1,10 +1,11 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef, inject, NgZone } from '@angular/core'; // ← أضفنا NgZone هنا
+import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef, inject, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { SocketService } from '../../services/socket.service';
 import { NotificationService } from '../../services/notification.service';
+import { AuthService } from '../../services/auth.service'; // ← جديد: نستورد AuthService
 
 // Font Awesome imports
 import { FontAwesomeModule, FaIconLibrary } from '@fortawesome/angular-fontawesome';
@@ -27,7 +28,6 @@ import {
   template: `
   <div class="min-h-screen bg-gray-100 p-2 sm:p-4">
     <div class="max-w-4xl mx-auto h-[95vh] flex flex-col bg-white rounded-2xl shadow-lg overflow-hidden">
-
       <!-- Header -->
       <div class="bg-blue-600 text-white p-3 sm:p-4 flex justify-between items-center flex-shrink-0">
         <div class="text-right flex-1 min-w-0 pr-2">
@@ -42,15 +42,12 @@ import {
           رجوع
         </button>
       </div>
-
       <!-- Messages container -->
       <div #messagesContainer class="flex-1 flex flex-col overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50 scrollbar-thin scrollbar-thumb-blue-400 scrollbar-track-transparent">
-
         <!-- Loading -->
         <div *ngIf="loading" class="flex-1 flex items-center justify-center">
           <div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
-
         <!-- No messages -->
         <div *ngIf="!loading && messages.length === 0" class="flex-1 flex items-center justify-center text-center p-6">
           <div class="text-gray-400">
@@ -61,18 +58,19 @@ import {
             <p class="text-sm text-gray-400 mt-1">ابدأ المحادثة بإرسال رسالة</p>
           </div>
         </div>
-
         <!-- Messages -->
         <div *ngFor="let msg of messages"
              class="flex items-start gap-2 sm:gap-3 max-w-full group"
-             [ngClass]="{'justify-end': !isMyMessage(msg), 'justify-start': isMyMessage(msg)}">
-
+             [ngClass]="{'justify-end': isMyMessage(msg), 'justify-start': !isMyMessage(msg)}">
+          <!-- أفاتار المستخدم الحالي (أنت) -->
           <div *ngIf="isMyMessage(msg)" class="flex-shrink-0 pt-1">
-            <div class="w-7 h-7 sm:w-8 sm:h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md">
-              أ
-            </div>
+            <img 
+              [src]="currentUser?.profileImage || 'https://via.placeholder.com/40?text=' + (currentUser?.name?.charAt(0) || 'أ')" 
+              alt="أنت"
+              class="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover ring-2 ring-blue-500 shadow-md">
           </div>
 
+          <!-- محتوى الرسالة -->
           <div class="flex flex-col max-w-[85%] sm:max-w-[75%]">
             <div *ngIf="msg.type === 'text'"
                  class="px-3 py-2 rounded-xl shadow-sm group-hover:shadow-md transition-all"
@@ -82,7 +80,6 @@ import {
                  }">
               <p class="text-sm sm:text-base leading-relaxed break-words whitespace-pre-wrap">{{ msg.message }}</p>
             </div>
-
             <div *ngIf="msg.type !== 'text'" class="p-2 bg-gray-200 rounded-xl text-center shadow-sm">
               <p class="text-sm text-gray-700">
                 [{{ msg.type === 'image' ? 'صورة' : msg.type === 'audio' ? 'تسجيل صوتي' : 'ملف' }}]
@@ -94,35 +91,32 @@ import {
                 <span *ngIf="!msg.url">{{ msg.filename || 'غير معروف' }}</span>
               </p>
             </div>
-
             <span class="text-xs text-gray-500 mt-1 px-1 opacity-80 self-end"
                   [ngClass]="{'text-right': !isMyMessage(msg), 'text-left': isMyMessage(msg)}">
               {{ msg.timestamp | date:'shortTime' }}
             </span>
           </div>
 
+          <!-- أفاتار الطرف التاني -->
           <div *ngIf="!isMyMessage(msg)" class="flex-shrink-0 pt-1">
-            <div class="w-7 h-7 sm:w-8 sm:h-8 bg-gray-500 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md">
-              {{ getAvatarInitial(msg.sender_name || 'م') }}
-            </div>
+            <img 
+              [src]="getOtherUserImage() || 'https://via.placeholder.com/40?text=' + getAvatarInitial(msg.sender_name || 'م')" 
+              alt="{{ msg.sender_name }}"
+              class="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover ring-2 ring-gray-400 shadow-md">
           </div>
         </div>
       </div>
-
       <!-- Input Area -->
       <div class="flex-shrink-0 border-t border-gray-200 p-2 sm:p-3 bg-white">
         <div class="flex items-end gap-1 sm:gap-2 h-auto sm:h-12">
-
           <!-- File Input -->
           <input #fileInput type="file" multiple accept="image/*,.pdf,.doc,.docx,.mp3,.wav"
                  (change)="onFilesSelected($event)" class="hidden" [disabled]="isDisabledInput()">
-
           <!-- Attachments Button -->
           <button type="button" (click)="fileInput.click()" [disabled]="isDisabledInput()"
                   class="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full flex items-center justify-center transition-all disabled:opacity-50 shadow-sm">
             <fa-icon icon="paperclip" class="text-lg"></fa-icon>
           </button>
-
           <!-- Voice Record Button -->
           <button type="button" (click)="toggleRecording()" [disabled]="isDisabledInput()"
                   class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all shadow-sm"
@@ -132,12 +126,10 @@ import {
                   }">
             <fa-icon [icon]="isRecording ? 'stop' : 'microphone'" class="text-lg"></fa-icon>
           </button>
-
           <!-- Message Input -->
           <input [(ngModel)]="newMessage" (keyup.enter)="sendMessage()"
                  placeholder="اكتب رسالتك هنا..." class="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-200 outline-none text-base bg-white"
                  [disabled]="isDisabledInput()" maxlength="1000">
-
           <!-- Send Button -->
           <button (click)="sendMessage()" [disabled]="!newMessage.trim() || isDisabledInput()"
                   class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm transition-all shadow-md hover:shadow-lg disabled:opacity-50 flex items-center gap-1">
@@ -145,7 +137,6 @@ import {
             إرسال
           </button>
         </div>
-
         <!-- Uploaded Files Status -->
         <div *ngIf="selectedFiles.length" class="mt-2 flex flex-wrap gap-2 text-xs">
           <div *ngFor="let f of selectedFiles"
@@ -171,12 +162,10 @@ import {
     .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
     .scrollbar-thin::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
     .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #2563eb; }
-
     input[type="text"] {
       font-size: 16px !important;
       -webkit-text-size-adjust: 100%;
     }
-
     .min-h-screen {
       min-height: 100vh;
       min-height: -webkit-fill-available;
@@ -191,6 +180,7 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
   newMessage = '';
   loading = true;
   currentUserId = '';
+  currentUser: any = null; // ← جديد: لتخزين بيانات المستخدم الحالي مع الصورة
   chatName = '';
   isJobSeeker = false;
   selectedFiles: { file: File; status: 'uploading' | 'success' | 'error'; }[] = [];
@@ -198,20 +188,24 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
   mediaRecorder: MediaRecorder | null = null;
   recordedChunks: Blob[] = [];
 
-  private ngZone = inject(NgZone); // ← استخدمنا inject لـ NgZone
+  private ngZone = inject(NgZone);
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private api: ApiService,
     private socketService: SocketService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private authService: AuthService // ← جديد
   ) {
     const library = inject(FaIconLibrary);
     library.addIcons(faMicrophone, faStop, faPaperclip, faPaperPlane, faArrowLeft);
   }
 
   ngOnInit() {
+    // جلب المستخدم الحالي من AuthService
+    this.currentUser = this.authService.getUser();
+
     this.socketService.connect();
 
     const token = localStorage.getItem('token');
@@ -251,20 +245,16 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
         this.socketService.joinChat(this.selectedApp._id);
 
         this.markAsRead();
-
         this.loadMessages();
 
-        // ← الحل النهائي: استقبال الرسائل داخل Angular Zone
         this.socketService.onNewMessage((msg: any) => {
           if (this.selectedApp && msg.application_id === this.selectedApp._id) {
             const normalized = this.normalizeMessage(msg);
-
             if (!this.messages.some(m => m._id === normalized._id)) {
               this.ngZone.run(() => {
                 this.messages.push(normalized);
                 this.scrollToBottom();
               });
-
               if (normalized.sender_id !== this.currentUserId) {
                 this.notificationService.markChatNotificationsAsRead(this.selectedApp._id);
                 this.markAsRead();
@@ -290,7 +280,6 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private markAsRead() {
     if (!this.selectedApp?._id) return;
-
     this.api.markMessagesAsRead(this.selectedApp._id).subscribe({
       next: () => {
         console.log('تم تصفير unreadCount بنجاح للدردشة:', this.selectedApp._id);
@@ -309,13 +298,23 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
     return senderId === this.currentUserId;
   }
 
+  // جديد: جلب صورة الطرف التاني من الـ application
+  getOtherUserImage(): string | null {
+    if (!this.selectedApp) return null;
+
+    const otherUser = this.isJobSeeker 
+      ? this.selectedApp.job_id?.owner_id 
+      : this.selectedApp.seeker_id;
+
+    return otherUser?.profileImage || null;
+  }
+
   getAvatarInitial(name: string): string {
     return name.charAt(0).toUpperCase() || 'م';
   }
 
   loadMessages() {
     if (!this.selectedApp) return;
-
     this.api.getMessages(this.selectedApp._id).subscribe({
       next: (msgs: any[]) => {
         this.messages = msgs.map(msg => this.normalizeMessage(msg));
@@ -331,10 +330,8 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
 
   sendMessage() {
     if (!this.newMessage.trim() || !this.selectedApp) return;
-
     const text = this.newMessage.trim();
     this.newMessage = '';
-
     const tempId = 'temp-' + Date.now();
     const tempMsg = {
       _id: tempId,
@@ -344,10 +341,8 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
       type: 'text',
       timestamp: new Date()
     };
-
     this.messages.push(this.normalizeMessage(tempMsg));
     this.scrollToBottom();
-
     this.api.sendMessage({ application_id: this.selectedApp._id, message: text }).subscribe({
       next: (savedMsg: any) => {
         const index = this.messages.findIndex(m => m._id === tempId);
@@ -366,14 +361,12 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
   onFilesSelected(event: any) {
     const files: FileList = event.target.files;
     if (!files?.length || !this.selectedApp) return;
-
     Array.from(files).forEach((file: File) => {
       const maxSize = 10 * 1024 * 1024;
       if (file.size > maxSize) {
         alert(`الملف ${file.name} كبير جدًا (الحد الأقصى 10 ميجا)`);
         return;
       }
-
       const fileObj = { file, status: 'uploading' as const };
       this.selectedFiles.push(fileObj);
       this.uploadFile(fileObj);
@@ -382,10 +375,8 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private uploadFile(fileObj: { file: File; status: 'uploading' | 'success' | 'error' }) {
     if (!this.selectedApp) return;
-
     const type = fileObj.file.type.startsWith('image/') ? 'image' :
                  fileObj.file.type.startsWith('audio/') ? 'audio' : 'file';
-
     this.api.sendMedia(this.selectedApp._id, fileObj.file, type, fileObj.file.name)
       .subscribe({
         next: (savedMsg: any) => {
@@ -411,24 +402,20 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
       alert('المتصفح لا يدعم التسجيل الصوتي أو يحتاج HTTPS');
       return;
     }
-
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then(stream => {
         this.mediaRecorder = new MediaRecorder(stream);
         this.recordedChunks = [];
         this.isRecording = true;
-
         this.mediaRecorder.ondataavailable = (event) => {
           if (event.data.size > 0) this.recordedChunks.push(event.data);
         };
-
         this.mediaRecorder.onstop = () => {
           const blob = new Blob(this.recordedChunks, { type: 'audio/webm' });
           this.uploadAudioFile(blob);
           this.isRecording = false;
           stream.getTracks().forEach(track => track.stop());
         };
-
         this.mediaRecorder.start();
       })
       .catch(err => {
@@ -460,7 +447,6 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
     const senderName = senderId === this.currentUserId
       ? 'أنت'
       : (msg.sender_id?.name || (this.isJobSeeker ? 'صاحب العمل' : 'الباحث عن عمل'));
-
     return {
       ...msg,
       _id: msg._id || 'temp-' + Date.now(),
