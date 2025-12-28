@@ -88,7 +88,6 @@ export class JobCardComponent {
   @Input() hasApplied = false;
   @Output() applySuccess = new EventEmitter<void>();
   modalOpen = false;
-
   private cacheBuster = Date.now();
 
   constructor(
@@ -101,13 +100,12 @@ export class JobCardComponent {
     return this.authService.isLoggedIn() && user?.role === 'job_seeker';
   }
 
-  // دالة جديدة لجلب صورة صاحب الوظيفة مع كسر الكاش
+  // دالة لجلب صورة صاحب الوظيفة مع كسر الكاش
   getOwnerImage(): string {
     const ownerImage = this.job?.owner_id?.profileImage;
     if (!ownerImage) {
       return `https://ui-avatars.com/api/?name=${encodeURIComponent(this.job.shop_name || 'متجر')}&background=3b82f6&color=fff&size=128&bold=true`;
     }
-    // إضافة timestamp لتجنب مشكلة الكاش
     return `${ownerImage}?t=${this.cacheBuster}`;
   }
 
@@ -130,8 +128,9 @@ export class JobCardComponent {
         window.scrollTo({ top: 0, behavior: 'smooth' });
         this.applySuccess.emit();
       },
-      error: (err) => {
+      error: (err: any) => {  // ← أضفنا type عشان نحل implicit any
         console.error('خطأ في التقديم:', err);
+        alert('فشل التقديم، حاول مرة أخرى');
       }
     });
   }
