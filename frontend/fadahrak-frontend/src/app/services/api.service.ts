@@ -14,7 +14,6 @@ export class ApiService {
 
   constructor(private http: HttpClient) {
     // في الـ dev (localhost) → نستخدم المسار النسبي
-    // في الـ production → نستخدم الدومين الكامل
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       this.imageBaseUrl = ''; // عشان يشتغل مع الـ proxy
     }
@@ -115,9 +114,21 @@ export class ApiService {
     );
   }
 
+  createJob(data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/jobs/create`, data, { headers: this.getHeaders() });
+  }
+
+  deleteJob(id: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/jobs/${id}`, { headers: this.getHeaders() });
+  }
+
   // ──────────────────────────────────────────────────────────────
   // Applications
   // ──────────────────────────────────────────────────────────────
+  applyToJob(data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/applications`, data, { headers: this.getHeaders() });
+  }
+
   getMyApplications(): Observable<any> {
     return this.http.get(`${this.apiUrl}/applications/my`, { headers: this.getHeaders() }).pipe(
       map(res => this.fixImageUrl(res))
@@ -139,8 +150,12 @@ export class ApiService {
     );
   }
 
+  sendMessage(data: { application_id: string; message: string }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/messages`, data, { headers: this.getHeaders() });
+  }
+
   // ──────────────────────────────────────────────────────────────
-  // Notifications (الدوال الناقصة اللي كانت بتسبب أخطاء)
+  // Notifications
   // ──────────────────────────────────────────────────────────────
   getNotifications(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/notifications`, { headers: this.getHeaders() });
@@ -161,6 +176,4 @@ export class ApiService {
       { headers: this.getHeaders() }
     );
   }
-
-  // باقي الدوال (لو عايز تضيف .pipe(map...) لأي دالة تانية فيها profileImage)
 }
