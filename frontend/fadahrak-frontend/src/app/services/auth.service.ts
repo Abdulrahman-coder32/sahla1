@@ -11,7 +11,6 @@ export class AuthService {
   constructor() {
     const storedUser = localStorage.getItem('user');
     const storedToken = localStorage.getItem('token');
-
     if (storedUser && storedToken) {
       this.userSubject.next(JSON.parse(storedUser));
       console.log('تم تحميل المستخدم من localStorage');
@@ -25,6 +24,17 @@ export class AuthService {
     console.log('تم حفظ التوكن والمستخدم في localStorage');
   }
 
+  /** جديد: تحديث بيانات المستخدم الحالي (يُستخدم بعد تعديل البروفايل) */
+  updateCurrentUser(updatedUser: any) {
+    // تحديث localStorage
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+
+    // تحديث BehaviorSubject عشان كل الكومبوننتس تتحدث فورًا
+    this.userSubject.next(updatedUser);
+
+    console.log('تم تحديث بيانات المستخدم في AuthService:', updatedUser);
+  }
+
   logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -32,7 +42,7 @@ export class AuthService {
     console.log('تم تسجيل الخروج');
   }
 
-  // دالة جلب المستخدم الحالي (اللي كانت ناقصة)
+  // دالة جلب المستخدم الحالي
   getUser() {
     return this.userSubject.value;
   }
