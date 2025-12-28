@@ -8,7 +8,6 @@ import { map } from 'rxjs/operators';
 })
 export class ApiService {
   private apiUrl = '/api'; // proxy في الـ dev
-
   // دومينك الحقيقي على Koyeb (بدون / في الآخر)
   private imageBaseUrl = 'https://positive-christiana-sahla-18a86cd2.koyeb.app';
 
@@ -36,17 +35,14 @@ export class ApiService {
   // ── دالة لإصلاح روابط الصور (تضيف الدومين لو المسار نسبي) ──
   private fixImageUrl(data: any): any {
     if (!data) return data;
-
     // لو object واحد
     if (data.profileImage && typeof data.profileImage === 'string' && !data.profileImage.startsWith('http')) {
       data.profileImage = this.prependBaseUrl(data.profileImage);
     }
-
     // لو array
     if (Array.isArray(data)) {
       return data.map(item => this.fixImageUrl(item));
     }
-
     // لو object nested (مثل owner_id.profileImage أو seeker_id.profileImage)
     Object.keys(data).forEach(key => {
       if (data[key] && typeof data[key] === 'object') {
@@ -55,7 +51,6 @@ export class ApiService {
         data[key] = this.prependBaseUrl(data[key]);
       }
     });
-
     return data;
   }
 
@@ -141,6 +136,22 @@ export class ApiService {
     );
   }
 
+  // *** الدالة الجديدة: جلب الطلبات لوظيفة معينة ***
+  getApplicationsForJob(jobId: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/applications/job/${jobId}`, { headers: this.getHeaders() }).pipe(
+      map(res => this.fixImageUrl(res))
+    );
+  }
+
+  // *** الدالة الجديدة: تحديث حالة الطلب ***
+  updateApplicationStatus(applicationId: string, status: string): Observable<any> {
+    return this.http.patch(
+      `${this.apiUrl}/applications/${applicationId}/status`,
+      { status },
+      { headers: this.getHeaders() }
+    );
+  }
+
   // ──────────────────────────────────────────────────────────────
   // Messages
   // ──────────────────────────────────────────────────────────────
@@ -154,7 +165,6 @@ export class ApiService {
     return this.http.post(`${this.apiUrl}/messages`, data, { headers: this.getHeaders() });
   }
 
-  // **الدالة الجديدة اللي كانت ناقصة (حل خطأ sendMedia في inbox.component.ts)**
   sendMedia(applicationId: string, file: File, type: 'image' | 'audio' | 'file', filename?: string): Observable<any> {
     const formData = new FormData();
     formData.append('application_id', applicationId);
@@ -163,11 +173,10 @@ export class ApiService {
     if (filename) {
       formData.append('filename', filename);
     }
-    const headers = this.getHeaders(true, true); // multipart → no Content-Type
+    const headers = this.getHeaders(true, true);
     return this.http.post(`${this.apiUrl}/messages/media`, formData, { headers });
   }
 
-  // **الدالة اللي كانت موجودة (للـ mark as read في inbox)**
   markMessagesAsRead(applicationId: string): Observable<any> {
     return this.http.patch(
       `${this.apiUrl}/messages/${applicationId}/mark-read`,
