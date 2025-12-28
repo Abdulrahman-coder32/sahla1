@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -19,7 +19,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
               <img src="assets/logo.png" alt="سَهلة" class="h-12 w-auto max-w-32 object-contain transition-transform duration-300 hover:scale-105 hover:translate-x-1 translate-x-4">
             </a>
           </div>
-
           <!-- Desktop Navigation -->
           <div class="hidden md:flex items-center gap-8">
             <!-- الروابط الأساسية -->
@@ -27,9 +26,8 @@ import { Observable, Subject, takeUntil } from 'rxjs';
             <a routerLink="/jobs" class="nav-link" routerLinkActive="active-link">الوظائف</a>
             <a routerLink="/about" class="nav-link" routerLinkActive="active-link">عننا</a>
             <a routerLink="/contact" class="nav-link" routerLinkActive="active-link">اتصل بنا</a>
-
             <!-- لو مسجل دخول -->
-            <ng-container *ngIf="currentUser; else guestDesktop">
+            <ng-container *ngIf="user; else guestDesktop">
               <!-- الإشعارات -->
               <div class="relative group">
                 <button class="nav-link flex items-center gap-1.5">
@@ -67,11 +65,9 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                   </a>
                 </div>
               </div>
-
               <a routerLink="/inbox" class="nav-link" routerLinkActive="active-link">الرسائل</a>
-              <a [routerLink]="currentUser.role === 'shop_owner' ? '/owner-dashboard' : '/seeker-dashboard'"
+              <a [routerLink]="user.role === 'shop_owner' ? '/owner-dashboard' : '/seeker-dashboard'"
                  class="nav-link" routerLinkActive="active-link">لوحة التحكم</a>
-
               <!-- Profile Dropdown مع الصورة والاسم -->
               <div class="relative group">
                 <button class="flex items-center gap-3 rounded-full focus:outline-none p-1">
@@ -79,9 +75,8 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                     [src]="getProfileImageUrl()"
                     alt="صورة الملف الشخصي"
                     class="w-10 h-10 rounded-full object-cover ring-2 ring-gray-300 shadow-md">
-                  <span class="text-gray-700 font-medium hidden lg:block">{{ currentUser.name || 'مستخدم' }}</span>
+                  <span class="text-gray-700 font-medium hidden lg:block">{{ user.name || 'مستخدم' }}</span>
                 </button>
-
                 <!-- Dropdown للملف الشخصي والخروج -->
                 <div class="absolute end-0 mt-3 w-56 bg-white rounded-xl shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
                   <a routerLink="/profile" class="block px-5 py-3 hover:bg-gray-50 text-right font-medium text-gray-700 border-b border-gray-100">
@@ -93,17 +88,15 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                 </div>
               </div>
             </ng-container>
-
             <!-- لو ضيف -->
             <ng-template #guestDesktop>
               <a routerLink="/login" class="nav-link" routerLinkActive="active-link">دخول</a>
               <a routerLink="/signup" class="btn-primary">إنشاء حساب</a>
             </ng-template>
           </div>
-
           <!-- Mobile: Bell + Hamburger -->
           <div class="md:hidden flex items-center gap-4">
-            <ng-container *ngIf="currentUser">
+            <ng-container *ngIf="user">
               <button (click)="mobileNotificationsOpen = !mobileNotificationsOpen" class="relative p-2">
                 <i class="fas fa-bell text-xl text-gray-700"></i>
                 <ng-container *ngIf="notificationCount$ | async as count">
@@ -122,7 +115,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
             </button>
           </div>
         </div>
-
         <!-- Mobile Menu + Mobile Notifications (باقي الـ template بدون تغيير كبير) -->
         <!-- ... باقي الكود للـ mobile menu والـ notifications ... -->
       </div>
@@ -131,14 +123,12 @@ import { Observable, Subject, takeUntil } from 'rxjs';
   styles: [/* باقي الـ styles بدون تغيير */]
 })
 export class NavbarComponent implements OnInit, OnDestroy {
-  currentUser: any = null;
+  @Input() user: any = null;  // الـ Input الجديد لاستقبال currentUser من الـ parent
 
   mobileMenuOpen = false;
   mobileNotificationsOpen = false;
-
   notificationCount$!: Observable<number>;
   notifications$!: Observable<any[]>;
-
   private destroy$ = new Subject<void>();
   private cacheBuster = Date.now();
 
@@ -152,22 +142,25 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    // نتابع المستخدم الحالي من AuthService (بدل currentUser$ اللي كان ناقص)
+    // لو الـ user مش جاي من Input (للاختبار أو حالات تانية)، نتابع من AuthService
+    // بس دلوقتي الـ user هيجي أساساً من الـ @Input
     this.authService.user$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(user => {
-        this.currentUser = user;
-        if (user?.profileImage) {
+      .subscribe(authUser => {
+        if (!this.user && authUser) {
+          this.user = authUser;
+        }
+        if (authUser?.profileImage) {
           this.cacheBuster = Date.now();
         }
       });
   }
 
   getProfileImageUrl(): string {
-    if (!this.currentUser?.profileImage) {
-      return `https://via.placeholder.com/40?text=${this.currentUser?.name?.charAt(0) || 'م'}`;
+    if (!this.user?.profileImage) {
+      return `https://via.placeholder.com/40?text=${this.user?.name?.charAt(0) || 'م'}`;
     }
-    return `${this.currentUser.profileImage}?t=${this.cacheBuster}`;
+    return `${this.user.profileImage}?t=${this.cacheBuster}`;
   }
 
   onLogout() {
@@ -186,7 +179,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.closeMobileMenu();
     let route: string[] = ['/notifications'];
     const appId = notification.application_id || null;
-
     switch (notification.type) {
       case 'new_message':
         if (appId) route = ['/inbox', appId];
@@ -197,9 +189,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
         if (appId) route = ['/applications', appId];
         break;
     }
-
     this.router.navigate(route);
-
     if (!notification.read) {
       this.notificationService.markAsReadAndUpdate(notification._id);
     }
