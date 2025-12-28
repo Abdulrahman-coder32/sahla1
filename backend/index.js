@@ -57,6 +57,7 @@ io.use((socket, next) => {
 
 io.on('connection', (socket) => {
   console.log('مستخدم متصل بالسوكت:', socket.user?.id, 'دور:', socket.user?.role);
+
   if (socket.user?.id) {
     socket.join(socket.user.id.toString());
   }
@@ -136,12 +137,12 @@ io.on('connection', (socket) => {
 });
 
 // ────────────────────────────────────────
-// خدمة Angular Frontend (الحل النهائي لـ Express 5+)
+// خدمة Angular Frontend (الحل الصحيح)
 // ────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend')));
 
-// Named wildcard route لخدمة index.html لكل المسارات غير الـ API
-app.get('/*', (req, res) => {
+// Catch-all route لكل المسارات غير الـ API → يرجع index.html
+app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend/index.html'));
 });
 
@@ -155,14 +156,12 @@ app.get('/api/test', (req, res) => {
 // ────────────────────────────────────────
 const connectWithRetry = () => {
   console.log('جاري محاولة الاتصال بـ MongoDB Atlas...');
-
   mongoose.connect(process.env.MONGO_URI, {
     serverSelectionTimeoutMS: 30000,
     socketTimeoutMS: 45000,
   })
   .then(() => {
     console.log('✅ تم الاتصال بـ MongoDB Atlas بنجاح');
-
     const PORT = process.env.PORT || 5000;
     server.listen(PORT, () => {
       console.log(`🚀 السيرفر شغال على البورت ${PORT}`);
