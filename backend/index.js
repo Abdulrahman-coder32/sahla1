@@ -138,11 +138,12 @@ io.on('connection', (socket) => {
 });
 
 // ────────────────────────────────────────
-// خدمة Angular Frontend
+// خدمة Angular Frontend (التعديل المهم لتفادي PathError)
 // ────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend')));
 
-app.get('*', (req, res) => {
+// تغيير * إلى /* لحل مشكلة path-to-regexp في الإصدارات الحديثة
+app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend/index.html'));
 });
 
@@ -152,7 +153,7 @@ app.get('/api/test', (req, res) => {
 });
 
 // ────────────────────────────────────────
-// اتصال MongoDB مع Retry Logic (التعديل الجديد)
+// اتصال MongoDB مع Retry Logic
 // ────────────────────────────────────────
 const connectWithRetry = () => {
   console.log('جاري محاولة الاتصال بـ MongoDB Atlas...');
