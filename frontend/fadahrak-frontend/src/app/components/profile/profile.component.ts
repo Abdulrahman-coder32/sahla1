@@ -11,7 +11,7 @@ import { NotificationService } from '../../services/notification.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './profile.component.html',
-  styleUrls: ['./profile.component.css']
+  styleUrl: './profile.component.css'
 })
 export class ProfileComponent implements OnInit {
   user: any = {
@@ -35,7 +35,7 @@ export class ProfileComponent implements OnInit {
     private notification: NotificationService
   ) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.loadProfile();
   }
 
@@ -49,29 +49,30 @@ export class ProfileComponent implements OnInit {
       },
       error: (err) => {
         console.error('فشل تحميل البروفايل', err);
-        this.notification.show('فشل تحميل البيانات');
+        this.notification.show('فشل تحميل البيانات، حاول مرة أخرى');
         this.loading = false;
-        this.router.navigate(['/inbox']);
       }
     });
   }
 
   onFileSelected(event: any) {
     const file = event.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        this.notification.show('حجم الصورة لا يتجاوز 5 ميجا');
-        return;
-      }
+    if (!file) return;
 
-      this.selectedFile = file;
-
-      const reader = new FileReader();
-      reader.onload = () => {
-        this.previewUrl = reader.result as string;
-      };
-      reader.readAsDataURL(file);
+    // تحقق من الحجم (حد أقصى 5 ميجا)
+    if (file.size > 5 * 1024 * 1024) {
+      this.notification.show('حجم الصورة كبير جدًا، الحد الأقصى 5 ميجا');
+      return;
     }
+
+    this.selectedFile = file;
+
+    // عرض معاينة فورية
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.previewUrl = reader.result as string;
+    };
+    reader.readAsDataURL(file);
   }
 
   toggleEdit() {
@@ -84,8 +85,10 @@ export class ProfileComponent implements OnInit {
     this.saving = true;
 
     const formData = new FormData();
-    formData.append('name', this.user.name);
-    formData.append('phone', this.user.phone || '');
+    formData.append('name', this.user.name.trim());
+    if (this.user.phone) {
+      formData.append('phone', this.user.phone.trim());
+    }
 
     if (this.selectedFile) {
       formData.append('profileImage', this.selectedFile);
@@ -93,29 +96,29 @@ export class ProfileComponent implements OnInit {
 
     this.api.updateProfile(formData).subscribe({
       next: (updatedUser: any) => {
-        // تحديث الـ currentUser في AuthService
+        // تحديث البيانات المحلية في AuthService عشان الصورة تتغير في كل الأماكن فورًا
         this.authService.updateCurrentUser(updatedUser);
 
         this.user = updatedUser;
         this.previewUrl = updatedUser.profileImage || null;
-        this.isEditing = false;
         this.selectedFile = null;
+        this.isEditing = false;
         this.saving = false;
 
-        this.notification.show('تم تحديث البروفايل بنجاح');
+        this.notification.show('تم تحديث الملف الشخصي بنجاح');
       },
       error: (err) => {
         console.error('فشل تحديث البروفايل', err);
-        this.notification.show('فشل حفظ التغييرات');
+        this.notification.show('فشل حفظ التغييرات، حاول مرة أخرى');
         this.saving = false;
       }
     });
   }
 
   cancelEdit() {
-    this.loadProfile();
-    this.isEditing = false;
+    this.loadProfile(); // إعادة تحميل البيانات الأصلية
     this.selectedFile = null;
     this.previewUrl = this.user.profileImage || null;
+    this.isEditing = false;
   }
 }
