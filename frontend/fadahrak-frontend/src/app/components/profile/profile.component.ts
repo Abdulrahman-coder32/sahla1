@@ -49,7 +49,7 @@ export class ProfileComponent implements OnInit {
       },
       error: (err) => {
         console.error('فشل تحميل البروفايل', err);
-        alert('فشل تحميل البيانات، حاول مرة أخرى'); // ← تغيير هنا
+        alert('فشل تحميل البيانات، حاول مرة أخرى');
         this.loading = false;
       }
     });
@@ -61,7 +61,7 @@ export class ProfileComponent implements OnInit {
 
     // تحقق من الحجم (حد أقصى 5 ميجا)
     if (file.size > 5 * 1024 * 1024) {
-      alert('حجم الصورة كبير جدًا، الحد الأقصى 5 ميجا'); // ← تغيير هنا
+      alert('حجم الصورة كبير جدًا، الحد الأقصى 5 ميجا');
       return;
     }
 
@@ -105,11 +105,11 @@ export class ProfileComponent implements OnInit {
         this.isEditing = false;
         this.saving = false;
 
-        alert('تم تحديث الملف الشخصي بنجاح'); // ← تغيير هنا
+        alert('تم تحديث الملف الشخصي بنجاح');
       },
       error: (err) => {
         console.error('فشل تحديث البروفايل', err);
-        alert('فشل حفظ التغييرات، حاول مرة أخرى'); // ← تغيير هنا
+        alert('فشل حفظ التغييرات، حاول مرة أخرى');
         this.saving = false;
       }
     });
