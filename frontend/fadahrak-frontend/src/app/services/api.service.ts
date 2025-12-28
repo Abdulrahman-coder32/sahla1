@@ -1,22 +1,23 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators'; // ← أضفنا ده
+import { map } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
-  // غير ده للدومين الحقيقي في الـ production (أو استخدم environment)
-  private apiUrl = '/api'; // proxy في dev
-  private imageBaseUrl = ''; // هنا الحل الذكي
+  private apiUrl = '/api'; // proxy في الـ dev
+
+  // ← غيّر ده لدومين موقعك الحقيقي (بدون / في الآخر)
+  private imageBaseUrl = 'https://sahla1.com'; // مثال: https://your-real-domain.com
 
   constructor(private http: HttpClient) {
-    // في الـ production هيبقى الدومين الحقيقي
-    // في الـ dev هيبقى فاضي عشان يشتغل مع الـ proxy
-    this.imageBaseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? '' 
-      : 'https://yourdomain.com'; // ← غيّر ده لدومينك الحقيقي
+    // في الـ dev (localhost) → نستخدم المسار النسبي
+    // في الـ production → نستخدم الدومين الكامل
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      this.imageBaseUrl = ''; // عشان يشتغل مع الـ proxy
+    }
   }
 
   private getHeaders(includeToken: boolean = true, isMultipart: boolean = false): HttpHeaders {
@@ -26,7 +27,6 @@ export class ApiService {
     }
     if (includeToken) {
       const token = localStorage.getItem('token');
-      console.log('ApiService: Token from localStorage:', token ? 'موجود' : 'مش موجود');
       if (token) {
         headers = headers.set('Authorization', `Bearer ${token}`);
       }
@@ -34,7 +34,7 @@ export class ApiService {
     return headers;
   }
 
-  // ── دالة مساعدة لإضافة الـ base URL للصورة ──
+  // ── دالة لإصلاح روابط الصور (تضيف الدومين لو المسار نسبي) ──
   private fixImageUrl(data: any): any {
     if (!data) return data;
 
@@ -43,12 +43,12 @@ export class ApiService {
       data.profileImage = this.prependBaseUrl(data.profileImage);
     }
 
-    // لو array من objects
+    // لو array
     if (Array.isArray(data)) {
       return data.map(item => this.fixImageUrl(item));
     }
 
-    // لو object فيه nested objects (مثل owner_id, seeker_id)
+    // لو object nested (مثل owner_id.profileImage أو seeker_id.profileImage)
     Object.keys(data).forEach(key => {
       if (data[key] && typeof data[key] === 'object') {
         data[key] = this.fixImageUrl(data[key]);
@@ -62,6 +62,7 @@ export class ApiService {
 
   private prependBaseUrl(path: string): string {
     if (path.startsWith('/')) path = path.substring(1);
+    if (this.imageBaseUrl === '') return `/${path}`;
     return `${this.imageBaseUrl}/${path}`;
   }
 
@@ -93,10 +94,9 @@ export class ApiService {
   }
 
   // ──────────────────────────────────────────────────────────────
-  // Jobs & Applications & Messages (نطبق نفس الـ fix)
+  // Jobs
   // ──────────────────────────────────────────────────────────────
   getJobs(filters?: any): Observable<any> {
-    console.log('طلب بحث عن وظائف (بدون توكن):', filters || {});
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     return this.http.post(`${this.apiUrl}/jobs`, filters || {}, { headers }).pipe(
       map(res => this.fixImageUrl(res))
@@ -115,6 +115,9 @@ export class ApiService {
     );
   }
 
+  // ──────────────────────────────────────────────────────────────
+  // Applications
+  // ──────────────────────────────────────────────────────────────
   getMyApplications(): Observable<any> {
     return this.http.get(`${this.apiUrl}/applications/my`, { headers: this.getHeaders() }).pipe(
       map(res => this.fixImageUrl(res))
@@ -127,17 +130,37 @@ export class ApiService {
     );
   }
 
+  // ──────────────────────────────────────────────────────────────
+  // Messages
+  // ──────────────────────────────────────────────────────────────
   getMessages(appId: string): Observable<any> {
     return this.http.get(`${this.apiUrl}/messages/${appId}`, { headers: this.getHeaders() }).pipe(
       map(res => this.fixImageUrl(res))
     );
   }
 
-  // ... باقي الدوال بدون تغيير (لأنها مش بترجع profileImage مباشرة)
-  // يمكنك إضافة .pipe(map(...)) لأي دالة تانية لو لقيت فيها profileImage
+  // ──────────────────────────────────────────────────────────────
+  // Notifications (الدوال الناقصة اللي كانت بتسبب أخطاء)
+  // ──────────────────────────────────────────────────────────────
+  getNotifications(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/notifications`, { headers: this.getHeaders() });
+  }
 
-  // ──────────────────────────────────────────────────────────────
-  // باقي الدوال كما هي
-  // ──────────────────────────────────────────────────────────────
-  // (copy-paste الباقي من الكود القديم)
+  getUnreadCount(): Observable<number> {
+    return this.http.get<number>(`${this.apiUrl}/notifications/unread-count`, { headers: this.getHeaders() });
+  }
+
+  markAsRead(notificationId: string): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/notifications/${notificationId}/read`, {}, { headers: this.getHeaders() });
+  }
+
+  markChatNotificationsAsRead(applicationId: string): Observable<any> {
+    return this.http.patch(
+      `${this.apiUrl}/notifications/mark-chat-read/${applicationId}`,
+      {},
+      { headers: this.getHeaders() }
+    );
+  }
+
+  // باقي الدوال (لو عايز تضيف .pipe(map...) لأي دالة تانية فيها profileImage)
 }
