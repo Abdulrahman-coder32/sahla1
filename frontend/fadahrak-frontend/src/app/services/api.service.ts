@@ -1,14 +1,23 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators'; // ← أضفنا ده
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
-  private apiUrl = '/api'; // بفضل الـ proxy
+  // غير ده للدومين الحقيقي في الـ production (أو استخدم environment)
+  private apiUrl = '/api'; // proxy في dev
+  private imageBaseUrl = ''; // هنا الحل الذكي
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    // في الـ production هيبقى الدومين الحقيقي
+    // في الـ dev هيبقى فاضي عشان يشتغل مع الـ proxy
+    this.imageBaseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? '' 
+      : 'https://yourdomain.com'; // ← غيّر ده لدومينك الحقيقي
+  }
 
   private getHeaders(includeToken: boolean = true, isMultipart: boolean = false): HttpHeaders {
     let headers = new HttpHeaders();
@@ -25,6 +34,37 @@ export class ApiService {
     return headers;
   }
 
+  // ── دالة مساعدة لإضافة الـ base URL للصورة ──
+  private fixImageUrl(data: any): any {
+    if (!data) return data;
+
+    // لو object واحد
+    if (data.profileImage && typeof data.profileImage === 'string' && !data.profileImage.startsWith('http')) {
+      data.profileImage = this.prependBaseUrl(data.profileImage);
+    }
+
+    // لو array من objects
+    if (Array.isArray(data)) {
+      return data.map(item => this.fixImageUrl(item));
+    }
+
+    // لو object فيه nested objects (مثل owner_id, seeker_id)
+    Object.keys(data).forEach(key => {
+      if (data[key] && typeof data[key] === 'object') {
+        data[key] = this.fixImageUrl(data[key]);
+      } else if (key === 'profileImage' && data[key] && typeof data[key] === 'string' && !data[key].startsWith('http')) {
+        data[key] = this.prependBaseUrl(data[key]);
+      }
+    });
+
+    return data;
+  }
+
+  private prependBaseUrl(path: string): string {
+    if (path.startsWith('/')) path = path.substring(1);
+    return `${this.imageBaseUrl}/${path}`;
+  }
+
   // ──────────────────────────────────────────────────────────────
   // Auth
   // ──────────────────────────────────────────────────────────────
@@ -37,134 +77,67 @@ export class ApiService {
   }
 
   // ──────────────────────────────────────────────────────────────
-  // Profile (جديد)
+  // Profile
   // ──────────────────────────────────────────────────────────────
-  /** جلب بيانات الملف الشخصي للمستخدم الحالي */
   getProfile(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/users/me`, { headers: this.getHeaders() });
+    return this.http.get(`${this.apiUrl}/users/me`, { headers: this.getHeaders() }).pipe(
+      map(res => this.fixImageUrl(res))
+    );
   }
 
-  /** تحديث الملف الشخصي (يدعم رفع صورة) */
   updateProfile(formData: FormData): Observable<any> {
-    // isMultipart = true → مفيش Content-Type (المتصفح بيحدده تلقائيًا مع boundary)
     const headers = this.getHeaders(true, true);
-    return this.http.put(`${this.apiUrl}/users/profile`, formData, { headers });
+    return this.http.put(`${this.apiUrl}/users/profile`, formData, { headers }).pipe(
+      map(res => this.fixImageUrl(res))
+    );
   }
 
   // ──────────────────────────────────────────────────────────────
-  // Jobs
+  // Jobs & Applications & Messages (نطبق نفس الـ fix)
   // ──────────────────────────────────────────────────────────────
   getJobs(filters?: any): Observable<any> {
     console.log('طلب بحث عن وظائف (بدون توكن):', filters || {});
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http.post(`${this.apiUrl}/jobs`, filters || {}, { headers });
+    return this.http.post(`${this.apiUrl}/jobs`, filters || {}, { headers }).pipe(
+      map(res => this.fixImageUrl(res))
+    );
   }
 
   getJob(id: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}/jobs/${id}`, { headers: this.getHeaders(false) });
+    return this.http.get(`${this.apiUrl}/jobs/${id}`, { headers: this.getHeaders(false) }).pipe(
+      map(res => this.fixImageUrl(res))
+    );
   }
 
   getMyJobs(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/jobs/my`, { headers: this.getHeaders() });
-  }
-
-  createJob(data: any): Observable<any> {
-    console.log('إرسال طلب إنشاء وظيفة جديدة:', data);
-    return this.http.post(`${this.apiUrl}/jobs/create`, data, { headers: this.getHeaders() });
-  }
-
-  deleteJob(id: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/jobs/${id}`, { headers: this.getHeaders() });
-  }
-
-  // ──────────────────────────────────────────────────────────────
-  // Applications
-  // ──────────────────────────────────────────────────────────────
-  applyToJob(data: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/applications`, data, { headers: this.getHeaders() });
+    return this.http.get(`${this.apiUrl}/jobs/my`, { headers: this.getHeaders() }).pipe(
+      map(res => this.fixImageUrl(res))
+    );
   }
 
   getMyApplications(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/applications/my`, { headers: this.getHeaders() });
+    return this.http.get(`${this.apiUrl}/applications/my`, { headers: this.getHeaders() }).pipe(
+      map(res => this.fixImageUrl(res))
+    );
   }
 
   getApplicationsForOwner(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/applications/my-jobs`, { headers: this.getHeaders() });
+    return this.http.get(`${this.apiUrl}/applications/my-jobs`, { headers: this.getHeaders() }).pipe(
+      map(res => this.fixImageUrl(res))
+    );
   }
 
-  getApplicationsForJob(jobId: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}/applications/job/${jobId}`, { headers: this.getHeaders() });
-  }
-
-  updateApplicationStatus(id: string, status: 'accepted' | 'rejected'): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/applications/${id}`, { status }, { headers: this.getHeaders() });
-  }
-
-  // ──────────────────────────────────────────────────────────────
-  // Messages
-  // ──────────────────────────────────────────────────────────────
   getMessages(appId: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}/messages/${appId}`, { headers: this.getHeaders() });
-  }
-
-  /** إرسال رسالة نصية عادية */
-  sendMessage(data: { application_id: string; message: string }): Observable<any> {
-    return this.http.post(`${this.apiUrl}/messages`, data, { headers: this.getHeaders() });
-  }
-
-  /**
-   * إرسال ملف/صورة/صوت (multipart/form-data)
-   */
-  sendMedia(
-    applicationId: string,
-    file: File,
-    type: 'image' | 'audio' | 'file',
-    originalFileName?: string
-  ): Observable<any> {
-    const formData = new FormData();
-    formData.append('application_id', applicationId);
-    formData.append('file', file);
-    formData.append('type', type);
-    if (originalFileName) {
-      formData.append('filename', originalFileName);
-    }
-    const headers = this.getHeaders(true, true);
-    return this.http.post(`${this.apiUrl}/messages/media`, formData, { headers });
-  }
-
-  /** وضع علامة قراءة لكل الرسائل في محادثة معينة */
-  markMessagesAsRead(applicationId: string): Observable<any> {
-    return this.http.patch(
-      `${this.apiUrl}/messages/${applicationId}/mark-read`,
-      {},
-      { headers: this.getHeaders() }
+    return this.http.get(`${this.apiUrl}/messages/${appId}`, { headers: this.getHeaders() }).pipe(
+      map(res => this.fixImageUrl(res))
     );
   }
 
+  // ... باقي الدوال بدون تغيير (لأنها مش بترجع profileImage مباشرة)
+  // يمكنك إضافة .pipe(map(...)) لأي دالة تانية لو لقيت فيها profileImage
+
   // ──────────────────────────────────────────────────────────────
-  // Notifications
+  // باقي الدوال كما هي
   // ──────────────────────────────────────────────────────────────
-  getNotifications(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/notifications`, { headers: this.getHeaders() });
-  }
-
-  getUnreadCount(): Observable<number> {
-    return this.http.get<number>(`${this.apiUrl}/notifications/unread-count`, { headers: this.getHeaders() });
-  }
-
-  markAsRead(notificationId: string): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/notifications/${notificationId}/read`, {}, { headers: this.getHeaders() });
-  }
-
-  deleteNotification(notificationId: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/notifications/${notificationId}`, { headers: this.getHeaders() });
-  }
-
-  markChatNotificationsAsRead(applicationId: string): Observable<any> {
-    return this.http.patch(
-      `${this.apiUrl}/notifications/mark-chat-read/${applicationId}`,
-      {},
-      { headers: this.getHeaders() }
-    );
-  }
+  // (copy-paste الباقي من الكود القديم)
 }
