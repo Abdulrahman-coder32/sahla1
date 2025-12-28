@@ -154,7 +154,20 @@ export class ApiService {
     return this.http.post(`${this.apiUrl}/messages`, data, { headers: this.getHeaders() });
   }
 
-  // **الدالة الجديدة اللي كانت ناقصة (حل خطأ markMessagesAsRead)**
+  // **الدالة الجديدة اللي كانت ناقصة (حل خطأ sendMedia في inbox.component.ts)**
+  sendMedia(applicationId: string, file: File, type: 'image' | 'audio' | 'file', filename?: string): Observable<any> {
+    const formData = new FormData();
+    formData.append('application_id', applicationId);
+    formData.append('file', file);
+    formData.append('type', type);
+    if (filename) {
+      formData.append('filename', filename);
+    }
+    const headers = this.getHeaders(true, true); // multipart → no Content-Type
+    return this.http.post(`${this.apiUrl}/messages/media`, formData, { headers });
+  }
+
+  // **الدالة اللي كانت موجودة (للـ mark as read في inbox)**
   markMessagesAsRead(applicationId: string): Observable<any> {
     return this.http.patch(
       `${this.apiUrl}/messages/${applicationId}/mark-read`,
