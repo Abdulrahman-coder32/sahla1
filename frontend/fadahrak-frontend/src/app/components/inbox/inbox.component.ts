@@ -171,13 +171,13 @@ import {
     .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
     .scrollbar-thin::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
     .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #2563eb; }
-    
+
     /* إضافة لمنع الزوم على الموبايل */
     input[type="text"] {
       font-size: 16px !important;
       -webkit-text-size-adjust: 100%;
     }
-    
+
     /* تحسين الريسبونسفية للحاوي الرئيسي */
     .min-h-screen {
       min-height: 100vh;
@@ -255,20 +255,20 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
 
         this.loadMessages();
 
-        // استقبال الرسائل الجديدة real-time
+        // ← التعديل النهائي: استقبال الرسائل الجديدة في الوقت الفعلي داخل الشات
         this.socketService.onNewMessage((msg: any) => {
+          // نتأكد إن الرسالة للدردشة الحالية
           if (this.selectedApp && msg.application_id === this.selectedApp._id) {
             const normalized = this.normalizeMessage(msg);
 
-            if (normalized.sender_id !== this.currentUserId) {
-              if (!this.messages.some(m => m._id === normalized._id)) {
-                this.messages.push(normalized);
-                this.scrollToBottom();
+            // نتأكد إن الرسالة مش مكررة
+            if (!this.messages.some(m => m._id === normalized._id)) {
+              this.messages.push(normalized);
+              this.scrollToBottom(); // scroll فوري لتحت
 
-                // ← جديد: نصفر إشعارات الشات ده في الناف بار فورًا
+              // لو الرسالة من الطرف الآخر → نصفر الإشعارات والـ unreadCount
+              if (normalized.sender_id !== this.currentUserId) {
                 this.notificationService.markChatNotificationsAsRead(this.selectedApp._id);
-
-                // نصفر unreadCount بتاع الدردشة
                 this.markAsRead();
               }
             }
@@ -284,7 +284,9 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    // نمسح الـ listener عشان ميتكررش لو دخلت الشات مرة تانية
     this.socketService.onNewMessage(() => {});
+
     if (this.mediaRecorder) {
       this.mediaRecorder.stop();
     }
@@ -296,8 +298,6 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
     this.api.markMessagesAsRead(this.selectedApp._id).subscribe({
       next: () => {
         console.log('تم تصفير unreadCount بنجاح للدردشة:', this.selectedApp._id);
-
-        // ← جديد: نصفر إشعارات الشات ده في الناف بار لما نفتح الشات أول مرة
         this.notificationService.markChatNotificationsAsRead(this.selectedApp._id);
       },
       error: (err) => {
@@ -415,8 +415,6 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
       alert('المتصفح لا يدعم التسجيل الصوتي أو يحتاج HTTPS');
       return;
     }
-
-  
 
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then(stream => {
