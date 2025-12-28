@@ -44,7 +44,6 @@ import { AsyncPipe } from '@angular/common';
                     [src]="getOwnerImage()"
                     alt="{{ job.shop_name }}"
                     class="w-32 h-32 sm:w-40 sm:h-40 rounded-full object-cover ring-4 ring-white shadow-2xl">
-                  <!-- إطار خارجي اختياري -->
                   <div class="absolute inset-0 rounded-full border-4 border-blue-500 opacity-20"></div>
                 </div>
               </div>
@@ -136,7 +135,7 @@ export class JobDetailComponent implements OnInit {
   hasApplied = false;
   modalOpen = false;
   applying = false;
-  private cacheBuster = Date.now(); // لكسر الكاش
+  private cacheBuster = Date.now();
 
   constructor(
     private route: ActivatedRoute,
@@ -162,27 +161,25 @@ export class JobDetailComponent implements OnInit {
     }
   }
 
-  // دالة لعرض صورة صاحب الوظيفة مع كسر الكاش
   getOwnerImage(): string {
     const ownerImage = this.job?.owner_id?.profileImage;
     if (!ownerImage) {
-      // صورة افتراضية جميلة بناءً على اسم المتجر
       return `https://ui-avatars.com/api/?name=${encodeURIComponent(this.job?.shop_name || 'متجر')}&background=3b82f6&color=fff&size=128&bold=true&font-size=0.33`;
     }
-    // إضافة timestamp لتجنب مشكلة الكاش
     return `${ownerImage}?t=${this.cacheBuster}`;
   }
 
   checkApplicationStatus() {
     const user = this.authService.getUser();
     if (!user || user.role !== 'job_seeker') return;
+
     this.api.getMyApplications().subscribe({
       next: (apps: any[]) => {
         this.hasApplied = apps.some(app =>
           app.job_id === this.job._id || (app.job_id && app.job_id._id === this.job._id)
         );
       },
-      error: (err: any) => {  // ← أضفنا type عشان نحل implicit any
+      error: (err: any) => {
         console.error('خطأ في جلب حالة التقديم:', err);
         this.hasApplied = false;
       }
@@ -201,15 +198,22 @@ export class JobDetailComponent implements OnInit {
   apply(message: string) {
     if (!message.trim()) return;
     this.applying = true;
-    this.api.applyToJob({ job_id: this.job._id, message: message.trim() }).subscribe({
+
+    this.api.applyToJob({ 
+      jobId: this.job._id,           // ← التعديل الرئيسي: job_id → jobId
+      message: message.trim() 
+    }).subscribe({
       next: () => {
         this.modalOpen = false;
         this.hasApplied = true;
         this.applying = false;
+        // رسالة نجاح أوضح (اختياري)
+        // alert('تم التقديم بنجاح!');
       },
-      error: (err: any) => {  // ← أضفنا type
+      error: (err: any) => {
         console.error('خطأ في التقديم:', err);
-        alert('فشل التقديم، حاول مرة أخرى');
+        const errorMsg = err.error?.msg || err.error?.message || 'حاول مرة أخرى';
+        alert('فشل التقديم: ' + errorMsg);
         this.applying = false;
       }
     });
