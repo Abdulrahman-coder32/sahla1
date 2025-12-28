@@ -203,11 +203,10 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit() {
-    // متابعة تحديث المستخدم الحالي (مهم لتحديث الصورة لو غيرتها)
     this.userSubscription = this.authService.user$.subscribe(user => {
       if (user) {
         this.currentUser = user;
-        this.cacheBuster = Date.now(); // كسر الكاش للصور
+        this.cacheBuster = Date.now();
       }
     });
 
@@ -282,7 +281,12 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  // ── دوال مساعدة (اللي كانت ناقصة) ──
+  // ── دوال مساعدة ──
+  isMyMessage(msg: any): boolean {
+    const senderId = msg.sender_id?._id || msg.sender_id || '';
+    return senderId === this.currentUserId;
+  }
+
   private normalizeMessage(msg: any) {
     const senderId = msg.sender_id?._id || msg.sender_id || '';
     const senderName = senderId === this.currentUserId
@@ -307,17 +311,12 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
         console.log('تم تصفير unreadCount بنجاح للدردشة:', this.selectedApp._id);
         this.notificationService.markChatNotificationsAsRead(this.selectedApp._id);
       },
-      error: (err) => console.error('خطأ في mark as read:', err)
+      error: (err: any) => console.error('خطأ في mark as read:', err)
     });
   }
 
   private goBack() {
     this.router.navigate(['/inbox']);
-  }
-
-  private isMyMessage(msg: any): boolean {
-    const senderId = msg.sender_id?._id || msg.sender_id || '';
-    return senderId === this.currentUserId;
   }
 
   private getOtherUserImage(): string | null {
@@ -328,7 +327,6 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
     return otherUser?.profileImage || null;
   }
 
-  // ── دوال عرض الصور مع كسر الكاش (موجودة بالفعل) ──
   getCurrentUserImage(): string {
     if (!this.currentUser?.profileImage) {
       return `https://via.placeholder.com/40?text=${this.currentUser?.name?.charAt(0) || 'أ'}`;
@@ -356,7 +354,7 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
         this.loading = false;
         this.scrollToBottom();
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('فشل تحميل الرسائل', err);
         this.loading = false;
       }
@@ -385,7 +383,7 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
           this.messages[index] = this.normalizeMessage(savedMsg);
         }
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('فشل الإرسال', err);
         alert('فشل إرسال الرسالة');
         this.messages = this.messages.filter(m => m._id !== tempId);
@@ -393,8 +391,88 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  // ... باقي الدوال (onFilesSelected, uploadFile, toggleRecording, scrollToBottom, getChatName, etc.) ...
-  // يمكنك نسخها من الكود الأصلي إذا كانت موجودة
+  // ── دوال الـ attachments والتسجيل الصوتي (اللي كانت ناقصة) ──
+  onFilesSelected(event: any) {
+    const files: FileList = event.target.files;
+    if (!files?.length || !this.selectedApp) return;
+    Array.from(files).forEach((file: File) => {
+      const maxSize = 10 * 1024 * 1024;
+      if (file.size > maxSize) {
+        alert(`الملف ${file.name} كبير جدًا (الحد الأقصى 10 ميجا)`);
+        return;
+      }
+      const fileObj = { file, status: 'uploading' as const };
+      this.selectedFiles.push(fileObj);
+      this.uploadFile(fileObj);
+    });
+  }
+
+  private uploadFile(fileObj: { file: File; status: 'uploading' | 'success' | 'error' }) {
+    if (!this.selectedApp) return;
+    const type = fileObj.file.type.startsWith('image/') ? 'image' :
+                 fileObj.file.type.startsWith('audio/') ? 'audio' : 'file';
+    this.api.sendMedia(this.selectedApp._id, fileObj.file, type, fileObj.file.name)
+      .subscribe({
+        next: (savedMsg: any) => {
+          fileObj.status = 'success';
+          this.messages.push(this.normalizeMessage(savedMsg));
+          this.scrollToBottom();
+        },
+        error: (err: any) => {
+          console.error('Upload error:', err);
+          fileObj.status = 'error';
+        }
+      });
+  }
+
+  toggleRecording() {
+    this.isRecording ? this.stopRecording() : this.startRecording();
+  }
+
+  private startRecording() {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      alert('المتصفح لا يدعم التسجيل الصوتي أو يحتاج HTTPS');
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        this.mediaRecorder = new MediaRecorder(stream);
+        this.recordedChunks = [];
+        this.isRecording = true;
+        this.mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) this.recordedChunks.push(event.data);
+        };
+        this.mediaRecorder.onstop = () => {
+          const blob = new Blob(this.recordedChunks, { type: 'audio/webm' });
+          this.uploadAudioFile(blob);
+          this.isRecording = false;
+          stream.getTracks().forEach(track => track.stop());
+        };
+        this.mediaRecorder.start();
+      })
+      .catch(err => {
+        console.error('Microphone error:', err);
+        alert('خطأ في الوصول للميكروفون');
+        this.isRecording = false;
+      });
+  }
+
+  private uploadAudioFile(blob: Blob) {
+    const file = new File([blob], `voice-${Date.now()}.webm`, { type: 'audio/webm' });
+    const fileObj = { file, status: 'uploading' as const };
+    this.selectedFiles.push(fileObj);
+    this.uploadFile(fileObj);
+  }
+
+  private stopRecording() {
+    if (this.mediaRecorder) {
+      this.mediaRecorder.stop();
+    }
+  }
+
+  private isDisabledInput(): boolean {
+    return this.isJobSeeker && this.selectedApp?.status !== 'accepted';
+  }
 
   scrollToBottom() {
     setTimeout(() => {
