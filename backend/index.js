@@ -6,7 +6,6 @@ const socketIo = require('socket.io');
 const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
 const path = require('path');
-
 const Message = require('./models/Message');
 const Application = require('./models/Application');
 const Notification = require('./models/Notification');
@@ -15,7 +14,6 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
-
 const io = socketIo(server, {
   cors: {
     origin: process.env.CLIENT_URL || "*",
@@ -25,6 +23,9 @@ const io = socketIo(server, {
 });
 
 app.set('io', io);
+
+// **الإضافة المهمة: خدمة مجلد uploads كـ static files**
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(cors({
   origin: process.env.CLIENT_URL || "*",
@@ -45,7 +46,6 @@ app.use('/api/notifications', require('./routes/notifications'));
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('لا يوجد توكن'));
-
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     socket.user = { id: decoded.id, role: decoded.role };
@@ -57,7 +57,6 @@ io.use((socket, next) => {
 
 io.on('connection', (socket) => {
   console.log('مستخدم متصل بالسوكت:', socket.user?.id, 'دور:', socket.user?.role);
-
   if (socket.user?.id) {
     socket.join(socket.user.id.toString());
   }
@@ -69,7 +68,6 @@ io.on('connection', (socket) => {
 
   socket.on('sendMessage', async ({ application_id, message }) => {
     if (!message.trim()) return;
-
     try {
       const newMessage = new Message({
         application_id,
@@ -143,7 +141,7 @@ io.on('connection', (socket) => {
 app.use(express.static(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend')));
 
 // Named wildcard route لخدمة index.html لكل المسارات غير الـ API
-app.get('/*splat', (req, res) => {
+app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend/index.html'));
 });
 
@@ -157,14 +155,14 @@ app.get('/api/test', (req, res) => {
 // ────────────────────────────────────────
 const connectWithRetry = () => {
   console.log('جاري محاولة الاتصال بـ MongoDB Atlas...');
-  
+
   mongoose.connect(process.env.MONGO_URI, {
     serverSelectionTimeoutMS: 30000,
     socketTimeoutMS: 45000,
   })
   .then(() => {
     console.log('✅ تم الاتصال بـ MongoDB Atlas بنجاح');
-    
+
     const PORT = process.env.PORT || 5000;
     server.listen(PORT, () => {
       console.log(`🚀 السيرفر شغال على البورت ${PORT}`);
