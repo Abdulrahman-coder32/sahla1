@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
 import { AuthService } from './auth.service';
+import { environment } from '../../environments/environment'; // مهم جدًا نستخدم environment
 
 @Injectable({
   providedIn: 'root'
@@ -22,21 +23,43 @@ export class SocketService {
       return;
     }
 
-    this.socket = io('http://localhost:5000', {
-      auth: { token }
+    // ──────────────────────────────────────────────────────────────
+    // الجزء المهم: URL ديناميكي حسب البيئة
+    // ──────────────────────────────────────────────────────────────
+    const socketUrl = environment.production
+      ? window.location.origin  // في الإنتاج: نفس الدومين (مثل https://your-app.koyeb.app)
+      : 'http://localhost:5000'; // في التطوير المحلي فقط
+
+    console.log('جاري الاتصال بالسوكت على:', socketUrl);
+
+    this.socket = io(socketUrl, {
+      auth: { token },
+      transports: ['websocket', 'polling'], // websocket أولًا لأفضل أداء
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
     });
 
+    // ──────────────────────────────────────────────────────────────
+    // Logs مفيدة للتشخيص (هتشوفها في console المتصفح)
+    // ──────────────────────────────────────────────────────────────
     this.socket.on('connect', () => {
-      console.log('متصل بالسوكت بنجاح');
+      console.log('✅ متصل بالسوكت بنجاح على', socketUrl);
     });
 
-    this.socket.on('disconnect', () => {
-      console.log('انفصل عن السوكت');
+    this.socket.on('disconnect', (reason) => {
+      console.log('انفصل عن السوكت، السبب:', reason);
     });
 
     this.socket.on('connect_error', (err) => {
-      console.error('خطأ في الاتصال بالسوكت:', err.message);
+      console.error('❌ خطأ في الاتصال بالسوكت:', err.message);
     });
+
+    // اختياري: لو عايز تشوف كل events جاية
+    // this.socket.onAny((event, ...args) => {
+    //   console.log('Event جاء:', event, args);
+    // });
   }
 
   joinChat(applicationId: string) {
@@ -52,7 +75,7 @@ export class SocketService {
   }
 
   // ──────────────────────────────────────────────────────────────
-  // Listeners للأحداث المختلفة
+  // Listeners للأحداث المختلفة (كلها زي ما هي، تمام)
   // ──────────────────────────────────────────────────────────────
 
   onNewMessage(callback: (msg: any) => void) {
@@ -90,7 +113,6 @@ export class SocketService {
     }
   }
 
-  /** تحديث عدد الرسائل غير المقروءة لمحادثة معينة */
   onUnreadUpdate(callback: (data: { application_id: string; unreadCount: number }) => void) {
     if (this.socket) {
       this.socket.off('unreadUpdate');
@@ -98,10 +120,6 @@ export class SocketService {
     }
   }
 
-  /**
-   * جديد: حدث مهم جداً لتحديث قائمة الدردشات (inbox-list) في الوقت الفعلي
-   * يحتوي على lastMessage + lastTimestamp + unreadCount الصحيح
-   */
   onChatListUpdate(callback: (data: {
     application_id: string;
     lastMessage: string;
