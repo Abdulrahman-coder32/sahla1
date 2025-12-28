@@ -11,7 +11,6 @@ import { Subscription } from 'rxjs';
   imports: [CommonModule, RouterLink],
   template: `
     <div class="w-full overflow-x-hidden bg-gray-50 py-12 px-4 sm:px-6" dir="rtl">
-
       <!-- Unread Notifications Badge -->
       <div *ngIf="unreadNotifications > 0"
            class="fixed top-16 sm:top-20 left-4 right-4 sm:left-4 sm:right-auto z-50
@@ -28,7 +27,6 @@ import { Subscription } from 'rxjs';
 
       <!-- Main Content -->
       <div class="max-w-7xl mx-auto">
-
         <!-- Loading State -->
         <div *ngIf="loading" class="flex flex-col items-center justify-center py-20">
           <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 mb-6"></div>
@@ -53,21 +51,25 @@ import { Subscription } from 'rxjs';
         <div *ngIf="!loading && applications.length > 0" class="space-y-8">
           <div *ngFor="let app of applications"
                class="bg-white p-6 sm:p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.01] border border-gray-100">
-
             <div class="flex flex-col lg:flex-row gap-6 lg:gap-8">
-
               <!-- Applicant Details -->
               <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-3 mb-4">
-                  <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-md">
-                    <i class="fas fa-user text-white text-lg"></i>
+                <div class="flex items-center gap-4 mb-4">
+                  <!-- صورة المتقدم (جديد) -->
+                  <div class="flex-shrink-0">
+                    <img
+                      [src]="getSeekerImage(app)"
+                      alt="{{ app.seeker_id?.name || 'متقدم' }}"
+                      class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover ring-2 ring-blue-500 shadow-md">
                   </div>
-                  <h3 class="text-xl sm:text-2xl font-bold text-gray-900">
-                    {{ app.seeker_id?.name || 'غير معروف' }}
-                    <span class="text-sm font-normal text-gray-600">
-                      (العمر: {{ app.seeker_id?.age || 'غير محدد' }})
-                    </span>
-                  </h3>
+                  <div>
+                    <h3 class="text-xl sm:text-2xl font-bold text-gray-900">
+                      {{ app.seeker_id?.name || 'غير معروف' }}
+                      <span class="text-sm font-normal text-gray-600">
+                        (العمر: {{ app.seeker_id?.age || 'غير محدد' }})
+                      </span>
+                    </h3>
+                  </div>
                 </div>
 
                 <!-- Applicant Info Grid -->
@@ -79,7 +81,6 @@ import { Subscription } from 'rxjs';
                       <p class="text-gray-700 break-all">{{ maskEmail(app.seeker_id?.email) }}</p>
                     </div>
                   </div>
-
                   <div class="flex items-start gap-3">
                     <i class="fas fa-map-marker-alt text-blue-500 mt-1"></i>
                     <div>
@@ -87,7 +88,6 @@ import { Subscription } from 'rxjs';
                       <p class="text-gray-700">{{ app.seeker_id?.governorate }} - {{ app.seeker_id?.city }}</p>
                     </div>
                   </div>
-
                   <div class="flex items-start gap-3">
                     <i class="fas fa-briefcase text-blue-500 mt-1"></i>
                     <div>
@@ -111,7 +111,6 @@ import { Subscription } from 'rxjs';
 
               <!-- Status and Actions -->
               <div class="flex flex-col gap-4 w-full lg:w-auto lg:min-w-[200px]">
-
                 <!-- Status Badge -->
                 <span [class]="getStatusClass(app.status)"
                       class="inline-flex justify-center items-center gap-2
@@ -143,7 +142,6 @@ import { Subscription } from 'rxjs';
                   <i class="fas fa-comments"></i>
                   فتح الدردشة
                 </a>
-
               </div>
             </div>
           </div>
@@ -154,11 +152,11 @@ import { Subscription } from 'rxjs';
 })
 export class ApplicationListComponent implements OnInit, OnDestroy {
   @Input() jobId!: string;
-
   applications: any[] = [];
   loading = true;
   unreadNotifications = 0;
   private socketSubscription!: Subscription;
+  private cacheBuster = Date.now(); // لكسر الكاش للصور
 
   constructor(
     private api: ApiService,
@@ -168,14 +166,11 @@ export class ApplicationListComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Scroll to top
     window.scrollTo(0, 0);
-
     this.loadApplications();
-
     this.socketService.onNewApplication((data: any) => {
       if (data.application.job_id._id === this.jobId) {
         this.applications.unshift(data.application);
         this.unreadNotifications++;
-        // Removed alert for better UX; notifications are shown via badge
       }
     });
   }
@@ -183,14 +178,24 @@ export class ApplicationListComponent implements OnInit, OnDestroy {
   loadApplications() {
     this.loading = true;
     this.api.getApplicationsForJob(this.jobId).subscribe({
-      next: (res) => {
-        this.applications = res;
+      next: (res: any) => {
+        this.applications = res || [];
         this.loading = false;
       },
-      error: () => {
+      error: (err: any) => {
+        console.error('خطأ في جلب المتقدمين:', err);
         this.loading = false;
       }
     });
+  }
+
+  // دالة جديدة لعرض صورة المتقدم مع كسر الكاش
+  getSeekerImage(app: any): string {
+    const seekerImage = app.seeker_id?.profileImage;
+    if (!seekerImage) {
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(app.seeker_id?.name || 'متقدم')}&background=3b82f6&color=fff&size=128&bold=true`;
+    }
+    return `${seekerImage}?t=${this.cacheBuster}`;
   }
 
   acceptApplication(id: string) {
@@ -203,9 +208,13 @@ export class ApplicationListComponent implements OnInit, OnDestroy {
 
   private updateStatus(id: string, status: 'accepted' | 'rejected') {
     this.api.updateApplicationStatus(id, status).subscribe({
-      next: (updatedApp) => {
+      next: (updatedApp: any) => {
         const i = this.applications.findIndex(a => a._id === id);
         if (i !== -1) this.applications[i] = updatedApp;
+      },
+      error: (err: any) => {
+        console.error('خطأ في تحديث حالة التقديم:', err);
+        alert('فشل تحديث الحالة، حاول مرة أخرى');
       }
     });
   }
