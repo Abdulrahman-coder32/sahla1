@@ -42,7 +42,7 @@ app.use('/api/messages', require('./routes/messages'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/notifications', require('./routes/notifications'));
 
-// Socket.IO Logic (محافظ عليه كامل زي ما هو)
+// Socket.IO Logic
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('لا يوجد توكن'));
@@ -137,12 +137,12 @@ io.on('connection', (socket) => {
 });
 
 // ────────────────────────────────────────
-// خدمة Angular Frontend (الحل الصحيح)
+// خدمة Angular Frontend
 // ────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend')));
 
-// Catch-all route لكل المسارات غير الـ API → يرجع index.html
-app.get('*', (req, res) => {
+// Catch-all route متوافق مع Express 5+ (الحل النهائي للمشكلة)
+app.get('/*splat', (req, res) => {
   res.sendFile(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend/index.html'));
 });
 
