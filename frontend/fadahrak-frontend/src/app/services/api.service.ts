@@ -7,7 +7,7 @@ import { map } from 'rxjs/operators';
   providedIn: 'root'
 })
 export class ApiService {
-  private apiUrl = ''; // proxy في الـ dev
+  private apiUrl = '/api'; // proxy في الـ dev
   // دومينك الحقيقي على Koyeb (بدون / في الآخر)
   private imageBaseUrl = 'https://positive-christiana-sahla-18a86cd2.koyeb.app';
 
