@@ -32,7 +32,7 @@ export class ProfileComponent implements OnInit {
     private api: ApiService,
     private authService: AuthService,
     private router: Router,
-    private notification: NotificationService
+    private notification: NotificationService // سيبها موجودة، مش مشكلة
   ) {}
 
   ngOnInit(): void {
@@ -49,7 +49,7 @@ export class ProfileComponent implements OnInit {
       },
       error: (err) => {
         console.error('فشل تحميل البروفايل', err);
-        this.notification.show('فشل تحميل البيانات، حاول مرة أخرى');
+        alert('فشل تحميل البيانات، حاول مرة أخرى'); // ← تغيير هنا
         this.loading = false;
       }
     });
@@ -61,7 +61,7 @@ export class ProfileComponent implements OnInit {
 
     // تحقق من الحجم (حد أقصى 5 ميجا)
     if (file.size > 5 * 1024 * 1024) {
-      this.notification.show('حجم الصورة كبير جدًا، الحد الأقصى 5 ميجا');
+      alert('حجم الصورة كبير جدًا، الحد الأقصى 5 ميجا'); // ← تغيير هنا
       return;
     }
 
@@ -105,11 +105,11 @@ export class ProfileComponent implements OnInit {
         this.isEditing = false;
         this.saving = false;
 
-        this.notification.show('تم تحديث الملف الشخصي بنجاح');
+        alert('تم تحديث الملف الشخصي بنجاح'); // ← تغيير هنا
       },
       error: (err) => {
         console.error('فشل تحديث البروفايل', err);
-        this.notification.show('فشل حفظ التغييرات، حاول مرة أخرى');
+        alert('فشل حفظ التغييرات، حاول مرة أخرى'); // ← تغيير هنا
         this.saving = false;
       }
     });
