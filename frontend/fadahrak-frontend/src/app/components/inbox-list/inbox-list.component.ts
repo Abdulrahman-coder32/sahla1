@@ -4,7 +4,6 @@ import { RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { SocketService } from '../../services/socket.service';
-import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-inbox-list',
@@ -47,6 +46,7 @@ import { Subscription } from 'rxjs';
              [routerLink]="['/inbox', chat._id]"
              class="group relative bg-white p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer border border-gray-100 overflow-hidden
                      {{ chat.unreadCount > 0 ? 'ring-2 ring-blue-500/50 bg-blue-50/50' : 'hover:bg-gray-50' }}">
+
             <!-- Unread Badge -->
             <div *ngIf="chat.unreadCount > 0"
                  class="absolute -top-3 -right-3 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-xl z-10 min-w-[24px] h-7 flex items-center justify-center animate-pulse">
@@ -55,12 +55,9 @@ import { Subscription } from 'rxjs';
 
             <!-- Chat Content -->
             <div class="flex items-center space-x-4 rtl:space-x-reverse">
-              <!-- الأفاتار بالصورة الشخصية -->
-              <div class="flex-shrink-0">
-                <img
-                  [src]="getProfileImageUrl(chat.profileImage, chat.name)"
-                  alt="{{ chat.name }}"
-                  class="w-14 h-14 rounded-full object-cover ring-2 ring-gray-300 shadow-md">
+              <!-- Avatar Placeholder -->
+              <div class="flex-shrink-0 w-14 h-14 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-md">
+                <i class="fas fa-user text-white text-lg"></i>
               </div>
 
               <!-- Chat Details -->
@@ -105,9 +102,6 @@ export class InboxListComponent implements OnInit, OnDestroy {
   loading = true;
   isOwner = false;
   currentUserId: string | null = null;
-  
-  private cacheBuster = Date.now();
-  private userSubscription: Subscription;
 
   constructor(
     private api: ApiService,
@@ -121,43 +115,117 @@ export class InboxListComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     window.scrollTo(0, 0);
-    this.socketService.connect();
+    this.socketService.connect(); // نتأكد إن السوكت متصل
     this.loadAcceptedChats();
     this.setupSocketListeners();
+  }
 
-    // متابعة تحديث المستخدم الحالي (لو هو اللي غيّر صورته)
-    this.userSubscription = this.authService.user$.subscribe(user => {
-      if (user) {
-        this.cacheBuster = Date.now(); // كسر الكاش لما يتغير المستخدم
-        // لو عايز تحديث فوري للقائمة كلها ممكن تضيف this.loadAcceptedChats() هنا
+  ngOnDestroy() {
+    // تنظيف الـ listeners عشان ما يتكررش
+    this.socketService.onChatListUpdate(() => {});
+    this.socketService.onUnreadUpdate(() => {});
+  }
+
+  private setupSocketListeners() {
+    // الحدث الجديد والأهم: تحديث قائمة الدردشات كاملة real-time
+    this.socketService.onChatListUpdate((data: {
+      application_id: string;
+      lastMessage: string;
+      lastTimestamp: Date;
+      unreadCount: number;
+    }) => {
+      console.log('chatListUpdate وصل:', data); // ← للتأكد من القيمة اللي جاية من الـ backend
+
+      const chat = this.chats.find(c => c._id === data.application_id);
+
+      if (chat) {
+        chat.lastMessage = data.lastMessage || '[ملف مرفق]';
+        chat.lastUpdated = new Date(data.lastTimestamp);
+
+        // نستخدم القيمة اللي جاية من الـ backend مباشرة
+        // لأن الـ backend بيرسل unreadCount الصحيح لكل مستخدم (0 للمرسل، +1 للمستقبل)
+        chat.unreadCount = data.unreadCount;
+
+        console.log('تم تحديث الدردشة محليًا:', {
+          id: chat._id,
+          name: chat.name,
+          unreadCount_الجديد: chat.unreadCount,
+          isOwner: this.isOwner
+        });
+      } else {
+        console.log('دردشة جديدة وصلت via socket، بنعمل reload');
+        this.loadAcceptedChats();
+        return;
+      }
+
+      // نقل الدردشة للأعلى دائمًا
+      this.chats = this.chats.filter(c => c._id !== data.application_id);
+      this.chats.unshift(chat);
+    });
+
+    // احتياطي: تحديث العداد فقط (من mark-read أو حالات أخرى)
+    this.socketService.onUnreadUpdate((data: { application_id: string; unreadCount: number }) => {
+      const chat = this.chats.find(c => c._id === data.application_id);
+      if (chat) {
+        chat.unreadCount = data.unreadCount;
+        console.log('unreadUpdate وصل:', data);
+      }
+    });
+
+    // حالات القبول الجديدة
+    if (this.isOwner) {
+      this.socketService.onNewApplication(() => this.loadAcceptedChats());
+    }
+
+    this.socketService.onApplicationUpdate((data: any) => {
+      if (data.status === 'accepted') {
+        this.loadAcceptedChats();
       }
     });
   }
 
-  ngOnDestroy() {
-    this.socketService.onChatListUpdate(() => {});
-    this.socketService.onUnreadUpdate(() => {});
-    this.userSubscription?.unsubscribe();
-  }
-
-  private getProfileImageUrl(profileImage: string | undefined, name: string): string {
-    if (!profileImage) {
-      return `https://via.placeholder.com/56?text=${name?.charAt(0) || 'م'}`;
-    }
-    // نضيف timestamp لكسر الكاش
-    return `${profileImage}?t=${this.cacheBuster}`;
-  }
-
-  // باقي الدوال بدون تغيير
-  private setupSocketListeners() {
-    // ... نفس الكود القديم ...
-  }
-
   private loadAcceptedChats() {
-    // ... نفس الكود القديم ...
+    this.loading = true;
+
+    const apiCall = this.isOwner ? this.api.getApplicationsForOwner() : this.api.getMyApplications();
+
+    apiCall.subscribe({
+      next: (applications: any[]) => {
+        const accepted = applications.filter(app => app.status === 'accepted');
+
+        this.chats = accepted.map(app => {
+          // ← التعديل النهائي: عرض unreadCount الخاص بالمستخدم الحالي فقط
+          let unreadCount = 0;
+          if (this.isOwner) {
+            unreadCount = app.unreadCounts?.owner || 0;  // صاحب العمل يشوف unread بتاعه (owner)
+          } else {
+            unreadCount = app.unreadCounts?.seeker || 0; // المتقدم يشوف unread بتاعه (seeker)
+          }
+
+          return {
+            _id: app._id,
+            name: this.isOwner
+              ? (app.seeker_id?.name || 'باحث عن عمل')
+              : (app.job_id?.shop_name || 'صاحب العمل'),
+            lastMessage: app.lastMessage || 'ابدأ المحادثة',
+            lastUpdated: app.lastTimestamp || app.updatedAt || app.createdAt || new Date(),
+            unreadCount: unreadCount
+          };
+        });
+
+        this.sortChats();
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('خطأ في جلب التطبيقات:', err);
+        this.loading = false;
+      }
+    });
   }
 
   private sortChats() {
-    // ... نفس الكود القديم ...
+    this.chats.sort((a, b) =>
+      new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
+    );
   }
 }
