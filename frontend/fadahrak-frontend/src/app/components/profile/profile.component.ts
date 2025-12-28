@@ -11,7 +11,7 @@ import { NotificationService } from '../../services/notification.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './profile.component.html',
-  styleUrls: ['./profile.component.css'] // صححت السطر هنا
+  styleUrls: ['./profile.component.css']
 })
 export class ProfileComponent implements OnInit {
   user: any = {
@@ -39,6 +39,11 @@ export class ProfileComponent implements OnInit {
     this.loadProfile();
   }
 
+  private notify(message: string) {
+    // مؤقت: استخدام alert، يمكن استبداله بأي طريقة عرض إشعار داخل المشروع لاحقًا
+    alert(message);
+  }
+
   loadProfile() {
     this.loading = true;
     this.api.getProfile().subscribe({
@@ -49,7 +54,7 @@ export class ProfileComponent implements OnInit {
       },
       error: (err) => {
         console.error('فشل تحميل البروفايل', err);
-        this.notification.show('فشل تحميل البيانات، حاول مرة أخرى');
+        this.notify('فشل تحميل البيانات، حاول مرة أخرى');
         this.loading = false;
       }
     });
@@ -60,7 +65,7 @@ export class ProfileComponent implements OnInit {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      this.notification.show('حجم الصورة كبير جدًا، الحد الأقصى 5 ميجا');
+      this.notify('حجم الصورة كبير جدًا، الحد الأقصى 5 ميجا');
       return;
     }
 
@@ -101,11 +106,11 @@ export class ProfileComponent implements OnInit {
         this.isEditing = false;
         this.saving = false;
 
-        this.notification.show('تم تحديث الملف الشخصي بنجاح');
+        this.notify('تم تحديث الملف الشخصي بنجاح');
       },
       error: (err) => {
         console.error('فشل تحديث البروفايل', err);
-        this.notification.show('فشل حفظ التغييرات، حاول مرة أخرى');
+        this.notify('فشل حفظ التغييرات، حاول مرة أخرى');
         this.saving = false;
       }
     });
@@ -118,7 +123,6 @@ export class ProfileComponent implements OnInit {
     this.isEditing = false;
   }
 
-  // إضافة دالة getTimestamp() لاستخدامها في HTML
   getTimestamp(): number {
     return new Date().getTime();
   }
