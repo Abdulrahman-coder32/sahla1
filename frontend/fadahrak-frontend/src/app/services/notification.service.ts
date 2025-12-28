@@ -24,12 +24,10 @@ export class NotificationService implements OnDestroy {
   init() {
     if (this.initialized) return;
     this.initialized = true;
-
     console.log('NotificationService: بدء التهيئة...');
+
     this.socketService.connect();
-
     this.setupSocketListeners();
-
     this.loadNotifications();
     this.loadUnreadCount();
   }
@@ -62,11 +60,9 @@ export class NotificationService implements OnDestroy {
     if (!exists) {
       const updated = [notification, ...current];
       this.notificationsSubject.next(updated);
-
       if (!notification.read) {
         this.incrementUnreadCount();
       }
-
       console.log('✨ إشعار جديد وصل:', notification.message || notification);
     }
   }
@@ -77,7 +73,10 @@ export class NotificationService implements OnDestroy {
         const count = res?.count ?? res ?? 0;
         this.unreadCountSubject.next(count);
       },
-      error: () => this.unreadCountSubject.next(0)
+      error: (err: any) => {
+        console.error('خطأ في جلب عدد الإشعارات غير المقروءة:', err);
+        this.unreadCountSubject.next(0);
+      }
     });
     this.subscriptions.push(sub);
   }
@@ -89,24 +88,32 @@ export class NotificationService implements OnDestroy {
         if (res?.data && Array.isArray(res.data)) notifications = res.data;
         else if (Array.isArray(res)) notifications = res;
         else if (res?.notifications && Array.isArray(res.notifications)) notifications = res.notifications;
+        else notifications = []; // fallback لو الـ response مش متوقع
 
         const sorted = notifications.sort((a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
         this.notificationsSubject.next(sorted);
       },
-      error: () => this.notificationsSubject.next([])
+      error: (err: any) => {
+        console.error('خطأ في جلب الإشعارات:', err);
+        this.notificationsSubject.next([]);
+      }
     });
     this.subscriptions.push(sub);
   }
 
-  getNotifications() { return this.notifications$; }
-  getUnreadCount() { return this.unreadCount$; }
+  getNotifications() {
+    return this.notifications$;
+  }
+
+  getUnreadCount() {
+    return this.unreadCount$;
+  }
 
   markAllAsRead() {
     const current = this.notificationsSubject.value;
     const allRead = current.map(n => ({ ...n, read: true }));
-
     this.notificationsSubject.next(allRead);
     this.unreadCountSubject.next(0);
   }
@@ -120,17 +127,16 @@ export class NotificationService implements OnDestroy {
         this.notificationsSubject.next(updated);
         this.loadUnreadCount();
       },
-      error: (err) => console.error('خطأ في تحديث حالة القراءة:', err)
+      error: (err: any) => {
+        console.error('خطأ في تحديث حالة القراءة:', err);
+      }
     });
     this.subscriptions.push(sub);
   }
 
-  // ← التعديل النهائي والأخير: نحدث محليًا + في الداتابيز
   markChatNotificationsAsRead(applicationId: string) {
     const current = this.notificationsSubject.value;
-
     let unreadDecreased = 0;
-
     const updated = current.map(n => {
       if (n.type === 'new_message' && n.application_id === applicationId && !n.read) {
         unreadDecreased++;
@@ -140,22 +146,19 @@ export class NotificationService implements OnDestroy {
     });
 
     this.notificationsSubject.next(updated);
-
     const newCount = Math.max(0, this.unreadCountSubject.value - unreadDecreased);
     this.unreadCountSubject.next(newCount);
 
-    // ← جديد: نرسل للـ backend عشان يحدث الداتابيز (السبب في حل مشكلة الريفريش)
-    this.api.markChatNotificationsAsRead(applicationId).subscribe({
+    // تحديث في الـ backend
+    const sub = this.api.markChatNotificationsAsRead(applicationId).subscribe({
       next: () => {
         console.log('تم تحديث إشعارات الشات في الداتابيز بنجاح:', applicationId);
-        // اختياري: نجيب العداد تاني من الـ API عشان نتأكد
-        // this.loadUnreadCount();
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('خطأ في تحديث إشعارات الشات في الـ backend:', err);
-        // حتى لو فشل، الـ frontend شغال محليًا، فالإشعار مختفي
       }
     });
+    this.subscriptions.push(sub);
   }
 
   incrementUnreadCount() {
