@@ -10,14 +10,25 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [CommonModule, RouterLink, ApplyModalComponent],
   template: `
-    <div class="bg-white rounded-2xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow duration-300">
+    <div class="bg-white rounded-2xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+      <!-- صورة صاحب الوظيفة + اسم المتجر -->
+      <div class="p-4 sm:p-5 flex items-center gap-4 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div class="flex-shrink-0">
+          <img
+            [src]="getOwnerImage()"
+            alt="{{ job.shop_name }}"
+            class="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover ring-2 ring-white shadow-md">
+        </div>
+        <div>
+          <h3 class="text-lg sm:text-xl font-bold text-primary">
+            {{ job.shop_name }}
+          </h3>
+          <p class="text-sm text-gray-600">صاحب العمل</p>
+        </div>
+      </div>
 
+      <!-- باقي التفاصيل -->
       <div class="p-4 sm:p-5">
-
-        <h3 class="text-lg sm:text-xl font-bold text-primary mb-3">
-          {{ job.shop_name }}
-        </h3>
-
         <div class="space-y-2 mb-5 text-gray-700 text-sm sm:text-base">
           <p class="flex items-center gap-2">
             <i class="fas fa-tag text-primary text-sm sm:text-base"></i>
@@ -34,7 +45,6 @@ import { AuthService } from '../../services/auth.service';
         </div>
 
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-
           <a routerLink="/job/{{job._id}}"
              class="text-primary text-sm sm:text-base hover:underline transition-all flex items-center gap-1">
             <i class="fas fa-eye text-sm"></i>
@@ -49,13 +59,12 @@ import { AuthService } from '../../services/auth.service';
             تقديم الآن
           </button>
 
-          <!-- بعد التقديم (ثابت وواضح) -->
+          <!-- بعد التقديم -->
           <span *ngIf="isJobSeeker && hasApplied"
                 class="text-green-600 text-sm sm:text-base font-semibold flex items-center gap-1">
             <i class="fas fa-check-circle"></i>
             تم التقديم
           </span>
-
         </div>
       </div>
 
@@ -78,8 +87,9 @@ export class JobCardComponent {
   @Input() job: any;
   @Input() hasApplied = false;
   @Output() applySuccess = new EventEmitter<void>();
-
   modalOpen = false;
+
+  private cacheBuster = Date.now();
 
   constructor(
     private api: ApiService,
@@ -89,6 +99,16 @@ export class JobCardComponent {
   get isJobSeeker(): boolean {
     const user = this.authService.getUser();
     return this.authService.isLoggedIn() && user?.role === 'job_seeker';
+  }
+
+  // دالة جديدة لجلب صورة صاحب الوظيفة مع كسر الكاش
+  getOwnerImage(): string {
+    const ownerImage = this.job?.owner_id?.profileImage;
+    if (!ownerImage) {
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(this.job.shop_name || 'متجر')}&background=3b82f6&color=fff&size=128&bold=true`;
+    }
+    // إضافة timestamp لتجنب مشكلة الكاش
+    return `${ownerImage}?t=${this.cacheBuster}`;
   }
 
   openModal() {
@@ -106,15 +126,12 @@ export class JobCardComponent {
     }).subscribe({
       next: () => {
         this.modalOpen = false;
-
-        // تغيير الحالة فورًا
         this.hasApplied = true;
-
-        // رجوع لأول الصفحة
         window.scrollTo({ top: 0, behavior: 'smooth' });
-
-        // إبلاغ الأب (لو بيعمل reload)
         this.applySuccess.emit();
+      },
+      error: (err) => {
+        console.error('خطأ في التقديم:', err);
       }
     });
   }
