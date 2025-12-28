@@ -1,187 +1,121 @@
-/* Container */
-.profile-container {
-  max-width: 600px;
-  margin: 20px auto;
-  padding: 20px;
-  background: #f9f9f9;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  font-family: 'Arial', sans-serif;
-}
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
+import { Router } from '@angular/router';
+import { NotificationService } from '../../services/notification.service';
 
-/* Header */
-.profile-header {
-  text-align: center;
-  margin-bottom: 20px;
-}
+@Component({
+  selector: 'app-profile',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './profile.component.html',
+  styleUrls: ['./profile.component.css']
+})
+export class ProfileComponent implements OnInit {
+  user: any = {
+    name: '',
+    email: '',
+    phone: '',
+    role: '',
+    profileImage: ''
+  };
 
-.profile-header h2 {
-  color: #333;
-  font-size: 24px;
-  margin: 0;
-}
+  isEditing = false;
+  selectedFile: File | null = null;
+  previewUrl: string | null = null;
+  loading = true;
+  saving = false;
 
-/* Loading Spinner */
-.loading-spinner {
-  text-align: center;
-  padding: 50px;
-}
+  constructor(
+    private api: ApiService,
+    private authService: AuthService,
+    private router: Router,
+    private notification: NotificationService
+  ) {}
 
-.spinner {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #007bff;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 10px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Profile Content */
-.profile-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-/* Profile Image */
-.profile-image-section {
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.profile-image {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid #007bff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.image-upload {
-  margin-top: 10px;
-}
-
-.upload-btn {
-  background: #28a745;
-  color: white;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.3s;
-}
-
-.upload-btn:hover {
-  background: #218838;
-}
-
-/* Profile Details */
-.profile-details {
-  width: 100%;
-  max-width: 400px;
-}
-
-.form-group {
-  margin-bottom: 15px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-  color: #555;
-}
-
-.form-control {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 16px;
-  box-sizing: border-box;
-}
-
-.form-control[readonly] {
-  background: #e9ecef;
-  cursor: not-allowed;
-}
-
-/* Action Buttons */
-.action-buttons {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.3s;
-  min-width: 100px;
-}
-
-.btn-edit {
-  background: #28a745;
-  color: white;
-}
-
-.btn-edit:hover {
-  background: #218838;
-}
-
-.btn-save {
-  background: #007bff;
-  color: white;
-}
-
-.btn-save:hover:not(:disabled) {
-  background: #0056b3;
-}
-
-.btn-save:disabled {
-  background: #6c757d;
-  cursor: not-allowed;
-}
-
-.btn-cancel {
-  background: #dc3545;
-  color: white;
-}
-
-.btn-cancel:hover {
-  background: #c82333;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .profile-container {
-    margin: 10px;
-    padding: 15px;
+  ngOnInit() {
+    this.loadProfile();
   }
 
-  .profile-image {
-    width: 100px;
-    height: 100px;
+  loadProfile() {
+    this.loading = true;
+    this.api.getProfile().subscribe({
+      next: (data: any) => {
+        this.user = data;
+        this.previewUrl = data.profileImage || null;
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('فشل تحميل البروفايل', err);
+        this.notification.show('فشل تحميل البيانات');
+        this.loading = false;
+        this.router.navigate(['/inbox']);
+      }
+    });
   }
 
-  .form-control {
-    font-size: 14px;
+  onFileSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        this.notification.show('حجم الصورة لا يتجاوز 5 ميجا');
+        return;
+      }
+
+      this.selectedFile = file;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.previewUrl = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
   }
 
-  .btn {
-    padding: 8px 16px;
-    font-size: 14px;
+  toggleEdit() {
+    this.isEditing = !this.isEditing;
+  }
+
+  saveProfile() {
+    if (this.saving) return;
+
+    this.saving = true;
+
+    const formData = new FormData();
+    formData.append('name', this.user.name);
+    formData.append('phone', this.user.phone || '');
+
+    if (this.selectedFile) {
+      formData.append('profileImage', this.selectedFile);
+    }
+
+    this.api.updateProfile(formData).subscribe({
+      next: (updatedUser: any) => {
+        // تحديث الـ currentUser في AuthService
+        this.authService.updateCurrentUser(updatedUser);
+
+        this.user = updatedUser;
+        this.previewUrl = updatedUser.profileImage || null;
+        this.isEditing = false;
+        this.selectedFile = null;
+        this.saving = false;
+
+        this.notification.show('تم تحديث البروفايل بنجاح');
+      },
+      error: (err) => {
+        console.error('فشل تحديث البروفايل', err);
+        this.notification.show('فشل حفظ التغييرات');
+        this.saving = false;
+      }
+    });
+  }
+
+  cancelEdit() {
+    this.loadProfile();
+    this.isEditing = false;
+    this.selectedFile = null;
+    this.previewUrl = this.user.profileImage || null;
   }
 }
