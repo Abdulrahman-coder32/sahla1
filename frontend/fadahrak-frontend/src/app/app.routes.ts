@@ -9,9 +9,10 @@ import { LoginComponent } from './components/login/login.component';
 import { SignupComponent } from './components/signup/signup.component';
 import { OwnerDashboardComponent } from './components/owner-dashboard/owner-dashboard.component';
 import { SeekerDashboardComponent } from './components/seeker-dashboard/seeker-dashboard.component';
-import { InboxListComponent } from './components/inbox-list/inbox-list.component'; // ← جديد
-import { InboxComponent } from './components/inbox/inbox.component'; // الچات الفردي
+import { InboxListComponent } from './components/inbox-list/inbox-list.component';
+import { InboxComponent } from './components/inbox/inbox.component';
 import { NotificationsPageComponent } from './components/notifications-page/notifications-page.component';
+import { ProfileComponent } from './components/profile/profile.component'; // ← جديد
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -25,10 +26,9 @@ export const routes: Routes = [
   { path: 'owner-dashboard', component: OwnerDashboardComponent },
   { path: 'seeker-dashboard', component: SeekerDashboardComponent },
   { path: 'notifications', component: NotificationsPageComponent },
-
-  // ← الصحيح: قائمة الدردشات + الچات الفردي
-  { path: 'inbox', component: InboxListComponent },     // ← صفحة القائمة (الجديدة)
-  { path: 'inbox/:id', component: InboxComponent },    // ← الچات الفردي (القديم)
-
+  { path: 'profile', component: ProfileComponent }, // ← جديد: صفحة الملف الشخصي
+  // قائمة الدردشات + الچات الفردي
+  { path: 'inbox', component: InboxListComponent },
+  { path: 'inbox/:id', component: InboxComponent },
   { path: '**', redirectTo: '' }
 ];
