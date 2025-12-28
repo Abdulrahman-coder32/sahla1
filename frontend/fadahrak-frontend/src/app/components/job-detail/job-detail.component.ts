@@ -18,13 +18,11 @@ import { AsyncPipe } from '@angular/common';
       (onClose)="closeModal()"
       (onSubmit)="apply($event)">
     </app-apply-modal>
-
     <ng-template #noUser></ng-template>
 
     <div class="min-h-screen bg-gray-50 py-12 px-4 sm:py-16 lg:py-20">
       <div class="max-w-4xl sm:max-w-5xl mx-auto">
         <div class="bg-white p-6 sm:p-8 md:p-12 shadow-2xl rounded-2xl border border-gray-100">
-
           <!-- زر الرجوع -->
           <button
             (click)="goBack()"
@@ -41,9 +39,18 @@ import { AsyncPipe } from '@angular/common';
 
           <!-- تفاصيل الوظيفة -->
           <div *ngIf="!loading && job" class="space-y-10">
-
-            <!-- الهيدر -->
-            <div class="text-center space-y-3">
+            <!-- الهيدر مع الصورة -->
+            <div class="text-center space-y-4">
+              <div class="flex justify-center">
+                <div class="relative">
+                  <img
+                    [src]="getOwnerImage()"
+                    alt="{{ job.shop_name }}"
+                    class="w-32 h-32 sm:w-40 sm:h-40 rounded-full object-cover ring-4 ring-white shadow-2xl">
+                  <!-- إطار خارجي اختياري -->
+                  <div class="absolute inset-0 rounded-full border-4 border-blue-500 opacity-20"></div>
+                </div>
+              </div>
               <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900">{{ job.shop_name }}</h1>
               <p class="text-2xl sm:text-3xl text-gray-800 font-semibold">{{ job.category }}</p>
               <p class="text-xl sm:text-2xl text-gray-600 flex items-center justify-center gap-2">
@@ -60,14 +67,12 @@ import { AsyncPipe } from '@angular/common';
                 </h3>
                 <p class="text-lg text-gray-800">{{ job.working_hours }}</p>
               </div>
-
               <div class="bg-green-50 p-6 rounded-xl shadow-lg text-center hover:shadow-xl transition-shadow">
                 <h3 class="text-xl font-bold mb-2 flex items-center justify-center gap-2 text-green-600">
                   <i class="fas fa-money-bill-wave text-2xl"></i> الراتب
                 </h3>
                 <p class="text-lg text-gray-800">{{ job.salary || 'حسب الاتفاق' }}</p>
               </div>
-
               <div class="bg-blue-50 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow md:col-span-2 lg:col-span-1">
                 <h3 class="text-xl font-bold mb-2 flex items-center justify-center gap-2 text-blue-600">
                   <i class="fas fa-list-ul text-2xl"></i> المتطلبات
@@ -89,14 +94,12 @@ import { AsyncPipe } from '@angular/common';
                   <i class="fas fa-spinner fa-spin" *ngIf="applying"></i>
                   {{ applying ? 'جاري التقديم...' : 'تقديم على الوظيفة الآن' }}
                 </button>
-
                 <!-- تم التقديم -->
                 <div *ngIf="user.role === 'job_seeker' && hasApplied"
                      class="inline-flex items-center gap-4 bg-green-100 text-green-800 px-10 sm:px-12 py-4 sm:py-5 rounded-full text-xl font-bold shadow-lg">
                   <i class="fas fa-check-circle text-3xl"></i>
                   تم التقديم بنجاح!
                 </div>
-
                 <!-- صاحب المحل -->
                 <div *ngIf="user.role === 'shop_owner'"
                      class="inline-flex items-center gap-4 bg-indigo-100 text-indigo-800 px-10 sm:px-12 py-4 sm:py-5 rounded-full text-xl font-bold shadow-lg">
@@ -104,7 +107,6 @@ import { AsyncPipe } from '@angular/common';
                   هذه إحدى وظائفك! تابع المتقدمين من لوحة التحكم
                 </div>
               </div>
-
               <!-- لغير المسجلين -->
               <p *ngIf="!(authService.user$ | async)" class="text-lg text-gray-600">
                 لازم
@@ -113,7 +115,6 @@ import { AsyncPipe } from '@angular/common';
                 عشان تتقدم على الوظيفة
               </p>
             </div>
-
           </div>
 
           <!-- الوظيفة غير موجودة -->
@@ -142,6 +143,8 @@ export class JobDetailComponent implements OnInit {
   modalOpen = false;
   applying = false;
 
+  private cacheBuster = Date.now(); // لكسر الكاش
+
   constructor(
     private route: ActivatedRoute,
     private api: ApiService,
@@ -166,10 +169,20 @@ export class JobDetailComponent implements OnInit {
     }
   }
 
+  // دالة جديدة لعرض صورة صاحب الوظيفة
+  getOwnerImage(): string {
+    const ownerImage = this.job?.owner_id?.profileImage;
+    if (!ownerImage) {
+      // صورة افتراضية جميلة بناءً على اسم المتجر
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(this.job?.shop_name || 'متجر')}&background=3b82f6&color=fff&size=128&bold=true&font-size=0.33`;
+    }
+    // إضافة timestamp لتجنب مشكلة الكاش
+    return `${ownerImage}?t=${this.cacheBuster}`;
+  }
+
   checkApplicationStatus() {
     const user = this.authService.getUser();
     if (!user || user.role !== 'job_seeker') return;
-
     this.api.getMyApplications().subscribe({
       next: (apps: any[]) => {
         this.hasApplied = apps.some(app =>
@@ -191,7 +204,6 @@ export class JobDetailComponent implements OnInit {
 
   apply(message: string) {
     if (!message.trim()) return;
-
     this.applying = true;
     this.api.applyToJob({ job_id: this.job._id, message: message.trim() }).subscribe({
       next: () => {
