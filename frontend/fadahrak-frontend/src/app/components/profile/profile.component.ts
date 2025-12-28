@@ -123,4 +123,5 @@ export class ProfileComponent implements OnInit {
   getTimestamp(): number {
     return Date.now();
   }
+  
 }
