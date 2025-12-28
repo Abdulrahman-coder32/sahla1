@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef, inject } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef, inject, NgZone } from '@angular/core'; // ← أضفنا NgZone هنا
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -172,13 +172,11 @@ import {
     .scrollbar-thin::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
     .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #2563eb; }
 
-    /* إضافة لمنع الزوم على الموبايل */
     input[type="text"] {
       font-size: 16px !important;
       -webkit-text-size-adjust: 100%;
     }
 
-    /* تحسين الريسبونسفية للحاوي الرئيسي */
     .min-h-screen {
       min-height: 100vh;
       min-height: -webkit-fill-available;
@@ -199,6 +197,8 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
   isRecording = false;
   mediaRecorder: MediaRecorder | null = null;
   recordedChunks: Blob[] = [];
+
+  private ngZone = inject(NgZone); // ← استخدمنا inject لـ NgZone
 
   constructor(
     private route: ActivatedRoute,
@@ -250,46 +250,26 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
         this.chatName = this.getChatName(this.selectedApp);
         this.socketService.joinChat(this.selectedApp._id);
 
-        // تصفير unreadCount + إشعارات الناف بار فور فتح الدردشة
         this.markAsRead();
 
         this.loadMessages();
 
-        // ← تشخيص + حل نهائي لاستقبال الرسائل داخل الشات في الوقت الفعلي
+        // ← الحل النهائي: استقبال الرسائل داخل Angular Zone
         this.socketService.onNewMessage((msg: any) => {
-          console.log('🔔 [InboxComponent] تلقيت event newMessage:', msg);
-          console.log('   application_id في الرسالة:', msg.application_id);
-          console.log('   selectedApp._id الحالي:', this.selectedApp?._id);
-          console.log('   هل متطابقين؟', msg.application_id === this.selectedApp?._id);
-
           if (this.selectedApp && msg.application_id === this.selectedApp._id) {
             const normalized = this.normalizeMessage(msg);
 
-            console.log('   الرسالة بعد normalize:', normalized);
-            console.log('   هل الـ _id موجود بالفعل في messages؟', this.messages.some(m => m._id === normalized._id));
-
             if (!this.messages.some(m => m._id === normalized._id)) {
-              console.log('✅ هضيف الرسالة الجديدة للـ messages array دلوقتي');
-
-              // الحل المهم: نضيف الرسالة داخل NgZone عشان Angular يكتشف التغيير
-              import('@angular/core').then(({ NgZone }) => {
-                inject(NgZone).run(() => {
-                  this.messages.push(normalized);
-                  console.log('   تم إضافة الرسالة، عدد الرسائل الآن:', this.messages.length);
-                  this.scrollToBottom();
-                });
+              this.ngZone.run(() => {
+                this.messages.push(normalized);
+                this.scrollToBottom();
               });
 
-              // لو الرسالة من الطرف الآخر → نصفر الإشعارات والـ unreadCount
               if (normalized.sender_id !== this.currentUserId) {
                 this.notificationService.markChatNotificationsAsRead(this.selectedApp._id);
                 this.markAsRead();
               }
-            } else {
-              console.log('   الرسالة مكررة، مش هضيفها');
             }
-          } else {
-            console.log('   الرسالة لشات تاني، متجاهلها هنا');
           }
         });
       },
@@ -302,9 +282,7 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    // نمسح الـ listener عشان ميتكررش لو دخلت الشات مرة تانية
     this.socketService.onNewMessage(() => {});
-
     if (this.mediaRecorder) {
       this.mediaRecorder.stop();
     }
@@ -318,9 +296,7 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
         console.log('تم تصفير unreadCount بنجاح للدردشة:', this.selectedApp._id);
         this.notificationService.markChatNotificationsAsRead(this.selectedApp._id);
       },
-      error: (err) => {
-        console.error('خطأ في mark as read:', err);
-      }
+      error: (err) => console.error('خطأ في mark as read:', err)
     });
   }
 
@@ -414,8 +390,10 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
       .subscribe({
         next: (savedMsg: any) => {
           fileObj.status = 'success';
-          this.messages.push(this.normalizeMessage(savedMsg));
-          this.scrollToBottom();
+          this.ngZone.run(() => {
+            this.messages.push(this.normalizeMessage(savedMsg));
+            this.scrollToBottom();
+          });
         },
         error: (err) => {
           console.error('Upload error:', err);
@@ -485,22 +463,23 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
 
     return {
       ...msg,
-      _id: msg._id,
+      _id: msg._id || 'temp-' + Date.now(),
       sender_id: senderId,
       sender_name: senderName,
-      timestamp: msg.timestamp || new Date(),
+      timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
       message: msg.message || '',
-      type: msg.type || 'text'
+      type: msg.type || 'text',
+      url: msg.url || null,
+      filename: msg.filename || null
     };
   }
 
   scrollToBottom() {
     setTimeout(() => {
       if (this.messagesContainer?.nativeElement) {
-        this.messagesContainer.nativeElement.scrollTop =
-          this.messagesContainer.nativeElement.scrollHeight;
+        this.messagesContainer.nativeElement.scrollTop = this.messagesContainer.nativeElement.scrollHeight;
       }
-    }, 150);
+    }, 100);
   }
 
   getChatName(app: any) {
