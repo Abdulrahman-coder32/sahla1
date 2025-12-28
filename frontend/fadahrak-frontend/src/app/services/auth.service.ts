@@ -8,31 +8,55 @@ export class AuthService {
   private userSubject = new BehaviorSubject<any>(null);
   user$ = this.userSubject.asObservable();
 
+  private cacheBuster = Date.now(); // ← نستخدمه لكسر كاش الصور
+
   constructor() {
     const storedUser = localStorage.getItem('user');
     const storedToken = localStorage.getItem('token');
+
     if (storedUser && storedToken) {
-      this.userSubject.next(JSON.parse(storedUser));
+      const user = JSON.parse(storedUser);
+      // لو فيه صورة قديمة → نضيف timestamp قديم عشان ما يتغيرش فجأة
+      if (user?.profileImage) {
+        user.profileImage = this.appendCacheBuster(user.profileImage);
+      }
+      this.userSubject.next(user);
       console.log('تم تحميل المستخدم من localStorage');
     }
   }
 
   setUser(user: any, token: string) {
+    const userCopy = { ...user };
+    if (userCopy?.profileImage) {
+      userCopy.profileImage = this.appendCacheBuster(userCopy.profileImage);
+    }
+
     localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    this.userSubject.next(user);
+    localStorage.setItem('user', JSON.stringify(userCopy));
+    this.userSubject.next(userCopy);
     console.log('تم حفظ التوكن والمستخدم في localStorage');
   }
 
-  /** جديد: تحديث بيانات المستخدم الحالي (يُستخدم بعد تعديل البروفايل) */
   updateCurrentUser(updatedUser: any) {
-    // تحديث localStorage
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+    const userCopy = { ...updatedUser };
 
-    // تحديث BehaviorSubject عشان كل الكومبوننتس تتحدث فورًا
-    this.userSubject.next(updatedUser);
+    // كسر الكاش للصورة لو موجودة
+    if (userCopy?.profileImage) {
+      userCopy.profileImage = this.appendCacheBuster(userCopy.profileImage);
+      this.cacheBuster = Date.now(); // تحديث القيمة للمرة القادمة
+    }
 
-    console.log('تم تحديث بيانات المستخدم في AuthService:', updatedUser);
+    localStorage.setItem('user', JSON.stringify(userCopy));
+    this.userSubject.next(userCopy);
+
+    console.log('تم تحديث بيانات المستخدم في AuthService:', userCopy);
+  }
+
+  private appendCacheBuster(url: string): string {
+    // لو الـ URL فيه query string بالفعل → نضيف &t=...
+    // لو مفيهوش → نضيف ?t=...
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}t=${this.cacheBuster}`;
   }
 
   logout() {
@@ -42,7 +66,6 @@ export class AuthService {
     console.log('تم تسجيل الخروج');
   }
 
-  // دالة جلب المستخدم الحالي
   getUser() {
     return this.userSubject.value;
   }
