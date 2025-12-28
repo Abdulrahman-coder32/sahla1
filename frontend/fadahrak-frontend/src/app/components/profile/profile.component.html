@@ -20,7 +20,7 @@
           <div class="relative">
             <div class="w-32 h-32 rounded-full overflow-hidden border-6 border-white shadow-2xl">
               <img
-                [src]="previewUrl ? (previewUrl + '?t=' + Date.now()) : 'https://ui-avatars.com/api/?name=' + (user.name || 'م') + '&background=3b82f6&color=fff&size=150&bold=true&font-size=0.33'"
+                [src]="previewUrl ? (previewUrl + '?t=' + getTimestamp()) : 'https://ui-avatars.com/api/?name=' + (user.name || 'م') + '&background=3b82f6&color=fff&size=150&bold=true&font-size=0.33'"
                 alt="صورة الملف الشخصي"
                 class="w-full h-full object-cover">
             </div>
