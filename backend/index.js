@@ -24,7 +24,7 @@ const io = socketIo(server, {
 
 app.set('io', io);
 
-// **الإضافة المهمة: خدمة مجلد uploads كـ static files**
+// خدمة مجلد uploads كـ static
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(cors({
@@ -32,7 +32,7 @@ app.use(cors({
   credentials: true
 }));
 
-// 🔴 التعديل المهم جدًا: زيادة حد حجم الـ body لدعم base64 كبير
+// زيادة حد حجم الـ body لدعم base64
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
@@ -44,7 +44,7 @@ app.use('/api/messages', require('./routes/messages'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/notifications', require('./routes/notifications'));
 
-// Socket.IO Logic
+// Socket.IO Logic (نفس الكود بتاعك تمام)
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('لا يوجد توكن'));
@@ -144,9 +144,14 @@ io.on('connection', (socket) => {
 // ────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend')));
 
-// Catch-all route للـ Angular routing
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend/index.html'));
+// Catch-all route آمن ومتوافق مع Express 5+ (بدل app.get('*'))
+app.use((req, res, next) => {
+  // لو الطلب GET ومش يبدأ بـ /api → ارجع index.html للـ Angular routing
+  if (req.method === 'GET' && !req.path.startsWith('/api')) {
+    res.sendFile(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend/index.html'));
+  } else {
+    next();
+  }
 });
 
 // Test route
