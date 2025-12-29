@@ -42,8 +42,8 @@ export class ApiService {
   }
 
   private cleanUrl(url: string): string {
-    // نزيل كل query string قديمة (كل ?t=... المتكررة)
     if (!url) return '';
+    // نزيل كل query string (كل ? وما بعدها)
     return url.split('?')[0];
   }
 
@@ -52,10 +52,10 @@ export class ApiService {
     const timestamp = Date.now();
 
     if (data.profileImage && typeof data.profileImage === 'string') {
-      const clean = this.cleanUrl(data.profileImage);
+      const clean = this.cleanUrl(data.profileImage); // ← تنظيف الـ URL القديم
       const base = this.prependBaseUrl(clean);
       data.profileImage = `${base}?t=${timestamp}`;
-      console.log('addCacheBuster applied to profileImage:', data.profileImage); // للتصحيح
+      console.log('addCacheBuster applied (cleaned):', data.profileImage); // للتصحيح
     }
 
     if (Array.isArray(data)) {
