@@ -25,13 +25,13 @@
           <div class="relative inline-block">
             <div class="avatar-container">
               <!-- الصورة الحقيقية -->
-              <img *ngIf="previewUrl && user?.profileImage !== 'default.jpg'"
+              <img *ngIf="previewUrl"
                    [src]="previewUrl"
                    alt="صورة الملف الشخصي"
                    class="profile-avatar w-full h-full object-cover">
 
-              <!-- Placeholder: أول حرفين من الاسم -->
-              <div *ngIf="!previewUrl || user?.profileImage === 'default.jpg'"
+              <!-- Placeholder: أول حرفين من الاسم (للحسابات الجديدة أو default) -->
+              <div *ngIf="!previewUrl"
                    class="avatar-placeholder flex items-center justify-center">
                 <span class="initials">{{ getInitials() }}</span>
               </div>
@@ -45,7 +45,7 @@
           </div>
 
           <h2 class="profile-name mt-6 text-3xl font-bold text-gray-900">{{ user.name || 'المستخدم' }}</h2>
-          <p class="profile-role mt-2 text-xl text-indigo-600 font-semibold flex items-center justify-center gap-3">
+          <p class="profile-role mt-2 text-xl font-semibold flex items-center justify-center gap-3" [style.color]="user?.role === 'job_seeker' ? 'rgb(38,32,137)' : '#16a34a'">
             <i class="fas fa-user-tag"></i>
             {{ user.role === 'job_seeker' ? 'باحث عن عمل' : 'صاحب عمل' }}
           </p>
