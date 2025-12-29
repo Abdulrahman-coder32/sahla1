@@ -90,11 +90,11 @@ import { AuthService } from '../../services/auth.service';
           <p class="text-xl md:text-2xl text-slate-700 mb-12 max-w-3xl mx-auto leading-relaxed">
             آلاف الأشخاص وجدوا فرصهم أو موظفيهم المثاليين من خلال سَهلة
           </p>
-          <a routerLink="/success-stories"
-             class="btn-primary px-12 py-5 md:px-16 md:py-6 rounded-full inline-flex items-center gap-5 text-xl md:text-2xl font-bold transition-all hover:scale-105 shadow-2xl bg-[rgb(38,32,137)] hover:bg-[rgb(28,22,117)]">
-            <i class="fas fa-trophy text-2xl"></i>
-            شوف قصص عملائنا
-          </a>
+        <a routerLink="/success-stories"
+   class="btn-primary px-12 py-5 md:px-16 md:py-6 rounded-full inline-flex items-center gap-5 text-xl md:text-2xl font-bold transition-all hover:scale-105 shadow-2xl bg-[rgb(38,32,137)] hover:bg-[rgb(28,22,117)] text-white">
+  <i class="fas fa-trophy text-2xl"></i>
+  شوف قصص عملائنا
+</a>
         </div>
       </section>
     </div>
@@ -102,8 +102,8 @@ import { AuthService } from '../../services/auth.service';
   styles: [`
     /* تنسيقات خاصة بالـ Home Page - متناسقة مع الفوتر والنافبار */
     .btn-primary {
-      @apply text-white font-bold rounded-full shadow-2xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-1;
-    }
+  @apply bg-[rgb(38,32,137)] hover:bg-[rgb(28,22,117)] text-white font-bold rounded-full shadow-2xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-1;
+}
     .btn-secondary {
       @apply bg-transparent hover:bg-white/20 text-white font-bold rounded-full border-2 border-white transition-all duration-300 backdrop-blur-sm;
     }
