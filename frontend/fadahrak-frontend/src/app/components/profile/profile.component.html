@@ -27,10 +27,11 @@
               <!-- الصورة الحقيقية -->
               <img *ngIf="previewUrl"
                    [src]="previewUrl"
-                   alt="صورة الملف الشخصي"
-                   class="profile-avatar w-full h-full object-cover">
+                   alt="صورة الملف الشخصي لـ {{ user.name || 'المستخدم' }}"
+                   class="profile-avatar w-full h-full object-cover"
+                   loading="lazy">
 
-              <!-- Placeholder: أول حرفين من الاسم (للحسابات الجديدة أو default) -->
+              <!-- Placeholder: أول حرفين من الاسم (حساب جديد أو default) -->
               <div *ngIf="!previewUrl"
                    class="avatar-placeholder flex items-center justify-center">
                 <span class="initials">{{ getInitials() }}</span>
