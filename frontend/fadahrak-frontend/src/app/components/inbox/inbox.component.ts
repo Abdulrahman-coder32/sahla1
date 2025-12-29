@@ -248,22 +248,34 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
         this.socketService.joinChat(this.selectedApp._id);
         this.markAsRead();
         this.loadMessages();
+this.socketService.onNewMessage((msg: any) => {
+  if (this.selectedApp && msg.application_id === this.selectedApp._id) {
+    const normalized = this.normalizeMessage(msg);
 
-        this.socketService.onNewMessage((msg: any) => {
-          if (this.selectedApp && msg.application_id === this.selectedApp._id) {
-            const normalized = this.normalizeMessage(msg);
-            if (!this.messages.some(m => m._id === normalized._id)) {
-              this.ngZone.run(() => {
-                this.messages.push(normalized);
-                this.scrollToBottom();
-              });
-              if (normalized.sender_id !== this.currentUserId) {
-                this.notificationService.markChatNotificationsAsRead(this.selectedApp._id);
-                this.markAsRead();
-              }
-            }
-          }
+    // لو الرسالة مني أنا → ما نضيفهاش تاني (خلاص أضفتها محليًا)
+    if (normalized.sender_id === this.currentUserId) {
+      // بس نستبدل الـ temp بالرسالة الحقيقية لو موجودة
+      const tempIndex = this.messages.findIndex(m => m._id.toString().startsWith('temp-'));
+      if (tempIndex !== -1 && this.messages[tempIndex].message === normalized.message) {
+        this.ngZone.run(() => {
+          this.messages[tempIndex] = normalized;
+          this.scrollToBottom();
         });
+      }
+      return;
+    }
+
+    // لو الرسالة من الطرف التاني → نضيفها عادي (مش موجودة أصلًا)
+    if (!this.messages.some(m => m._id === normalized._id)) {
+      this.ngZone.run(() => {
+        this.messages.push(normalized);
+        this.scrollToBottom();
+      });
+      this.notificationService.markChatNotificationsAsRead(this.selectedApp._id);
+      this.markAsRead();
+    }
+  }
+});
       },
       error: () => this.goBack()
     });
