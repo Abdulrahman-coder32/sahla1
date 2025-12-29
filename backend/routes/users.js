@@ -35,10 +35,10 @@ const upload = multer({
   }
 });
 
-// دالة مساعدة: إضافة الـ full URL + cache buster للصورة
+// دالة مساعدة: إضافة الـ full URL + cache buster
 const addImageUrlAndCache = (user, req) => {
   if (user.profileImage && user.profileImage !== 'default.jpg') {
-    const baseUrl = `${req.protocol}://${req.get('host')}/uploads/profile/`;
+    const baseUrl = `https://${req.get('host')}/uploads/profile/`; // ← forcing https
     const cleanFilename = path.basename(user.profileImage.split('?')[0]);
     user.profileImage = `${baseUrl}${cleanFilename}?t=${Date.now()}`;
   }
@@ -62,7 +62,6 @@ router.get('/me', auth, async (req, res) => {
 // PUT /api/users/profile - تحديث البيانات والصورة
 router.put('/profile', auth, upload.single('profileImage'), async (req, res) => {
   try {
-    // جيب المستخدم الحالي عشان نحتفظ بالصورة القديمة
     const currentUser = await User.findById(req.user.id).select('-password');
     if (!currentUser) return res.status(404).json({ msg: 'المستخدم غير موجود' });
 
@@ -71,9 +70,7 @@ router.put('/profile', auth, upload.single('profileImage'), async (req, res) => 
       phone: req.body.phone || currentUser.phone || ''
     };
 
-    // لو في صورة جديدة
     if (req.file) {
-      // احذف الصورة القديمة لو موجودة ومش default
       if (currentUser.profileImage && currentUser.profileImage !== 'default.jpg') {
         const oldFileName = path.basename(currentUser.profileImage.split('?')[0]);
         const oldPath = path.join(__dirname, '..', 'uploads', 'profile', oldFileName);
@@ -83,7 +80,6 @@ router.put('/profile', auth, upload.single('profileImage'), async (req, res) => 
       }
       updates.profileImage = req.file.filename;
     } else {
-      // مهم جدًا: احتفظ بالصورة القديمة لو مفيش صورة جديدة
       updates.profileImage = currentUser.profileImage;
     }
 
@@ -93,9 +89,7 @@ router.put('/profile', auth, upload.single('profileImage'), async (req, res) => 
       { new: true, runValidators: true }
     ).select('-password');
 
-    // دايمًا أضف الـ full URL + cache buster جديد
     addImageUrlAndCache(updatedUser, req);
-
     res.json(updatedUser);
   } catch (err) {
     console.error('خطأ في تحديث البروفايل:', err);
@@ -103,7 +97,7 @@ router.put('/profile', auth, upload.single('profileImage'), async (req, res) => 
   }
 });
 
-// PATCH /:id - الـ route القديم (للتوافق)
+// PATCH /:id - الـ route القديم
 router.patch('/:id', auth, async (req, res) => {
   if (req.params.id !== req.user.id) return res.status(403).json({ msg: 'غير مصرح' });
 
@@ -113,7 +107,6 @@ router.patch('/:id', auth, async (req, res) => {
 
     const updates = { ...req.body };
 
-    // احتفظ بالصورة القديمة لو مفيش profileImage في الـ body
     if (!updates.profileImage && currentUser.profileImage) {
       updates.profileImage = currentUser.profileImage;
     }
