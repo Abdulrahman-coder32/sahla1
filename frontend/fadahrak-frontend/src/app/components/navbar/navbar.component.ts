@@ -21,14 +21,14 @@ import { Observable, Subject, takeUntil } from 'rxjs';
           </div>
 
           <!-- Desktop Navigation -->
-          <div class="hidden md:flex items-center gap-6 lg:gap-8 xl:gap-10">
+          <div class="hidden md:flex items-center gap-4 lg:gap-6"> <!-- قللنا الـ gap من 6/8/10 لـ 4/6 -->
             <a routerLink="/" class="nav-link" routerLinkActive="active-link">الرئيسية</a>
             <a routerLink="/jobs" class="nav-link" routerLinkActive="active-link">الوظائف</a>
             <a routerLink="/about" class="nav-link" routerLinkActive="active-link">عننا</a>
             <a routerLink="/contact" class="nav-link" routerLinkActive="active-link">اتصل بنا</a>
 
             <ng-container *ngIf="user; else guestDesktop">
-              <!-- Notifications Dropdown (Desktop) -->
+              <!-- Notifications Dropdown -->
               <div class="relative group">
                 <button class="nav-link flex items-center gap-2 relative">
                   الإشعارات
@@ -59,7 +59,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                       <div class="p-6 lg:p-8 text-center text-gray-400">جاري التحميل...</div>
                     </ng-template>
                   </div>
-                  <!-- زر عرض جميع الإشعارات في الديسكتوب -->
                   <a routerLink="/notifications" class="block p-4 text-center bg-gray-50 hover:bg-gray-100 text-gray-600 font-medium rounded-b-xl">
                     عرض جميع الإشعارات
                   </a>
@@ -123,21 +122,22 @@ import { Observable, Subject, takeUntil } from 'rxjs';
            class="fixed inset-0 bg-black bg-opacity-60 z-40 md:hidden"
            (click)="closeMobileMenu()"></div>
 
-      <!-- Mobile Sidebar (من اليمين) -->
+      <!-- Mobile Sidebar -->
       <div [ngClass]="{
         'translate-x-0': mobileMenuOpen || mobileNotificationsOpen,
         'translate-x-full': !(mobileMenuOpen || mobileNotificationsOpen)
-      }" class="fixed inset-y-0 right-0 w-80 max-w-full bg-white shadow-2xl z-50 transition-transform duration-500 ease-in-out md:hidden overflow-y-auto">
-        <div class="p-5 border-b border-gray-200 flex justify-between items-center bg-white sticky top-0">
+      }" class="fixed inset-y-0 right-0 w-80 max-w-full bg-white shadow-2xl z-50 transition-transform duration-500 ease-in-out md:hidden flex flex-col">
+        <!-- Header -->
+        <div class="p-5 border-b border-gray-200 flex justify-between items-center bg-white sticky top-0 z-10">
           <h2 class="text-xl font-bold">{{ mobileNotificationsOpen ? 'الإشعارات' : 'القائمة' }}</h2>
           <button (click)="closeMobileMenu()" class="p-2">
             <i class="fas fa-times text-2xl text-gray-600"></i>
           </button>
         </div>
 
-        <!-- Notifications Content (Mobile) -->
-        <div *ngIf="mobileNotificationsOpen" class="p-5">
-          <div class="max-h-[calc(100vh-120px)] overflow-y-auto pb-20">
+        <!-- Content (اسكرول هنا فقط) -->
+        <div class="flex-1 overflow-y-auto pb-20"> <!-- pb-20 عشان الزر الثابت ميغطيش -->
+          <div *ngIf="mobileNotificationsOpen" class="p-5">
             <ng-container *ngIf="notifications$ | async as notifications; else loadingMobile">
               <button *ngFor="let notif of notifications.slice(0, 20)" (click)="navigateToNotification(notif)"
                       class="w-full p-4 hover:bg-gray-50 border-b border-gray-100 flex items-start gap-4 text-right mb-2 rounded-xl"
@@ -156,50 +156,54 @@ import { Observable, Subject, takeUntil } from 'rxjs';
               <div class="p-8 text-center text-gray-400">جاري التحميل...</div>
             </ng-template>
           </div>
-          <!-- زر عرض جميع الإشعارات في الموبايل -->
-          <a routerLink="/notifications" (click)="closeMobileMenu()" class="block mt-6 p-4 text-center bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl font-medium">
-            عرض جميع الإشعارات
-          </a>
+
+          <!-- Mobile Menu Content -->
+          <div *ngIf="mobileMenuOpen && !mobileNotificationsOpen" class="p-5">
+            <ng-container *ngIf="user; else guestMobile">
+              <a routerLink="/inbox" (click)="closeMobileMenu()" class="mobile-link">الرسائل</a>
+              <a [routerLink]="user.role === 'shop_owner' ? '/owner-dashboard' : '/seeker-dashboard'" (click)="closeMobileMenu()" class="mobile-link">لوحة التحكم</a>
+              <a routerLink="/profile" (click)="closeMobileMenu()" class="mobile-link">الملف الشخصي</a>
+              <hr class="my-6 border-gray-300">
+              <button (click)="onLogout(); closeMobileMenu()" class="w-full text-right px-8 py-6 text-xl font-medium text-red-600 hover:bg-red-50 transition-all rounded-xl">
+                تسجيل الخروج
+              </button>
+            </ng-container>
+            <ng-template #guestMobile>
+              <a routerLink="/login" (click)="closeMobileMenu()" class="mobile-link">دخول</a>
+              <a routerLink="/signup" (click)="closeMobileMenu()" class="mobile-link bg-indigo-600 text-white hover:bg-indigo-700">إنشاء حساب</a>
+            </ng-template>
+            <hr class="my-6 border-gray-300">
+            <div class="space-y-2">
+              <a routerLink="/" (click)="closeMobileMenu()" class="mobile-link">الرئيسية</a>
+              <a routerLink="/jobs" (click)="closeMobileMenu()" class="mobile-link">الوظائف</a>
+              <a routerLink="/about" (click)="closeMobileMenu()" class="mobile-link">عننا</a>
+              <a routerLink="/contact" (click)="closeMobileMenu()" class="mobile-link">اتصل بنا</a>
+            </div>
+          </div>
         </div>
 
-        <!-- Menu Content (Mobile) -->
-        <div *ngIf="mobileMenuOpen && !mobileNotificationsOpen" class="p-5">
-          <ng-container *ngIf="user; else guestMobile">
-            <a routerLink="/inbox" (click)="closeMobileMenu()" class="block py-4 px-5 text-lg hover:bg-gray-100 rounded-xl text-right mb-2">الرسائل</a>
-            <a [routerLink]="user.role === 'shop_owner' ? '/owner-dashboard' : '/seeker-dashboard'" (click)="closeMobileMenu()" class="block py-4 px-5 text-lg hover:bg-gray-100 rounded-xl text-right mb-2">لوحة التحكم</a>
-            <a routerLink="/profile" (click)="closeMobileMenu()" class="block py-4 px-5 text-lg hover:bg-gray-100 rounded-xl text-right mb-2">الملف الشخصي</a>
-            <hr class="my-6 border-gray-300">
-            <button (click)="onLogout(); closeMobileMenu()" class="w-full py-4 px-5 text-lg hover:bg-red-50 text-red-600 rounded-xl text-right font-medium">
-              تسجيل الخروج
-            </button>
-          </ng-container>
-
-          <ng-template #guestMobile>
-            <a routerLink="/login" (click)="closeMobileMenu()" class="block py-4 px-5 text-lg hover:bg-gray-100 rounded-xl text-right mb-2">دخول</a>
-            <a routerLink="/signup" (click)="closeMobileMenu()" class="block py-4 px-5 text-lg bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl text-right font-medium mb-6">إنشاء حساب</a>
-          </ng-template>
-
-          <hr class="my-6 border-gray-300">
-          <div class="space-y-3">
-            <a routerLink="/" (click)="closeMobileMenu()" class="block py-4 px-5 text-lg hover:bg-gray-100 rounded-xl text-right">الرئيسية</a>
-            <a routerLink="/jobs" (click)="closeMobileMenu()" class="block py-4 px-5 text-lg hover:bg-gray-100 rounded-xl text-right">الوظائف</a>
-            <a routerLink="/about" (click)="closeMobileMenu()" class="block py-4 px-5 text-lg hover:bg-gray-100 rounded-xl text-right">عننا</a>
-            <a routerLink="/contact" (click)="closeMobileMenu()" class="block py-4 px-5 text-lg hover:bg-gray-100 rounded-xl text-right">اتصل بنا</a>
-          </div>
+        <!-- زر "عرض جميع الإشعارات" ثابت في الأسفل دايمًا (فقط في وضع الإشعارات) -->
+        <div *ngIf="mobileNotificationsOpen" class="sticky bottom-0 bg-white border-t border-gray-200 p-4">
+          <a routerLink="/notifications" (click)="closeMobileMenu()" class="block text-center bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-6 rounded-xl transition-all">
+            عرض جميع الإشعارات
+          </a>
         </div>
       </div>
     </nav>
   `,
   styles: [`
     .nav-link {
-      @apply text-gray-700 hover:text-indigo-600 font-medium transition-colors duration-200 relative text-base lg:text-lg;
+      @apply text-gray-700 hover:text-indigo-600 font-medium transition-colors duration-200 relative text-base lg:text-lg whitespace-nowrap; /* منع تقسيم الكلمة */
     }
     .active-link::after {
       content: '';
-      @apply absolute bottom-[-8px] left-0 right-0 h-1 bg-indigo-600 rounded-full;
+      @apply absolute bottom-[-12px] left-0 right-0 h-1 bg-indigo-600 rounded-full; /* زدنا المسافة من -8px لـ -12px */
     }
     .btn-primary {
-      @apply bg-indigo-600 text-white hover:bg-indigo-700 font-medium transition-all duration-200 shadow-md rounded-xl;
+      @apply bg-indigo-600 text-white hover:bg-indigo-700 font-medium transition-all duration-200 shadow-md rounded-xl whitespace-nowrap; /* منع تقسيم النص */
+    }
+    .mobile-link {
+      @apply block px-8 py-6 text-xl font-medium text-gray-800 hover:bg-indigo-50 transition-all text-right border-b border-gray-100 whitespace-nowrap;
     }
   `]
 })
@@ -207,7 +211,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
   @Input() user: any = null;
   mobileMenuOpen = false;
   mobileNotificationsOpen = false;
-
   notificationCount$!: Observable<number>;
   notifications$!: Observable<any[]>;
 
