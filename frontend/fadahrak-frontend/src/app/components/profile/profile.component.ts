@@ -37,22 +37,36 @@ export class ProfileComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    // تجديد قسري للكاش عند الدخول للصفحة
+    this.cacheBuster = Date.now();
+    this.authService.forceRefreshCache(); // ← لو موجودة في AuthService
     this.loadProfile();
   }
 
   loadProfile() {
     this.loading = true;
-    this.cacheBuster = Date.now();
+    this.cacheBuster = Date.now(); // تجديد كل تحميل
+
     this.api.getProfile().subscribe({
       next: (data: any) => {
+        // حماية: لو الـ response مفيهوش profileImage → نحافظ على القديم
+        if (!data.profileImage && this.originalUser.profileImage) {
+          data.profileImage = this.originalUser.profileImage;
+        }
+
         this.user = {
           ...data,
           bio: data.bio || ''
         };
         this.originalUser = { ...this.user };
-        this.previewUrl = data?.profileImage
-          ? `${data.profileImage}?t=${this.cacheBuster}`
-          : null;
+
+        // تحديث previewUrl دايمًا مع timestamp جديد
+        if (this.user.profileImage && this.user.profileImage !== 'default.jpg') {
+          this.previewUrl = `${this.user.profileImage}?t=${this.cacheBuster}`;
+        } else {
+          this.previewUrl = null; // عشان نعرض الـ initials
+        }
+
         this.loading = false;
       },
       error: (err) => {
@@ -87,6 +101,7 @@ export class ProfileComponent implements OnInit {
     if (this.saving) return;
     this.saving = true;
     this.message = null;
+
     const formData = new FormData();
     formData.append('name', this.user.name?.trim() || '');
     if (this.user.phone) formData.append('phone', this.user.phone.trim());
@@ -95,14 +110,23 @@ export class ProfileComponent implements OnInit {
 
     this.api.updateProfile(formData).subscribe({
       next: (updatedUser: any) => {
+        // حماية: لو الـ response مفيهوش profileImage → نحافظ على القديم
+        if (!updatedUser.profileImage && this.originalUser.profileImage) {
+          updatedUser.profileImage = this.originalUser.profileImage;
+        }
+
         const updatedWithBio = { ...updatedUser, bio: updatedUser.bio || this.user.bio };
         this.authService.updateCurrentUser(updatedWithBio);
         this.user = { ...updatedWithBio };
         this.originalUser = { ...this.user };
+
         this.cacheBuster = Date.now();
-        this.previewUrl = updatedWithBio?.profileImage
-          ? `${updatedWithBio.profileImage}?t=${this.cacheBuster}`
-          : null;
+        if (this.user.profileImage && this.user.profileImage !== 'default.jpg') {
+          this.previewUrl = `${this.user.profileImage}?t=${this.cacheBuster}`;
+        } else {
+          this.previewUrl = null;
+        }
+
         this.selectedFile = null;
         this.isEditing = false;
         this.saving = false;
@@ -118,9 +142,12 @@ export class ProfileComponent implements OnInit {
 
   cancelEdit() {
     this.user = { ...this.originalUser };
-    this.previewUrl = this.originalUser?.profileImage
-      ? `${this.originalUser.profileImage}?t=${this.cacheBuster}`
-      : null;
+    this.cacheBuster = Date.now();
+    if (this.originalUser?.profileImage && this.originalUser.profileImage !== 'default.jpg') {
+      this.previewUrl = `${this.originalUser.profileImage}?t=${this.cacheBuster}`;
+    } else {
+      this.previewUrl = null;
+    }
     this.selectedFile = null;
     this.isEditing = false;
     this.message = null;
@@ -131,22 +158,20 @@ export class ProfileComponent implements OnInit {
     setTimeout(() => this.message = null, 4000);
   }
 
-  // دالة جديدة: حساب أول حرفين من الاسم
+  // دالة حساب أول حرفين من الاسم
   getInitials(): string {
     if (!this.user?.name?.trim()) return 'م';
-    
+
     const name = this.user.name.trim();
     const parts = name.split(/\s+/);
-    
+
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();
-    } else {
-      return name.substring(0, 2).toUpperCase();
     }
+    return name.substring(0, 2).toUpperCase();
   }
 
   getProfileImageUrl(): string {
-    // لو مفيش صورة → نرجع placeholder URL (لكن في الـ html هنستخدم الـ initials)
-    return this.previewUrl || this.user?.profileImage || '';
+    return this.previewUrl || '';
   }
 }
