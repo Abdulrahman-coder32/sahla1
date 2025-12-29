@@ -11,11 +11,10 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// دالة لتحويل public_id إلى URL كامل محسن (سريع، آمن، دائري، يركز على الوجه)
+// دالة لتحويل public_id إلى URL كامل محسن
 const getProfileImageUrl = (publicId) => {
   if (!publicId) {
-    // صورة افتراضية جميلة (رمادي مع أيقونة شخص) - ممكن تغيرها بعدين
-    return 'https://res.cloudinary.com/dv48puhaq/image/upload/v1700000000/default-avatar.png';
+    return null; // مهم جدًا: نرجع null مش default image
   }
   return cloudinary.url(publicId, {
     secure: true,
@@ -24,8 +23,8 @@ const getProfileImageUrl = (publicId) => {
     width: 400,
     height: 400,
     crop: 'fill',
-    gravity: 'face',    // يركز على الوجه تلقائي
-    radius: 'max'       // يخليها دائرة كاملة
+    gravity: 'face',
+    radius: 'max'
   });
 };
 
@@ -35,7 +34,9 @@ router.get('/me', auth, async (req, res) => {
     const user = await User.findById(req.user.id).select('-password');
     if (!user) return res.status(404).json({ msg: 'المستخدم غير موجود' });
 
+    // لو مفيش صورة → null
     user.profileImage = getProfileImageUrl(user.profileImage);
+
     res.json(user);
   } catch (err) {
     console.error('خطأ جلب البروفايل:', err);
@@ -44,7 +45,6 @@ router.get('/me', auth, async (req, res) => {
 });
 
 // تحديث البروفايل (PUT /api/users/profile)
-// الفرونت بيبعت الصورة كـ base64 في حقل profileImage
 router.put('/profile', auth, async (req, res) => {
   try {
     const { name, phone, bio, profileImage } = req.body;
@@ -59,11 +59,13 @@ router.put('/profile', auth, async (req, res) => {
       const result = await cloudinary.uploader.upload(profileImage, {
         folder: 'sahla-profiles',
         public_id: `user_${req.user.id}`,
-        overwrite: true,           // يستبدل الصورة القديمة لنفس المستخدم
+        overwrite: true,
         resource_type: 'image'
       });
-      updates.profileImage = result.public_id; // نحفظ بس الـ public_id في الداتابيز
+      updates.profileImage = result.public_id;
     }
+    // لو مفيش صورة جديدة وكان في صورة قديمة، نحافظ عليها
+    // لو مفيش صورة أصلًا → نخليها null (مش default)
 
     const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
@@ -71,7 +73,9 @@ router.put('/profile', auth, async (req, res) => {
       { new: true, runValidators: true }
     ).select('-password');
 
+    // لو مفيش صورة في الداتابيز → null
     updatedUser.profileImage = getProfileImageUrl(updatedUser.profileImage);
+
     res.json(updatedUser);
   } catch (err) {
     console.error('خطأ تحديث البروفايل:', err);
