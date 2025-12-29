@@ -197,7 +197,7 @@ import { Observable, Subject, takeUntil } from 'rxjs';
     }
     .active-link::after {
       content: '';
-      @apply absolute bottom-[-12px] left-0 right-0 h-1 bg-indigo-600 rounded-full; /* زدنا المسافة من -8px لـ -12px */
+      @apply absolute bottom-[-4px] left-0 right-0 h-1 bg-indigo-600 rounded-full; /* زدنا المسافة من -8px لـ -12px */
     }
     .btn-primary {
       @apply bg-indigo-600 text-white hover:bg-indigo-700 font-medium transition-all duration-200 shadow-md rounded-xl whitespace-nowrap; /* منع تقسيم النص */
