@@ -1,1 +1,237 @@
+/* تنسيقات خاصة بصفحة الملف الشخصي فقط - بدون تداخل مع باقي الموقع */
 
+.profile-container {
+  min-height: 100vh;
+  padding: 3rem 1rem;
+  direction: rtl;
+}
+
+.profile-card {
+  max-width: 1024px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 1.5rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.profile-header {
+  background: linear-gradient(to left, #1e293b, #4f46e5);
+  padding: 4rem 2rem;
+  text-align: center;
+  color: white;
+}
+
+.profile-header h1 {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+}
+
+.profile-header p {
+  font-size: 1.25rem;
+  color: #c7d2fe;
+}
+
+.profile-content {
+  padding: 4rem 2rem;
+  position: relative;
+  margin-top: -4rem;
+}
+
+.profile-avatar-wrapper {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.profile-avatar {
+  width: 14rem;
+  height: 14rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 8px solid white;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.profile-camera-btn {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  background: #4f46e5;
+  color: white;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.profile-camera-btn:hover {
+  background: #4338ca;
+  transform: scale(1.1);
+}
+
+.profile-name {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.profile-role {
+  font-size: 1.5rem;
+  color: #4f46e5;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.profile-email {
+  font-size: 1.25rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.profile-info-card {
+  background: linear-gradient(to bottom right, #eef2ff, #f8fafc);
+  border-radius: 1.5rem;
+  padding: 3rem;
+  border: 2px solid #e0e7ff;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+}
+
+.profile-info-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.profile-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 768px) {
+  .profile-form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .profile-form-grid > div:last-child {
+    grid-column: span 2;
+  }
+}
+
+.profile-label {
+  display: block;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.75rem;
+  font-size: 1.125rem;
+}
+
+.profile-input {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  border-radius: 1rem;
+  border: 2px solid #d1d5db;
+  background: white;
+  font-size: 1.125rem;
+  transition: all 0.3s ease;
+}
+
+.profile-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.2);
+}
+
+.profile-input:disabled {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.profile-textarea {
+  min-height: 150px;
+  resize: vertical;
+}
+
+.profile-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 3rem;
+  align-items: center;
+}
+
+@media (min-width: 640px) {
+  .profile-actions {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+
+.profile-btn {
+  padding: 1rem 3rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  min-width: 250px;
+}
+
+.profile-btn:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+}
+
+.profile-btn-edit {
+  background: #4f46e5;
+  color: white;
+}
+
+.profile-btn-edit:hover {
+  background: #4338ca;
+}
+
+.profile-btn-save {
+  background: #16a34a; /* أخضر غامق جذاب جدًا */
+  color: white;
+}
+
+.profile-btn-save:hover {
+  background: #15803d;
+}
+
+.profile-btn-cancel {
+  background: #6b7280;
+  color: white;
+}
+
+.profile-btn-cancel:hover {
+  background: #4b5563;
+}
+
+.profile-btn-icon {
+  font-size: 1.5rem;
+}
