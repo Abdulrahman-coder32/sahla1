@@ -28,7 +28,6 @@ export class ProfileComponent implements OnInit {
   loading = true;
   saving = false;
   message: { text: string; type: 'success' | 'error' } | null = null;
-  cacheBuster = Date.now();
 
   constructor(
     private api: ApiService,
@@ -37,21 +36,17 @@ export class ProfileComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.cacheBuster = Date.now();
-    this.authService.forceRefreshImage();
     this.loadProfile();
   }
 
   loadProfile() {
     this.loading = true;
-    this.cacheBuster = Date.now();
-
     this.api.getProfile().subscribe({
       next: (data: any) => {
-        console.log('Response from getProfile:', data); // ← للتصحيح: شوف profileImage جاي إيه
+        console.log('Response from getProfile:', data);
 
-        // حماية قوية
-        if (!data.profileImage && this.originalUser.profileImage) {
+        // حماية: لو الـ backend رد بدون صورة، نحتفظ بالقديمة
+        if (!data.profileImage && this.originalUser?.profileImage) {
           data.profileImage = this.originalUser.profileImage;
         }
 
@@ -61,14 +56,8 @@ export class ProfileComponent implements OnInit {
         };
         this.originalUser = { ...this.user };
 
-        if (this.user.profileImage) {
-          const clean = this.user.profileImage.split('?')[0];
-          this.previewUrl = `${clean}?t=${this.cacheBuster}`;
-          console.log('previewUrl set to:', this.previewUrl);
-        } else {
-          this.previewUrl = null;
-          console.log('previewUrl set to null - showing initials');
-        }
+        // Cloudinary بيولد URL جديد تلقائي، بس لو عايز تجديد قسري:
+        this.previewUrl = this.user.profileImage || null;
 
         this.loading = false;
       },
@@ -83,14 +72,17 @@ export class ProfileComponent implements OnInit {
   onFileSelected(event: any) {
     const file = event.target.files?.[0];
     if (!file) return;
+
     if (file.size > 5 * 1024 * 1024) {
       this.showMessage('حجم الصورة كبير جدًا، الحد الأقصى 5 ميجا', 'error');
       return;
     }
+
     this.selectedFile = file;
+
     const reader = new FileReader();
     reader.onload = () => {
-      this.previewUrl = reader.result as string;
+      this.previewUrl = reader.result as string; // preview فوري
     };
     reader.readAsDataURL(file);
   }
@@ -105,37 +97,56 @@ export class ProfileComponent implements OnInit {
     this.saving = true;
     this.message = null;
 
-    const formData = new FormData();
-    formData.append('name', this.user.name?.trim() || '');
-    if (this.user.phone) formData.append('phone', this.user.phone.trim());
-    if (this.user.bio) formData.append('bio', this.user.bio.trim());
-    if (this.selectedFile) formData.append('profileImage', this.selectedFile);
+    const updateData: any = {
+      name: this.user.name?.trim() || '',
+      phone: this.user.phone?.trim() || '',
+      bio: this.user.bio?.trim() || ''
+    };
 
-    this.api.updateProfile(formData).subscribe({
+    if (this.selectedFile) {
+      // تحويل الصورة إلى base64 وإرسالها
+      const reader = new FileReader();
+      reader.onload = () => {
+        updateData.profileImage = reader.result as string; // data:image/jpeg;base64,...
+
+        this.sendUpdate(updateData);
+      };
+      reader.onerror = () => {
+        this.showMessage('خطأ في قراءة الصورة', 'error');
+        this.saving = false;
+      };
+      reader.readAsDataURL(this.selectedFile);
+    } else {
+      // بدون صورة جديدة → إرسال مباشر
+      this.sendUpdate(updateData);
+    }
+  }
+
+  private sendUpdate(updateData: any) {
+    this.api.updateProfile(updateData).subscribe({
       next: (updatedUser: any) => {
         console.log('Response from updateProfile:', updatedUser);
 
-        if (!updatedUser.profileImage && this.originalUser.profileImage) {
+        // حماية من فقدان الصورة
+        if (!updatedUser.profileImage && this.originalUser?.profileImage) {
           updatedUser.profileImage = this.originalUser.profileImage;
         }
 
-        const updatedWithBio = { ...updatedUser, bio: updatedUser.bio || this.user.bio };
-        this.authService.updateCurrentUser(updatedWithBio);
-        this.user = { ...updatedWithBio };
-        this.originalUser = { ...this.user };
+        const finalUser = { ...updatedUser, bio: updatedUser.bio || this.user.bio };
 
-        this.cacheBuster = Date.now();
-        if (this.user.profileImage) {
-          const clean = this.user.profileImage.split('?')[0];
-          this.previewUrl = `${clean}?t=${this.cacheBuster}`;
-        } else {
-          this.previewUrl = null;
-        }
+        this.authService.updateCurrentUser(finalUser);
+
+        this.user = { ...finalUser };
+        this.originalUser = { ...this.user };
+        this.previewUrl = finalUser.profileImage || null;
 
         this.selectedFile = null;
         this.isEditing = false;
         this.saving = false;
         this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
+
+        // اختياري: تجديد قسري للكاش في AuthService
+        this.authService.forceRefreshImage();
       },
       error: (err) => {
         console.error('فشل تحديث البروفايل', err);
@@ -147,13 +158,7 @@ export class ProfileComponent implements OnInit {
 
   cancelEdit() {
     this.user = { ...this.originalUser };
-    this.cacheBuster = Date.now();
-    if (this.originalUser?.profileImage) {
-      const clean = this.originalUser.profileImage.split('?')[0];
-      this.previewUrl = `${clean}?t=${this.cacheBuster}`;
-    } else {
-      this.previewUrl = null;
-    }
+    this.previewUrl = this.originalUser.profileImage || null;
     this.selectedFile = null;
     this.isEditing = false;
     this.message = null;
