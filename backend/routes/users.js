@@ -11,13 +11,12 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// الصورة الديفولت اللي عايزها (اللي رفعتها)
+// الصورة الديفولت الجديدة اللي اخترتها
 const DEFAULT_AVATAR = 'https://res.cloudinary.com/dv48puhaq/image/upload/c_fill,g_face,h_400,q_auto,r_max,w_400/v1767034237/photo_2025-12-29_20-47-41_ovo0fn.jpg';
 
-// دالة URL - رجع الصورة الديفولت لو مفيش
 const getProfileImageUrl = (publicId) => {
   if (!publicId) {
-    return DEFAULT_AVATAR; // دي هتظهر لكل يوزر بدون صورة
+    return DEFAULT_AVATAR;
   }
   return cloudinary.url(publicId, {
     secure: true,
@@ -64,7 +63,7 @@ router.put('/profile', auth, async (req, res) => {
       });
       updates.profileImage = result.public_id;
     } else if (profileImage === null || profileImage === '') {
-      updates.profileImage = null; // لو اليوزر مسح الصورة يدويًا
+      updates.profileImage = null; // لو اليوزر مسح الصورة
     }
 
     const updatedUser = await User.findByIdAndUpdate(
