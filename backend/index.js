@@ -32,7 +32,9 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json());
+// 🔴 التعديل المهم جدًا: زيادة حد حجم الـ body لدعم base64 كبير
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -69,6 +71,7 @@ io.on('connection', (socket) => {
 
   socket.on('sendMessage', async ({ application_id, message }) => {
     if (!message.trim()) return;
+
     try {
       const newMessage = new Message({
         application_id,
@@ -141,8 +144,8 @@ io.on('connection', (socket) => {
 // ────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend')));
 
-// Catch-all route متوافق مع Express 5+ (الحل النهائي للمشكلة)
-app.get('/*splat', (req, res) => {
+// Catch-all route للـ Angular routing
+app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend/index.html'));
 });
 
