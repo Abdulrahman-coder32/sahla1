@@ -42,8 +42,7 @@ export class ProfileComponent implements OnInit {
 
   loadProfile() {
     this.loading = true;
-    this.cacheBuster = Date.now(); // تجديد الكاش عند كل تحميل
-
+    this.cacheBuster = Date.now();
     this.api.getProfile().subscribe({
       next: (data: any) => {
         this.user = {
@@ -51,8 +50,8 @@ export class ProfileComponent implements OnInit {
           bio: data.bio || ''
         };
         this.originalUser = { ...this.user };
-        this.previewUrl = data?.profileImage 
-          ? `${data.profileImage}?t=${this.cacheBuster}` 
+        this.previewUrl = data?.profileImage
+          ? `${data.profileImage}?t=${this.cacheBuster}`
           : null;
         this.loading = false;
       },
@@ -88,7 +87,6 @@ export class ProfileComponent implements OnInit {
     if (this.saving) return;
     this.saving = true;
     this.message = null;
-
     const formData = new FormData();
     formData.append('name', this.user.name?.trim() || '');
     if (this.user.phone) formData.append('phone', this.user.phone.trim());
@@ -101,9 +99,9 @@ export class ProfileComponent implements OnInit {
         this.authService.updateCurrentUser(updatedWithBio);
         this.user = { ...updatedWithBio };
         this.originalUser = { ...this.user };
-        this.cacheBuster = Date.now(); // تجديد الكاش بعد الحفظ
-        this.previewUrl = updatedWithBio?.profileImage 
-          ? `${updatedWithBio.profileImage}?t=${this.cacheBuster}` 
+        this.cacheBuster = Date.now();
+        this.previewUrl = updatedWithBio?.profileImage
+          ? `${updatedWithBio.profileImage}?t=${this.cacheBuster}`
           : null;
         this.selectedFile = null;
         this.isEditing = false;
@@ -120,8 +118,8 @@ export class ProfileComponent implements OnInit {
 
   cancelEdit() {
     this.user = { ...this.originalUser };
-    this.previewUrl = this.originalUser?.profileImage 
-      ? `${this.originalUser.profileImage}?t=${this.cacheBuster}` 
+    this.previewUrl = this.originalUser?.profileImage
+      ? `${this.originalUser.profileImage}?t=${this.cacheBuster}`
       : null;
     this.selectedFile = null;
     this.isEditing = false;
@@ -133,8 +131,22 @@ export class ProfileComponent implements OnInit {
     setTimeout(() => this.message = null, 4000);
   }
 
+  // دالة جديدة: حساب أول حرفين من الاسم
+  getInitials(): string {
+    if (!this.user?.name?.trim()) return 'م';
+    
+    const name = this.user.name.trim();
+    const parts = name.split(/\s+/);
+    
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    } else {
+      return name.substring(0, 2).toUpperCase();
+    }
+  }
+
   getProfileImageUrl(): string {
-    return this.previewUrl || this.user?.profileImage 
-      || `https://via.placeholder.com/200?text=${encodeURIComponent(this.user?.name?.charAt(0) || 'م')}`;
+    // لو مفيش صورة → نرجع placeholder URL (لكن في الـ html هنستخدم الـ initials)
+    return this.previewUrl || this.user?.profileImage || '';
   }
 }
