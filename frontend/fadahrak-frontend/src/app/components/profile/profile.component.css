@@ -215,7 +215,7 @@
 }
 
 .profile-btn-save {
-  background: #16a34a; /* أخضر غامق جذاب جدًا */
+  background: #16a34a; /* أخضر غامق جذاب */
   color: white;
 }
 
@@ -234,4 +234,61 @@
 
 .profile-btn-icon {
   font-size: 1.5rem;
+}
+
+/* Toast Notification */
+.profile-toast {
+  position: fixed;
+  top: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  padding: 1.5rem 3rem;
+  border-radius: 1rem;
+  font-weight: bold;
+  font-size: 1.25rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  animation: toastFadeIn 0.5s ease-out, toastFadeOut 0.5s ease-out 2.5s forwards;
+  min-width: 300px;
+  text-align: center;
+}
+
+.profile-toast-success {
+  background: #16a34a;
+  color: white;
+}
+
+.profile-toast-error {
+  background: #dc2626;
+  color: white;
+}
+
+@media (max-width: 640px) {
+  .profile-toast {
+    top: 80px;
+    left: 5%;
+    right: 5%;
+    transform: none;
+    width: auto;
+    padding: 1.25rem 2rem;
+    font-size: 1.125rem;
+  }
+}
+
+@keyframes toastFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes toastFadeOut {
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
 }
