@@ -8,16 +8,16 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <div class="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 flex flex-col">
+    <div class="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-100 flex flex-col">
       <!-- Hero Section -->
-      <section class="bg-gradient-to-r from-slate-900 via-gray-900 to-black text-white py-20 md:py-28 lg:py-36 text-center relative overflow-hidden">
-        <div class="absolute inset-0 bg-black opacity-40"></div>
+      <section class="bg-gradient-to-r from-slate-800 via-slate-900 to-indigo-900 text-white py-20 md:py-28 lg:py-36 text-center relative overflow-hidden">
+        <div class="absolute inset-0 bg-black opacity-30"></div>
         <div class="max-w-5xl mx-auto px-6 sm:px-8 relative z-10">
           <h1 class="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold mb-8 leading-tight">
-            مرحباً بك في <span class="text-gray-300">سَهلة</span>
+            مرحباً بك في <span class="text-indigo-300">سَهلة</span>
           </h1>
-          <p class="text-xl md:text-2xl lg:text-3xl mb-12 max-w-4xl mx-auto leading-relaxed px-4 text-gray-200">
-            ابحث عن <strong class="text-gray-300">وظائف محلية حقيقية</strong> في مصر، أو انشر فرص عمل في محلك بسهولة<br class="hidden sm:block">
+          <p class="text-xl md:text-2xl lg:text-3xl mb-12 max-w-4xl mx-auto leading-relaxed px-4 text-slate-200">
+            ابحث عن <strong class="text-indigo-300">وظائف محلية حقيقية</strong> في مصر، أو انشر فرص عمل في محلك بسهولة<br class="hidden sm:block">
             تواصل مباشر مع الباحثين عن عمل أو أصحاب الأعمال – بدون وسطاء أو تعقيد
           </p>
           <div class="flex flex-col sm:flex-row justify-center gap-8">
@@ -53,25 +53,25 @@ import { AuthService } from '../../services/auth.service';
       <section class="py-20 md:py-28 lg:py-36 bg-white">
         <div class="max-w-6xl mx-auto px-6 sm:px-8 text-center">
           <h2 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-20">
-            كيف تعمل <span class="text-slate-800">سَهلة</span>؟
+            كيف تعمل <span class="text-indigo-600">سَهلة</span>؟
           </h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 md:gap-16">
             <div class="home-card p-10 text-center transition-all hover:shadow-2xl hover:-translate-y-2">
-              <i class="fas fa-user-plus text-6xl text-slate-800 mb-8"></i>
+              <i class="fas fa-user-plus text-6xl text-indigo-600 mb-8"></i>
               <h3 class="text-3xl font-bold text-slate-800 mb-6">1. أنشئ حسابك</h3>
               <p class="text-slate-600 leading-relaxed text-lg">
                 سجل كباحث عن عمل أو صاحب محل في ثواني معدودة
               </p>
             </div>
             <div class="home-card p-10 text-center transition-all hover:shadow-2xl hover:-translate-y-2">
-              <i class="fas fa-briefcase text-6xl text-slate-800 mb-8"></i>
+              <i class="fas fa-briefcase text-6xl text-indigo-600 mb-8"></i>
               <h3 class="text-3xl font-bold text-slate-800 mb-6">2. ابحث أو انشر</h3>
               <p class="text-slate-600 leading-relaxed text-lg">
                 اعرض مهاراتك أو انشر وظيفة محلية بكل سهولة ووضوح
               </p>
             </div>
             <div class="home-card p-10 text-center transition-all hover:shadow-2xl hover:-translate-y-2">
-              <i class="fas fa-comments text-6xl text-slate-800 mb-8"></i>
+              <i class="fas fa-comments text-6xl text-indigo-600 mb-8"></i>
               <h3 class="text-3xl font-bold text-slate-800 mb-6">3. تواصل مباشر</h3>
               <p class="text-slate-600 leading-relaxed text-lg">
                 دردش فوراً بعد قبول الطلب – بدون انتظار أو تعقيد
@@ -82,7 +82,7 @@ import { AuthService } from '../../services/auth.service';
       </section>
 
       <!-- Success Stories -->
-      <section class="py-20 md:py-28 lg:py-36 bg-gradient-to-br from-gray-50 to-slate-100">
+      <section class="py-20 md:py-28 lg:py-36 bg-gradient-to-br from-indigo-50 to-slate-100">
         <div class="max-w-4xl mx-auto text-center px-6">
           <h2 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-10">
             قصص نجاح حقيقية
@@ -100,23 +100,23 @@ import { AuthService } from '../../services/auth.service';
     </div>
   `,
   styles: [`
-    /* تنسيقات خاصة بالـ Home Page - بدون أي indigo */
+    /* تنسيقات خاصة بالـ Home Page - متناسقة مع الفوتر والنافبار */
     .btn-primary {
-      @apply bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-full shadow-2xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-1;
+      @apply bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full shadow-2xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-1;
     }
     .btn-secondary {
-      @apply bg-transparent hover:bg-white/10 text-white font-bold rounded-full border-2 border-white transition-all duration-300 backdrop-blur-sm;
+      @apply bg-transparent hover:bg-white/20 text-white font-bold rounded-full border-2 border-white transition-all duration-300 backdrop-blur-sm;
     }
     .home-card {
-      @apply bg-white rounded-2xl shadow-xl border border-slate-200 p-10 transition-all duration-500 hover:border-slate-400 hover:shadow-2xl hover:-translate-y-2;
+      @apply bg-white rounded-2xl shadow-xl border border-slate-200 p-10 transition-all duration-500 hover:border-indigo-300 hover:shadow-2xl hover:-translate-y-2;
     }
     /* تحسين الخلفية العامة */
     body {
-      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
     }
     /* تحسين الـ Hero text */
-    .text-gray-300 {
-      text-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    .text-indigo-300 {
+      text-shadow: 0 2px 10px rgba(0,0,0,0.3);
     }
   `]
 })
