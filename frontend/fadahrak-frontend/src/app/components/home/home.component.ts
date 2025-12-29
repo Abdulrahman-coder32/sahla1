@@ -53,25 +53,25 @@ import { AuthService } from '../../services/auth.service';
       <section class="py-20 md:py-28 lg:py-36 bg-white">
         <div class="max-w-6xl mx-auto px-6 sm:px-8 text-center">
           <h2 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-20">
-            كيف تعمل <span class="text-indigo-600">سَهلة</span>؟
+            كيف تعمل <span class="text-[rgb(38,32,137)]">سَهلة</span>؟
           </h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 md:gap-16">
             <div class="home-card p-10 text-center transition-all hover:shadow-2xl hover:-translate-y-2">
-              <i class="fas fa-user-plus text-6xl text-indigo-600 mb-8"></i>
+              <i class="fas fa-user-plus text-6xl text-[rgb(38,32,137)] mb-8"></i>
               <h3 class="text-3xl font-bold text-slate-800 mb-6">1. أنشئ حسابك</h3>
               <p class="text-slate-600 leading-relaxed text-lg">
                 سجل كباحث عن عمل أو صاحب محل في ثواني معدودة
               </p>
             </div>
             <div class="home-card p-10 text-center transition-all hover:shadow-2xl hover:-translate-y-2">
-              <i class="fas fa-briefcase text-6xl text-indigo-600 mb-8"></i>
+              <i class="fas fa-briefcase text-6xl text-[rgb(38,32,137)] mb-8"></i>
               <h3 class="text-3xl font-bold text-slate-800 mb-6">2. ابحث أو انشر</h3>
               <p class="text-slate-600 leading-relaxed text-lg">
                 اعرض مهاراتك أو انشر وظيفة محلية بكل سهولة ووضوح
               </p>
             </div>
             <div class="home-card p-10 text-center transition-all hover:shadow-2xl hover:-translate-y-2">
-              <i class="fas fa-comments text-6xl text-indigo-600 mb-8"></i>
+              <i class="fas fa-comments text-6xl text-[rgb(38,32,137)] mb-8"></i>
               <h3 class="text-3xl font-bold text-slate-800 mb-6">3. تواصل مباشر</h3>
               <p class="text-slate-600 leading-relaxed text-lg">
                 دردش فوراً بعد قبول الطلب – بدون انتظار أو تعقيد
@@ -91,7 +91,7 @@ import { AuthService } from '../../services/auth.service';
             آلاف الأشخاص وجدوا فرصهم أو موظفيهم المثاليين من خلال سَهلة
           </p>
           <a routerLink="/success-stories"
-             class="btn-primary px-12 py-5 md:px-16 md:py-6 rounded-full inline-flex items-center gap-5 text-xl md:text-2xl font-bold transition-all hover:scale-105 shadow-2xl">
+             class="btn-primary px-12 py-5 md:px-16 md:py-6 rounded-full inline-flex items-center gap-5 text-xl md:text-2xl font-bold transition-all hover:scale-105 shadow-2xl bg-[rgb(38,32,137)] hover:bg-[rgb(28,22,117)]">
             <i class="fas fa-trophy text-2xl"></i>
             شوف قصص عملائنا
           </a>
@@ -102,7 +102,7 @@ import { AuthService } from '../../services/auth.service';
   styles: [`
     /* تنسيقات خاصة بالـ Home Page - متناسقة مع الفوتر والنافبار */
     .btn-primary {
-      @apply bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full shadow-2xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-1;
+      @apply text-white font-bold rounded-full shadow-2xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-1;
     }
     .btn-secondary {
       @apply bg-transparent hover:bg-white/20 text-white font-bold rounded-full border-2 border-white transition-all duration-300 backdrop-blur-sm;
