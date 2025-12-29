@@ -35,18 +35,23 @@ const upload = multer({
   }
 });
 
+// دالة مساعدة: إضافة الـ full URL + cache buster للصورة
+const addImageUrlAndCache = (user, req) => {
+  if (user.profileImage && user.profileImage !== 'default.jpg') {
+    const baseUrl = `${req.protocol}://${req.get('host')}/uploads/profile/`;
+    const cleanFilename = path.basename(user.profileImage.split('?')[0]);
+    user.profileImage = `${baseUrl}${cleanFilename}?t=${Date.now()}`;
+  }
+  return user;
+};
+
 // GET /api/users/me - جلب بيانات المستخدم الحالي
 router.get('/me', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    let user = await User.findById(req.user.id).select('-password');
     if (!user) return res.status(404).json({ msg: 'المستخدم غير موجود' });
-
-    // إضافة الـ full URL للصورة + كسر الكاش
-    if (user.profileImage) {
-      const baseUrl = `${req.protocol}://${req.get('host')}/uploads/profile/`;
-      user.profileImage = baseUrl + user.profileImage + '?t=' + Date.now();
-    }
-
+    
+    user = addImageUrlAndCache(user, req);
     res.json(user);
   } catch (err) {
     console.error('خطأ في جلب البروفايل:', err);
@@ -57,36 +62,39 @@ router.get('/me', auth, async (req, res) => {
 // PUT /api/users/profile - تحديث البيانات والصورة
 router.put('/profile', auth, upload.single('profileImage'), async (req, res) => {
   try {
+    // جيب المستخدم الحالي عشان نحتفظ بالصورة القديمة
+    const currentUser = await User.findById(req.user.id).select('-password');
+    if (!currentUser) return res.status(404).json({ msg: 'المستخدم غير موجود' });
+
     const updates = {
-      name: req.body.name,
-      phone: req.body.phone || ''
+      name: req.body.name || currentUser.name,
+      phone: req.body.phone || currentUser.phone || ''
     };
 
     // لو في صورة جديدة
     if (req.file) {
       // احذف الصورة القديمة لو موجودة ومش default
-      const oldUser = await User.findById(req.user.id);
-      if (oldUser.profileImage && oldUser.profileImage !== 'default.jpg') {
-        const oldFileName = path.basename(oldUser.profileImage.split('?')[0]); // نتجاهل ?t=...
+      if (currentUser.profileImage && currentUser.profileImage !== 'default.jpg') {
+        const oldFileName = path.basename(currentUser.profileImage.split('?')[0]);
         const oldPath = path.join(__dirname, '..', 'uploads', 'profile', oldFileName);
         if (fs.existsSync(oldPath)) {
           fs.unlinkSync(oldPath);
         }
       }
       updates.profileImage = req.file.filename;
+    } else {
+      // مهم جدًا: احتفظ بالصورة القديمة لو مفيش صورة جديدة
+      updates.profileImage = currentUser.profileImage;
     }
 
     const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
       updates,
-      { new: true }
+      { new: true, runValidators: true }
     ).select('-password');
 
-    // إضافة الـ full URL + كسر الكاش
-    if (updatedUser.profileImage) {
-      const baseUrl = `${req.protocol}://${req.get('host')}/uploads/profile/`;
-      updatedUser.profileImage = baseUrl + updatedUser.profileImage + '?t=' + Date.now();
-    }
+    // دايمًا أضف الـ full URL + cache buster جديد
+    addImageUrlAndCache(updatedUser, req);
 
     res.json(updatedUser);
   } catch (err) {
@@ -95,21 +103,31 @@ router.put('/profile', auth, upload.single('profileImage'), async (req, res) => 
   }
 });
 
-// الحفاظ على الـ route القديم (اختياري)
+// PATCH /:id - الـ route القديم (للتوافق)
 router.patch('/:id', auth, async (req, res) => {
   if (req.params.id !== req.user.id) return res.status(403).json({ msg: 'غير مصرح' });
 
   try {
-    const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true }).select('-password');
-    if (!user) return res.status(404).json({ msg: 'المستخدم غير موجود' });
+    const currentUser = await User.findById(req.user.id).select('-password');
+    if (!currentUser) return res.status(404).json({ msg: 'المستخدم غير موجود' });
 
-    if (user.profileImage) {
-      const baseUrl = `${req.protocol}://${req.get('host')}/uploads/profile/`;
-      user.profileImage = baseUrl + path.basename(user.profileImage.split('?')[0]) + '?t=' + Date.now();
+    const updates = { ...req.body };
+
+    // احتفظ بالصورة القديمة لو مفيش profileImage في الـ body
+    if (!updates.profileImage && currentUser.profileImage) {
+      updates.profileImage = currentUser.profileImage;
     }
 
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      updates,
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    addImageUrlAndCache(user, req);
     res.json(user);
   } catch (err) {
+    console.error('خطأ في PATCH:', err);
     res.status(500).json({ msg: 'خطأ في التحديث' });
   }
 });
