@@ -59,6 +59,7 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                       <div class="p-6 lg:p-8 text-center text-gray-400">جاري التحميل...</div>
                     </ng-template>
                   </div>
+                  <!-- زر عرض جميع الإشعارات في الديسكتوب -->
                   <a routerLink="/notifications" class="block p-4 text-center bg-gray-50 hover:bg-gray-100 text-gray-600 font-medium rounded-b-xl">
                     عرض جميع الإشعارات
                   </a>
@@ -134,7 +135,7 @@ import { Observable, Subject, takeUntil } from 'rxjs';
           </button>
         </div>
 
-        <!-- Notifications -->
+        <!-- Notifications Content (Mobile) -->
         <div *ngIf="mobileNotificationsOpen" class="p-5">
           <div class="max-h-[calc(100vh-120px)] overflow-y-auto pb-20">
             <ng-container *ngIf="notifications$ | async as notifications; else loadingMobile">
@@ -147,18 +148,21 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                   <p class="text-sm text-gray-500 mt-1">{{ notif.createdAt | date:'medium' }}</p>
                 </div>
               </button>
-              <div *ngIf="notifications.length === 0" class="p-8 text-center text-gray-500">لا توجد إشعارات جديدة</div>
+              <div *ngIf="notifications.length === 0" class="p-8 text-center text-gray-500">
+                لا توجد إشعارات جديدة
+              </div>
             </ng-container>
             <ng-template #loadingMobile>
               <div class="p-8 text-center text-gray-400">جاري التحميل...</div>
             </ng-template>
           </div>
+          <!-- زر عرض جميع الإشعارات في الموبايل -->
           <a routerLink="/notifications" (click)="closeMobileMenu()" class="block mt-6 p-4 text-center bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl font-medium">
             عرض جميع الإشعارات
           </a>
         </div>
 
-        <!-- Menu -->
+        <!-- Menu Content (Mobile) -->
         <div *ngIf="mobileMenuOpen && !mobileNotificationsOpen" class="p-5">
           <ng-container *ngIf="user; else guestMobile">
             <a routerLink="/inbox" (click)="closeMobileMenu()" class="block py-4 px-5 text-lg hover:bg-gray-100 rounded-xl text-right mb-2">الرسائل</a>
