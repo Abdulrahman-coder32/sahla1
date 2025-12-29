@@ -12,7 +12,7 @@ cloudinary.config({
 });
 
 // الصورة الديفولت الجديدة اللي اخترتها
-const DEFAULT_AVATAR = 'https://res.cloudinary.com/dv48puhaq/image/upload/c_fill,g_face,h_400,q_auto,r_max,w_400/v1767034237/photo_2025-12-29_20-47-41_ovo0fn.jpg';
+const DEFAULT_AVATAR = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
 
 const getProfileImageUrl = (publicId) => {
   if (!publicId) {
