@@ -273,7 +273,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   getProfileImageUrl(): string {
     if (!this.user?.profileImage) {
-     return 'https://res.cloudinary.com/dv48puhaq/image/upload/c_fill,g_face,h_400,q_auto,r_max,w_400/v1767034237/photo_2025-12-29_20-47-41_ovo0fn.jpg';
+     return 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
     }
     return `${this.user.profileImage}?t=${this.cacheBuster}`;
   }
