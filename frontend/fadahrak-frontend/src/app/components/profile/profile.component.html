@@ -20,16 +20,29 @@
           {{ message.text }}
         </div>
 
-        <!-- Avatar -->
+        <!-- Avatar مع Placeholder -->
         <div class="profile-avatar-wrapper">
           <div class="relative inline-block">
-            <img [src]="previewUrl || getProfileImageUrl()" alt="صورة الملف الشخصي" class="profile-avatar">
+            <!-- الدايرة الخارجية -->
+            <div class="avatar-container">
+              <!-- لو فيه صورة حقيقية -->
+              <img *ngIf="previewUrl && user?.profileImage !== 'default.jpg'"
+                   [src]="previewUrl"
+                   alt="صورة الملف الشخصي"
+                   class="profile-avatar">
 
-            <!-- زر الكاميرا -->
-            <label class="profile-camera-btn" [class.hidden]="!isEditing">
-              <i class="fas fa-camera"></i>
-              <input type="file" accept="image/*" (change)="onFileSelected($event)" class="hidden">
-            </label>
+              <!-- Placeholder: أول حرفين من الاسم -->
+              <div *ngIf="!previewUrl || user?.profileImage === 'default.jpg'"
+                   class="avatar-placeholder">
+                <span class="initials">{{ getInitials() }}</span>
+              </div>
+
+              <!-- زر الكاميرا (يظهر فقط في وضع التعديل) -->
+              <label class="profile-camera-btn" [class.hidden]="!isEditing">
+                <i class="fas fa-camera"></i>
+                <input type="file" accept="image/*" (change)="onFileSelected($event)" class="hidden">
+              </label>
+            </div>
           </div>
 
           <h2 class="profile-name">{{ user.name || 'المستخدم' }}</h2>
@@ -48,18 +61,15 @@
             <i class="fas fa-info-circle"></i>
             معلومات الحساب
           </h3>
-
           <div class="profile-form-grid">
             <div>
               <label class="profile-label">الاسم الكامل</label>
               <input [(ngModel)]="user.name" [disabled]="!isEditing" class="profile-input">
             </div>
-
             <div>
               <label class="profile-label">رقم الهاتف</label>
               <input [(ngModel)]="user.phone" [disabled]="!isEditing" placeholder="01xxxxxxxxx" class="profile-input">
             </div>
-
             <div>
               <label class="profile-label">نبذة تعريفية (اختياري)</label>
               <textarea [(ngModel)]="user.bio" [disabled]="!isEditing" rows="6" class="profile-input profile-textarea" placeholder="اكتب نبذة قصيرة عن نفسك..."></textarea>
@@ -73,14 +83,12 @@
             <i class="fas fa-edit profile-btn-icon"></i>
             تعديل الملف الشخصي
           </button>
-
           <div *ngIf="isEditing" class="flex flex-col sm:flex-row gap-8 w-full max-w-4xl">
             <button (click)="saveProfile()" [disabled]="saving" class="profile-btn profile-btn-save">
               <i class="fas fa-save profile-btn-icon" *ngIf="!saving"></i>
               <span *ngIf="saving">جاري الحفظ...</span>
               <span *ngIf="!saving">حفظ التغييرات</span>
             </button>
-
             <button (click)="cancelEdit()" class="profile-btn profile-btn-cancel">
               <i class="fas fa-times profile-btn-icon"></i>
               إلغاء
