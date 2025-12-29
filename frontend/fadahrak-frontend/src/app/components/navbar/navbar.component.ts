@@ -122,7 +122,7 @@ import { Observable, Subject, takeUntil } from 'rxjs';
            class="fixed inset-0 bg-black bg-opacity-60 z-40 md:hidden"
            (click)="closeMobileMenu()"></div>
 
-      <!-- Mobile Sidebar (من اليمين - أنضف وأحترف) -->
+      <!-- Mobile Sidebar (من اليمين) -->
       <div [ngClass]="{
         'translate-x-0': mobileMenuOpen || mobileNotificationsOpen,
         'translate-x-full': !(mobileMenuOpen || mobileNotificationsOpen)
@@ -134,7 +134,7 @@ import { Observable, Subject, takeUntil } from 'rxjs';
           </button>
         </div>
 
-        <!-- Notifications Content -->
+        <!-- Notifications -->
         <div *ngIf="mobileNotificationsOpen" class="p-5">
           <div class="max-h-[calc(100vh-120px)] overflow-y-auto pb-20">
             <ng-container *ngIf="notifications$ | async as notifications; else loadingMobile">
@@ -147,9 +147,7 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                   <p class="text-sm text-gray-500 mt-1">{{ notif.createdAt | date:'medium' }}</p>
                 </div>
               </button>
-              <div *ngIf="notifications.length === 0" class="p-8 text-center text-gray-500">
-                لا توجد إشعارات جديدة
-              </div>
+              <div *ngIf="notifications.length === 0" class="p-8 text-center text-gray-500">لا توجد إشعارات جديدة</div>
             </ng-container>
             <ng-template #loadingMobile>
               <div class="p-8 text-center text-gray-400">جاري التحميل...</div>
@@ -160,7 +158,7 @@ import { Observable, Subject, takeUntil } from 'rxjs';
           </a>
         </div>
 
-        <!-- Menu Content -->
+        <!-- Menu -->
         <div *ngIf="mobileMenuOpen && !mobileNotificationsOpen" class="p-5">
           <ng-container *ngIf="user; else guestMobile">
             <a routerLink="/inbox" (click)="closeMobileMenu()" class="block py-4 px-5 text-lg hover:bg-gray-100 rounded-xl text-right mb-2">الرسائل</a>
@@ -221,7 +219,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.notifications$ = this.notificationService.getNotifications();
   }
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.authService.user$
       .pipe(takeUntil(this.destroy$))
       .subscribe(authUser => {
@@ -234,17 +232,17 @@ export class NavbarComponent implements OnInit, OnDestroy {
       });
   }
 
-  toggleMenu() {
+  toggleMenu(): void {
     this.mobileMenuOpen = !this.mobileMenuOpen;
     this.mobileNotificationsOpen = false;
   }
 
-  toggleNotifications() {
+  toggleNotifications(): void {
     this.mobileNotificationsOpen = !this.mobileNotificationsOpen;
     this.mobileMenuOpen = false;
   }
 
-  closeMobileMenu() {
+  closeMobileMenu(): void {
     this.mobileMenuOpen = false;
     this.mobileNotificationsOpen = false;
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -252,21 +250,22 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   getProfileImageUrl(): string {
     if (!this.user?.profileImage) {
-      return \`https://via.placeholder.com/48?text=\${encodeURIComponent(this.user?.name?.charAt(0) || 'م')}\`;
+      return `https://via.placeholder.com/48?text=${encodeURIComponent(this.user?.name?.charAt(0) || 'م')}`;
     }
-    return \`\${this.user.profileImage}?t=\${this.cacheBuster}\`;
+    return `${this.user.profileImage}?t=${this.cacheBuster}`;
   }
 
-  onLogout() {
+  onLogout(): void {
     this.authService.logout();
     this.closeMobileMenu();
     this.router.navigate(['/']);
   }
 
-  navigateToNotification(notification: any) {
+  navigateToNotification(notification: any): void {
     this.closeMobileMenu();
     let route: string[] = ['/notifications'];
     const appId = notification.application_id || null;
+
     switch (notification.type) {
       case 'new_message':
         if (appId) route = ['/inbox', appId];
@@ -277,13 +276,15 @@ export class NavbarComponent implements OnInit, OnDestroy {
         if (appId) route = ['/applications', appId];
         break;
     }
+
     this.router.navigate(route);
+
     if (!notification.read) {
       this.notificationService.markAsReadAndUpdate(notification._id);
     }
   }
 
-  ngOnDestroy() {
+  ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
