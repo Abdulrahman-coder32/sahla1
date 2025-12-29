@@ -23,7 +23,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 ميجا max
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const filetypes = /jpeg|jpg|png|gif|webp/;
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
@@ -35,22 +35,29 @@ const upload = multer({
   }
 });
 
-// دالة مساعدة: إضافة الـ full URL + cache buster
+// دالة مساعدة: إضافة الـ full URL + cache buster (force https)
 const addImageUrlAndCache = (user, req) => {
+  if (!user.profileImage) {
+    user.profileImage = 'default.jpg';
+  }
+
   if (user.profileImage && user.profileImage !== 'default.jpg') {
-    const baseUrl = `https://${req.get('host')}/uploads/profile/`; // ← forcing https
+    const baseUrl = `https://${req.get('host')}/uploads/profile/`; // ← force https هنا
     const cleanFilename = path.basename(user.profileImage.split('?')[0]);
     user.profileImage = `${baseUrl}${cleanFilename}?t=${Date.now()}`;
+  } else {
+    user.profileImage = `https://${req.get('host')}/uploads/profile/default.jpg`;
   }
+
   return user;
 };
 
-// GET /api/users/me - جلب بيانات المستخدم الحالي
+// GET /api/users/me
 router.get('/me', auth, async (req, res) => {
   try {
     let user = await User.findById(req.user.id).select('-password');
     if (!user) return res.status(404).json({ msg: 'المستخدم غير موجود' });
-    
+
     user = addImageUrlAndCache(user, req);
     res.json(user);
   } catch (err) {
@@ -59,7 +66,7 @@ router.get('/me', auth, async (req, res) => {
   }
 });
 
-// PUT /api/users/profile - تحديث البيانات والصورة
+// PUT /api/users/profile
 router.put('/profile', auth, upload.single('profileImage'), async (req, res) => {
   try {
     const currentUser = await User.findById(req.user.id).select('-password');
@@ -97,7 +104,7 @@ router.put('/profile', auth, upload.single('profileImage'), async (req, res) => 
   }
 });
 
-// PATCH /:id - الـ route القديم
+// PATCH /:id (للتوافق)
 router.patch('/:id', auth, async (req, res) => {
   if (req.params.id !== req.user.id) return res.status(403).json({ msg: 'غير مصرح' });
 
