@@ -5,37 +5,27 @@
       <h1>الملف الشخصي</h1>
       <p>إدارة بياناتك الشخصية بسهولة وأمان</p>
     </div>
-
     <!-- Content -->
     <div class="profile-content">
       <!-- Loading -->
       <div *ngIf="loading" class="flex justify-center py-24">
         <div class="w-20 h-20 border-6 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
-
       <!-- Main Content -->
       <div *ngIf="!loading">
         <!-- Toast Notification -->
         <div *ngIf="message" class="profile-toast" [class.profile-toast-success]="message.type === 'success'" [class.profile-toast-error]="message.type === 'error'">
           {{ message.text }}
         </div>
-
-        <!-- Avatar مع Placeholder -->
+        <!-- Avatar مع الصورة الديفولت -->
         <div class="profile-avatar-wrapper text-center">
           <div class="relative inline-block">
             <div class="avatar-container">
-              <!-- الصورة الحقيقية -->
-              <img *ngIf="previewUrl"
-                   [src]="previewUrl"
+              <!-- الصورة (شخصية أو الديفولت اللي اخترتها) -->
+              <img [src]="previewUrl || 'https://res.cloudinary.com/dv48puhaq/image/upload/c_fill,g_face,h_400,q_auto,r_max,w_400/v1767034237/photo_2025-12-29_20-47-41_ovo0fn.jpg'"
                    alt="صورة الملف الشخصي لـ {{ user.name || 'المستخدم' }}"
-                   class="profile-avatar w-full h-full object-cover"
+                   class="profile-avatar w-full h-full object-cover rounded-full"
                    loading="lazy">
-
-              <!-- Placeholder: أول حرفين من الاسم (حساب جديد أو default) -->
-              <div *ngIf="!previewUrl"
-                   class="avatar-placeholder flex items-center justify-center">
-                <span class="initials">{{ getInitials() }}</span>
-              </div>
 
               <!-- زر الكاميرا (يظهر فقط في وضع التعديل) -->
               <label class="profile-camera-btn" [class.hidden]="!isEditing">
@@ -44,7 +34,6 @@
               </label>
             </div>
           </div>
-
           <h2 class="profile-name mt-6 text-3xl font-bold text-gray-900">{{ user.name || 'المستخدم' }}</h2>
           <p class="profile-role mt-2 text-xl font-semibold flex items-center justify-center gap-3" [style.color]="user?.role === 'job_seeker' ? 'rgb(38,32,137)' : '#16a34a'">
             <i class="fas fa-user-tag"></i>
@@ -54,7 +43,6 @@
             <i class="fas fa-envelope"></i> {{ user.email }}
           </p>
         </div>
-
         <!-- Info Card -->
         <div class="profile-info-card mt-10">
           <h3 class="profile-info-title text-2xl font-bold text-gray-900 flex items-center gap-3">
@@ -76,14 +64,12 @@
             </div>
           </div>
         </div>
-
         <!-- Action Buttons -->
         <div class="profile-actions mt-12 flex flex-col sm:flex-row gap-6 justify-center">
           <button *ngIf="!isEditing" (click)="toggleEdit()" class="profile-btn profile-btn-edit px-10 py-4 text-xl font-bold">
             <i class="fas fa-edit mr-3"></i>
             تعديل الملف الشخصي
           </button>
-
           <div *ngIf="isEditing" class="flex flex-col sm:flex-row gap-6 w-full max-w-4xl">
             <button (click)="saveProfile()" [disabled]="saving" class="profile-btn profile-btn-save px-10 py-4 text-xl font-bold">
               <i class="fas fa-save mr-3" *ngIf="!saving"></i>
