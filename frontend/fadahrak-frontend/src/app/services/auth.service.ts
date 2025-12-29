@@ -51,11 +51,11 @@ export class AuthService {
   private refreshImageCache(user: any) {
     if (user?.profileImage) {
       const timestamp = Date.now();
-      // تنظيف الـ query string القديمة (كل ?t=... المتكررة)
+      // تنظيف كامل: نزيل كل query string قديمة (كل ? وما بعدها)
       const clean = user.profileImage.split('?')[0];
       const separator = clean.includes('?') ? '&' : '?';
       user.profileImage = `${clean}${separator}t=${timestamp}`;
-      console.log('تم تنظيف وتجديد الكاش للصورة:', user.profileImage);
+      console.log('تم تنظيف وتجديد الكاش للصورة (نهائي):', user.profileImage);
     }
   }
 
