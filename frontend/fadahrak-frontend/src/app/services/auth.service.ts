@@ -17,56 +17,46 @@ export class AuthService {
     const storedToken = localStorage.getItem('token');
     if (storedUser && storedToken) {
       const user = JSON.parse(storedUser);
-      this.refreshImageCache(user);
       this.userSubject.next(user);
       console.log('تم تحميل المستخدم من localStorage');
     }
   }
 
   setUser(user: any, token: string) {
-    const userCopy = { ...user };
-    this.refreshImageCache(userCopy);
     localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userCopy));
-    this.userSubject.next(userCopy);
+    localStorage.setItem('user', JSON.stringify(user));
+    this.userSubject.next(user);
     console.log('تم حفظ التوكن والمستخدم في localStorage');
   }
 
   updateCurrentUser(updatedUser: any) {
     const current = this.userSubject.value;
-    const userCopy = { ...updatedUser };
+    const mergedUser = { ...current, ...updatedUser };
 
-    // حماية: لو الـ update مفيهوش profileImage → نحتفظ بالقديم
-    if (!userCopy.profileImage && current?.profileImage) {
-      userCopy.profileImage = current.profileImage;
-      console.log('حافظنا على الصورة القديمة في updateCurrentUser');
+    // حماية مهمة: لو الـ backend رد بدون profileImage (نادر)، نحتفظ بالقديم
+    if (!updatedUser.profileImage && current?.profileImage) {
+      mergedUser.profileImage = current.profileImage;
+      console.log('حافظنا على الصورة القديمة عند التحديث');
     }
 
-    this.refreshImageCache(userCopy);
-    localStorage.setItem('user', JSON.stringify(userCopy));
-    this.userSubject.next(userCopy);
-    console.log('تم تحديث بيانات المستخدم في AuthService:', userCopy);
+    localStorage.setItem('user', JSON.stringify(mergedUser));
+    this.userSubject.next(mergedUser);
+    console.log('تم تحديث بيانات المستخدم في AuthService:', mergedUser);
   }
 
-  private refreshImageCache(user: any) {
-    if (user?.profileImage) {
-      const timestamp = Date.now();
-      // تنظيف كامل: نزيل كل query string قديمة (كل ? وما بعدها)
-      const clean = user.profileImage.split('?')[0];
-      const separator = clean.includes('?') ? '&' : '?';
-      user.profileImage = `${clean}${separator}t=${timestamp}`;
-      console.log('تم تنظيف وتجديد الكاش للصورة (نهائي):', user.profileImage);
-    }
-  }
-
-  forceRefreshCache() {
+  // دالة اختيارية: تجديد الكاش قسريًا لو عايز (مثلاً بعد رفع صورة)
+  forceRefreshImage() {
     const current = this.userSubject.value;
-    if (current) {
+    if (current && current.profileImage) {
       const userCopy = { ...current };
-      this.refreshImageCache(userCopy);
+      // Cloudinary بيغير الـ version تلقائي لما الصورة تتغير، بس لو عايز نجبر تحديث فوري:
+      // نضيف timestamp بسيط (آمن لأن Cloudinary بيتجاهله لو الـ public_id نفسه)
+      const separator = userCopy.profileImage.includes('?') ? '&' : '?';
+      userCopy.profileImage = `${userCopy.profileImage}${separator}refresh=${Date.now()}`;
+
       localStorage.setItem('user', JSON.stringify(userCopy));
       this.userSubject.next(userCopy);
-      console.log('تم تجديد الكاش قسريًا للصورة');
+      console.log('تم تجديد كاش الصورة قسريًا');
     }
   }
 
@@ -78,11 +68,7 @@ export class AuthService {
   }
 
   getUser() {
-    const user = this.userSubject.value;
-    if (user) {
-      this.refreshImageCache(user);
-    }
-    return user;
+    return this.userSubject.value;
   }
 
   isLoggedIn(): boolean {
