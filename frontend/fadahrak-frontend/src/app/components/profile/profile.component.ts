@@ -37,19 +37,18 @@ export class ProfileComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // تجديد قسري للكاش عند الدخول للصفحة
     this.cacheBuster = Date.now();
-    this.authService.forceRefreshCache(); // ← لو موجودة في AuthService
+    this.authService.forceRefreshCache();
     this.loadProfile();
   }
 
   loadProfile() {
     this.loading = true;
-    this.cacheBuster = Date.now(); // تجديد كل تحميل
+    this.cacheBuster = Date.now();
 
     this.api.getProfile().subscribe({
       next: (data: any) => {
-        // حماية: لو الـ response مفيهوش profileImage → نحافظ على القديم
+        // حماية قوية: لو مفيش profileImage في الـ response → نستخدم القديم
         if (!data.profileImage && this.originalUser.profileImage) {
           data.profileImage = this.originalUser.profileImage;
         }
@@ -60,11 +59,11 @@ export class ProfileComponent implements OnInit {
         };
         this.originalUser = { ...this.user };
 
-        // تحديث previewUrl دايمًا مع timestamp جديد
+        // تحديث previewUrl دايمًا
         if (this.user.profileImage && this.user.profileImage !== 'default.jpg') {
           this.previewUrl = `${this.user.profileImage}?t=${this.cacheBuster}`;
         } else {
-          this.previewUrl = null; // عشان نعرض الـ initials
+          this.previewUrl = null; // → هيعرض الـ initials
         }
 
         this.loading = false;
@@ -158,13 +157,10 @@ export class ProfileComponent implements OnInit {
     setTimeout(() => this.message = null, 4000);
   }
 
-  // دالة حساب أول حرفين من الاسم
   getInitials(): string {
     if (!this.user?.name?.trim()) return 'م';
-
     const name = this.user.name.trim();
     const parts = name.split(/\s+/);
-
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();
     }
