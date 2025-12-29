@@ -38,7 +38,7 @@ export class ProfileComponent implements OnInit {
 
   ngOnInit(): void {
     this.cacheBuster = Date.now();
-    this.authService.forceRefreshCache();
+    this.authService.forceRefreshCache(); // تجديد قسري للكاش عند الدخول
     this.loadProfile();
   }
 
@@ -48,7 +48,7 @@ export class ProfileComponent implements OnInit {
 
     this.api.getProfile().subscribe({
       next: (data: any) => {
-        // حماية قوية: لو مفيش profileImage في الـ response → نستخدم القديم
+        // حماية قوية: لو الـ response مفيهوش profileImage → نستخدم القديم
         if (!data.profileImage && this.originalUser.profileImage) {
           data.profileImage = this.originalUser.profileImage;
         }
@@ -59,7 +59,7 @@ export class ProfileComponent implements OnInit {
         };
         this.originalUser = { ...this.user };
 
-        // تحديث previewUrl دايمًا
+        // تحديث previewUrl دايمًا مع timestamp جديد
         if (this.user.profileImage && this.user.profileImage !== 'default.jpg') {
           this.previewUrl = `${this.user.profileImage}?t=${this.cacheBuster}`;
         } else {
@@ -123,7 +123,7 @@ export class ProfileComponent implements OnInit {
         if (this.user.profileImage && this.user.profileImage !== 'default.jpg') {
           this.previewUrl = `${this.user.profileImage}?t=${this.cacheBuster}`;
         } else {
-          this.previewUrl = null;
+          this.previewUrl = null; // → هيعرض الـ initials
         }
 
         this.selectedFile = null;
