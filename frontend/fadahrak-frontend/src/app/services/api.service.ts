@@ -12,12 +12,9 @@ export class ApiService {
 
   constructor(private http: HttpClient) {
     const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
-    // دايمًا نستخدم /api سواء dev أو production
     this.apiUrl = '/api';
-
     if (isDev) {
-      this.imageBaseUrl = ''; // في dev الصور relative
+      this.imageBaseUrl = '';
     } else {
       this.imageBaseUrl = 'https://positive-christiana-sahla-18a86cd2.koyeb.app';
     }
@@ -39,19 +36,26 @@ export class ApiService {
 
   private prependBaseUrl(path: string): string {
     if (!path) return '';
-    if (path.startsWith('http')) return path; // لو كان URL كامل بالفعل
+    if (path.startsWith('http')) return path;
     if (path.startsWith('/')) path = path.substring(1);
     return this.imageBaseUrl === '' ? `/${path}` : `${this.imageBaseUrl}/${path}`;
   }
 
+  private cleanUrl(url: string): string {
+    // نزيل كل query string قديمة (كل ?t=... المتكررة)
+    if (!url) return '';
+    return url.split('?')[0];
+  }
+
   private addCacheBuster(data: any): any {
     if (!data) return data;
-
     const timestamp = Date.now();
 
     if (data.profileImage && typeof data.profileImage === 'string') {
-      const base = this.prependBaseUrl(data.profileImage);
+      const clean = this.cleanUrl(data.profileImage);
+      const base = this.prependBaseUrl(clean);
       data.profileImage = `${base}?t=${timestamp}`;
+      console.log('addCacheBuster applied to profileImage:', data.profileImage); // للتصحيح
     }
 
     if (Array.isArray(data)) {
@@ -62,7 +66,8 @@ export class ApiService {
       if (data[key] && typeof data[key] === 'object') {
         data[key] = this.addCacheBuster(data[key]);
       } else if (key === 'profileImage' && data[key] && typeof data[key] === 'string') {
-        const base = this.prependBaseUrl(data[key]);
+        const clean = this.cleanUrl(data[key]);
+        const base = this.prependBaseUrl(clean);
         data[key] = `${base}?t=${timestamp}`;
       }
     });
@@ -77,21 +82,17 @@ export class ApiService {
 
   // Auth
   login(data: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/auth/login`, data).pipe(
-      catchError(this.handleError)
-    );
+    return this.http.post(`${this.apiUrl}/auth/login`, data).pipe(catchError(this.handleError));
   }
 
   signup(data: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/auth/signup`, data).pipe(
-      catchError(this.handleError)
-    );
+    return this.http.post(`${this.apiUrl}/auth/signup`, data).pipe(catchError(this.handleError));
   }
 
   // Profile
   getProfile(): Observable<any> {
     return this.http.get(`${this.apiUrl}/users/me`, { headers: this.getHeaders() }).pipe(
-      map(res => this.addCacheBuster(res)), // ← أضفنا cache buster هنا
+      map(res => this.addCacheBuster(res)),
       catchError(this.handleError)
     );
   }
@@ -99,7 +100,7 @@ export class ApiService {
   updateProfile(formData: FormData): Observable<any> {
     const headers = this.getHeaders(true, true);
     return this.http.put(`${this.apiUrl}/users/profile`, formData, { headers }).pipe(
-      map(res => this.addCacheBuster(res)), // ← cache buster بعد التحديث
+      map(res => this.addCacheBuster(res)),
       catchError(this.handleError)
     );
   }
@@ -195,7 +196,6 @@ export class ApiService {
     formData.append('file', file);
     formData.append('type', type);
     if (filename) formData.append('filename', filename);
-
     const headers = this.getHeaders(true, true);
     return this.http.post(`${this.apiUrl}/messages/media`, formData, { headers }).pipe(
       catchError(this.handleError)
