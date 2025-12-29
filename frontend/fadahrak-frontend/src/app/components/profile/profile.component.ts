@@ -44,21 +44,16 @@ export class ProfileComponent implements OnInit {
     this.api.getProfile().subscribe({
       next: (data: any) => {
         console.log('Response from getProfile:', data);
-
         // حماية: لو الـ backend رد بدون صورة، نحتفظ بالقديمة
         if (!data.profileImage && this.originalUser?.profileImage) {
           data.profileImage = this.originalUser.profileImage;
         }
-
         this.user = {
           ...data,
           bio: data.bio || ''
         };
         this.originalUser = { ...this.user };
-
-        // Cloudinary بيولد URL جديد تلقائي، بس لو عايز تجديد قسري:
         this.previewUrl = this.user.profileImage || null;
-
         this.loading = false;
       },
       error: (err) => {
@@ -73,16 +68,44 @@ export class ProfileComponent implements OnInit {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      this.showMessage('حجم الصورة كبير جدًا، الحد الأقصى 5 ميجا', 'error');
+    if (file.size > 10 * 1024 * 1024) { // حد أعلى للصورة الأصلية
+      this.showMessage('الصورة كبيرة جدًا، اختر أصغر من 10 ميجا', 'error');
       return;
     }
 
     this.selectedFile = file;
 
+    // ضغط الصورة تلقائي قبل التحويل لـ base64
     const reader = new FileReader();
-    reader.onload = () => {
-      this.previewUrl = reader.result as string; // preview فوري
+    reader.onload = (e: any) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800; // حجم مثالي للبروفايل
+        let width = img.width;
+        let height = img.height;
+
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            // تحويل الـ blob المضغوط إلى File جديد
+            this.selectedFile = new File([blob], file.name, { type: 'image/jpeg' });
+
+            // preview فوري من الـ blob المضغوط
+            this.previewUrl = URL.createObjectURL(blob);
+          }
+        }, 'image/jpeg', 0.75); // جودة 75% = حجم أصغر بكتير
+      };
+      img.src = e.target.result;
     };
     reader.readAsDataURL(file);
   }
@@ -104,11 +127,10 @@ export class ProfileComponent implements OnInit {
     };
 
     if (this.selectedFile) {
-      // تحويل الصورة إلى base64 وإرسالها
+      // تحويل الصورة المضغوطة إلى base64
       const reader = new FileReader();
       reader.onload = () => {
-        updateData.profileImage = reader.result as string; // data:image/jpeg;base64,...
-
+        updateData.profileImage = reader.result as string;
         this.sendUpdate(updateData);
       };
       reader.onerror = () => {
@@ -117,7 +139,6 @@ export class ProfileComponent implements OnInit {
       };
       reader.readAsDataURL(this.selectedFile);
     } else {
-      // بدون صورة جديدة → إرسال مباشر
       this.sendUpdate(updateData);
     }
   }
@@ -126,26 +147,19 @@ export class ProfileComponent implements OnInit {
     this.api.updateProfile(updateData).subscribe({
       next: (updatedUser: any) => {
         console.log('Response from updateProfile:', updatedUser);
-
         // حماية من فقدان الصورة
         if (!updatedUser.profileImage && this.originalUser?.profileImage) {
           updatedUser.profileImage = this.originalUser.profileImage;
         }
-
         const finalUser = { ...updatedUser, bio: updatedUser.bio || this.user.bio };
-
         this.authService.updateCurrentUser(finalUser);
-
         this.user = { ...finalUser };
         this.originalUser = { ...this.user };
         this.previewUrl = finalUser.profileImage || null;
-
         this.selectedFile = null;
         this.isEditing = false;
         this.saving = false;
         this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
-
-        // اختياري: تجديد قسري للكاش في AuthService
         this.authService.forceRefreshImage();
       },
       error: (err) => {
