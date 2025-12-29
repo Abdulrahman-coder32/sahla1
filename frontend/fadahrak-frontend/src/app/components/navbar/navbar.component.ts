@@ -9,8 +9,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
   selector: 'app-navbar',
   standalone: true,
   imports: [CommonModule, RouterLink],
-  templateUrl: './navbar.component.html',  // لو عايز تفصل الـ HTML في ملف خارجي، غير ده
-  styleUrls: ['./navbar.component.css'],    // لو عايز تفصل الـ CSS في ملف خارجي
   template: `
     <nav class="bg-white shadow-lg sticky top-0 z-50 border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -41,10 +39,25 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                   </ng-container>
                 </button>
                 <div class="absolute end-0 mt-3 w-80 lg:w-96 bg-white rounded-xl shadow-2xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
-                  <!-- نفس المحتوى اللي عندك... (مش هغيره عشان طويل) -->
                   <div class="p-4 border-b border-gray-200 font-semibold text-lg lg:text-xl">الإشعارات</div>
                   <div class="max-h-96 overflow-y-auto">
-                    <!-- ... باقي الكود زي ما هو ... -->
+                    <ng-container *ngIf="notifications$ | async as notifications; else loading">
+                      <button *ngFor="let notif of notifications.slice(0, 10)" (click)="navigateToNotification(notif)"
+                              class="w-full p-3 lg:p-4 hover:bg-gray-50 border-b border-gray-100 flex items-start gap-3 lg:gap-4 text-right rounded-lg"
+                              [class.font-semibold]="!notif.read" [class.bg-gray-50]="!notif.read">
+                        <div class="w-3 h-3 rounded-full mt-2 lg:mt-3 flex-shrink-0" [class.bg-indigo-500]="!notif.read" [class.bg-gray-300]="notif.read"></div>
+                        <div>
+                          <p class="text-sm lg:text-base">{{ notif.message }}</p>
+                          <p class="text-xs lg:text-sm text-gray-500 mt-1">{{ notif.createdAt | date:'short' }}</p>
+                        </div>
+                      </button>
+                      <div *ngIf="notifications.length === 0" class="p-6 lg:p-8 text-center text-gray-500">
+                        لا توجد إشعارات جديدة
+                      </div>
+                    </ng-container>
+                    <ng-template #loading>
+                      <div class="p-6 lg:p-8 text-center text-gray-400">جاري التحميل...</div>
+                    </ng-template>
                   </div>
                   <a routerLink="/notifications" class="block p-4 text-center bg-gray-50 hover:bg-gray-100 text-gray-600 font-medium rounded-b-xl">
                     عرض جميع الإشعارات
@@ -109,12 +122,12 @@ import { Observable, Subject, takeUntil } from 'rxjs';
            class="fixed inset-0 bg-black bg-opacity-60 z-40 md:hidden"
            (click)="closeMobileMenu()"></div>
 
-      <!-- Mobile Sidebar (من اليمين - RTL friendly) -->
+      <!-- Mobile Sidebar (من اليمين - أنضف وأحترف) -->
       <div [ngClass]="{
         'translate-x-0': mobileMenuOpen || mobileNotificationsOpen,
         'translate-x-full': !(mobileMenuOpen || mobileNotificationsOpen)
       }" class="fixed inset-y-0 right-0 w-80 max-w-full bg-white shadow-2xl z-50 transition-transform duration-500 ease-in-out md:hidden overflow-y-auto">
-        <div class="p-5 border-b border-gray-200 flex justify-between items-center">
+        <div class="p-5 border-b border-gray-200 flex justify-between items-center bg-white sticky top-0">
           <h2 class="text-xl font-bold">{{ mobileNotificationsOpen ? 'الإشعارات' : 'القائمة' }}</h2>
           <button (click)="closeMobileMenu()" class="p-2">
             <i class="fas fa-times text-2xl text-gray-600"></i>
@@ -123,9 +136,24 @@ import { Observable, Subject, takeUntil } from 'rxjs';
 
         <!-- Notifications Content -->
         <div *ngIf="mobileNotificationsOpen" class="p-5">
-          <!-- نفس محتوى الإشعارات اللي عندك، بس مع max-h-screen -->
-          <div class="max-h-screen overflow-y-auto pb-20">
-            <!-- ... باقي كود الإشعارات زي ما هو ... -->
+          <div class="max-h-[calc(100vh-120px)] overflow-y-auto pb-20">
+            <ng-container *ngIf="notifications$ | async as notifications; else loadingMobile">
+              <button *ngFor="let notif of notifications.slice(0, 20)" (click)="navigateToNotification(notif)"
+                      class="w-full p-4 hover:bg-gray-50 border-b border-gray-100 flex items-start gap-4 text-right mb-2 rounded-xl"
+                      [class.font-semibold]="!notif.read" [class.bg-gray-50]="!notif.read">
+                <div class="w-3 h-3 rounded-full mt-2 flex-shrink-0" [class.bg-indigo-500]="!notif.read" [class.bg-gray-300]="notif.read"></div>
+                <div class="flex-1">
+                  <p class="text-sm">{{ notif.message }}</p>
+                  <p class="text-sm text-gray-500 mt-1">{{ notif.createdAt | date:'medium' }}</p>
+                </div>
+              </button>
+              <div *ngIf="notifications.length === 0" class="p-8 text-center text-gray-500">
+                لا توجد إشعارات جديدة
+              </div>
+            </ng-container>
+            <ng-template #loadingMobile>
+              <div class="p-8 text-center text-gray-400">جاري التحميل...</div>
+            </ng-template>
           </div>
           <a routerLink="/notifications" (click)="closeMobileMenu()" class="block mt-6 p-4 text-center bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl font-medium">
             عرض جميع الإشعارات
@@ -169,11 +197,7 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       @apply absolute bottom-[-8px] left-0 right-0 h-1 bg-indigo-600 rounded-full;
     }
     .btn-primary {
-      @apply bg-indigo-600 text-white hover:bg-indigo-700 font-medium transition-all duration-200 shadow-md;
-    }
-    /* تحسينات إضافية للموبايل */
-    body {
-      overflow-x: hidden;
+      @apply bg-indigo-600 text-white hover:bg-indigo-700 font-medium transition-all duration-200 shadow-md rounded-xl;
     }
   `]
 })
@@ -228,9 +252,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   getProfileImageUrl(): string {
     if (!this.user?.profileImage) {
-      return `https://via.placeholder.com/48?text=${encodeURIComponent(this.user?.name?.charAt(0) || 'م')}`;
+      return \`https://via.placeholder.com/48?text=\${encodeURIComponent(this.user?.name?.charAt(0) || 'م')}\`;
     }
-    return `${this.user.profileImage}?t=${this.cacheBuster}`;
+    return \`\${this.user.profileImage}?t=\${this.cacheBuster}\`;
   }
 
   onLogout() {
@@ -241,7 +265,22 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   navigateToNotification(notification: any) {
     this.closeMobileMenu();
-    // ... نفس الكود اللي عندك ...
+    let route: string[] = ['/notifications'];
+    const appId = notification.application_id || null;
+    switch (notification.type) {
+      case 'new_message':
+        if (appId) route = ['/inbox', appId];
+        break;
+      case 'application_accepted':
+      case 'application_rejected':
+      case 'new_application':
+        if (appId) route = ['/applications', appId];
+        break;
+    }
+    this.router.navigate(route);
+    if (!notification.read) {
+      this.notificationService.markAsReadAndUpdate(notification._id);
+    }
   }
 
   ngOnDestroy() {
