@@ -51,12 +51,14 @@ export class AuthService {
   private refreshImageCache(user: any) {
     if (user?.profileImage) {
       const timestamp = Date.now();
-      const separator = user.profileImage.includes('?') ? '&' : '?';
-      user.profileImage = `${user.profileImage}${separator}t=${timestamp}`;
+      // تنظيف الـ query string القديمة (كل ?t=... المتكررة)
+      const clean = user.profileImage.split('?')[0];
+      const separator = clean.includes('?') ? '&' : '?';
+      user.profileImage = `${clean}${separator}t=${timestamp}`;
+      console.log('تم تنظيف وتجديد الكاش للصورة:', user.profileImage);
     }
   }
 
-  // دالة جديدة: تجديد قسري للكاش (استخدمها في ngOnInit لو لزم)
   forceRefreshCache() {
     const current = this.userSubject.value;
     if (current) {
