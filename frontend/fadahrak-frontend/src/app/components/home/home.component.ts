@@ -8,42 +8,40 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <div class="min-h-screen bg-slate-50 flex flex-col">
+    <div class="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-100 flex flex-col">
       <!-- Hero Section -->
-      <section class="bg-gradient-to-r from-slate-700 via-slate-800 to-slate-900 text-white py-16 md:py-24 lg:py-32 text-center relative overflow-hidden">
-        <div class="absolute inset-0 bg-black opacity-10"></div>
+      <section class="bg-gradient-to-r from-slate-800 via-slate-900 to-indigo-900 text-white py-20 md:py-28 lg:py-36 text-center relative overflow-hidden">
+        <div class="absolute inset-0 bg-black opacity-30"></div>
         <div class="max-w-5xl mx-auto px-6 sm:px-8 relative z-10">
-          <h1 class="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 leading-tight">
-            مرحباً بك في <span class="text-slate-300">سَهلة</span>
+          <h1 class="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold mb-8 leading-tight">
+            مرحباً بك في <span class="text-indigo-300">سَهلة</span>
           </h1>
-          <p class="text-lg md:text-xl lg:text-2xl mb-10 max-w-3xl mx-auto leading-relaxed px-4">
-            ابحث عن <strong>وظائف محلية حقيقية</strong> في مصر، أو انشر فرص عمل في محلك بسهولة<br class="hidden sm:block">
-            تواصل مباشر مع الباحثين عن عمل أو أصحاب الأعمال – بدون وسطاء
+          <p class="text-xl md:text-2xl lg:text-3xl mb-12 max-w-4xl mx-auto leading-relaxed px-4 text-slate-200">
+            ابحث عن <strong class="text-indigo-300">وظائف محلية حقيقية</strong> في مصر، أو انشر فرص عمل في محلك بسهولة<br class="hidden sm:block">
+            تواصل مباشر مع الباحثين عن عمل أو أصحاب الأعمال – بدون وسطاء أو تعقيد
           </p>
-
-          <div class="flex flex-col sm:flex-row justify-center gap-6">
+          <div class="flex flex-col sm:flex-row justify-center gap-8">
             <ng-container *ngIf="isLoggedIn; else guestButtons">
               <a [routerLink]="user?.role === 'shop_owner' ? '/owner-dashboard' : '/seeker-dashboard'"
-                 class="btn-primary px-8 py-3 md:px-10 md:py-4 rounded-full flex items-center justify-center gap-3 transition hover:scale-105 font-semibold">
-                <i class="fas fa-tachometer-alt"></i>
+                 class="btn-primary px-10 py-4 md:px-12 md:py-5 rounded-full flex items-center justify-center gap-4 text-lg md:text-xl font-bold transition-all hover:scale-105 shadow-2xl">
+                <i class="fas fa-tachometer-alt text-xl"></i>
                 لوحة التحكم
               </a>
               <a routerLink="/jobs"
-                 class="btn-secondary px-8 py-3 md:px-10 md:py-4 rounded-full flex items-center justify-center gap-3 transition hover:scale-105 font-semibold">
-                <i class="fas fa-search"></i>
+                 class="btn-secondary px-10 py-4 md:px-12 md:py-5 rounded-full flex items-center justify-center gap-4 text-lg md:text-xl font-bold transition-all hover:scale-105">
+                <i class="fas fa-search text-xl"></i>
                 تصفح الوظائف
               </a>
             </ng-container>
-
             <ng-template #guestButtons>
               <a routerLink="/jobs"
-                 class="btn-primary px-8 py-3 md:px-10 md:py-4 rounded-full flex items-center justify-center gap-3 transition hover:scale-105 font-semibold">
-                <i class="fas fa-search"></i>
+                 class="btn-primary px-10 py-4 md:px-12 md:py-5 rounded-full flex items-center justify-center gap-4 text-lg md:text-xl font-bold transition-all hover:scale-105 shadow-2xl">
+                <i class="fas fa-search text-xl"></i>
                 ابحث عن وظائف
               </a>
               <a routerLink="/signup"
-                 class="btn-secondary px-8 py-3 md:px-10 md:py-4 rounded-full flex items-center justify-center gap-3 transition hover:scale-105 font-semibold">
-                <i class="fas fa-user-plus"></i>
+                 class="btn-secondary px-10 py-4 md:px-12 md:py-5 rounded-full flex items-center justify-center gap-4 text-lg md:text-xl font-bold transition-all hover:scale-105">
+                <i class="fas fa-user-plus text-xl"></i>
                 إنشاء حساب
               </a>
             </ng-template>
@@ -52,32 +50,29 @@ import { AuthService } from '../../services/auth.service';
       </section>
 
       <!-- How It Works -->
-      <section class="py-16 md:py-24 lg:py-32 bg-white">
+      <section class="py-20 md:py-28 lg:py-36 bg-white">
         <div class="max-w-6xl mx-auto px-6 sm:px-8 text-center">
-          <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-800 mb-16">
-            كيف تعمل <span class="text-slate-600">سَهلة</span>؟
+          <h2 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-20">
+            كيف تعمل <span class="text-indigo-600">سَهلة</span>؟
           </h2>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 md:gap-12">
-            <div class="card p-8 text-center transition hover:shadow-xl">
-              <i class="fas fa-user-plus text-5xl text-slate-600 mb-6"></i>
-              <h3 class="text-2xl font-bold mb-4">1. أنشئ حسابك</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 md:gap-16">
+            <div class="home-card p-10 text-center transition-all hover:shadow-2xl hover:-translate-y-2">
+              <i class="fas fa-user-plus text-6xl text-indigo-600 mb-8"></i>
+              <h3 class="text-3xl font-bold text-slate-800 mb-6">1. أنشئ حسابك</h3>
               <p class="text-slate-600 leading-relaxed text-lg">
                 سجل كباحث عن عمل أو صاحب محل في ثواني معدودة
               </p>
             </div>
-
-            <div class="card p-8 text-center transition hover:shadow-xl">
-              <i class="fas fa-briefcase text-5xl text-slate-600 mb-6"></i>
-              <h3 class="text-2xl font-bold mb-4">2. ابحث أو انشر</h3>
+            <div class="home-card p-10 text-center transition-all hover:shadow-2xl hover:-translate-y-2">
+              <i class="fas fa-briefcase text-6xl text-indigo-600 mb-8"></i>
+              <h3 class="text-3xl font-bold text-slate-800 mb-6">2. ابحث أو انشر</h3>
               <p class="text-slate-600 leading-relaxed text-lg">
                 اعرض مهاراتك أو انشر وظيفة محلية بكل سهولة ووضوح
               </p>
             </div>
-
-            <div class="card p-8 text-center transition hover:shadow-xl">
-              <i class="fas fa-comments text-5xl text-slate-600 mb-6"></i>
-              <h3 class="text-2xl font-bold mb-4">3. تواصل مباشر</h3>
+            <div class="home-card p-10 text-center transition-all hover:shadow-2xl hover:-translate-y-2">
+              <i class="fas fa-comments text-6xl text-indigo-600 mb-8"></i>
+              <h3 class="text-3xl font-bold text-slate-800 mb-6">3. تواصل مباشر</h3>
               <p class="text-slate-600 leading-relaxed text-lg">
                 دردش فوراً بعد قبول الطلب – بدون انتظار أو تعقيد
               </p>
@@ -87,17 +82,17 @@ import { AuthService } from '../../services/auth.service';
       </section>
 
       <!-- Success Stories -->
-      <section class="py-16 md:py-24 lg:py-32 bg-slate-100">
+      <section class="py-20 md:py-28 lg:py-36 bg-gradient-to-br from-indigo-50 to-slate-100">
         <div class="max-w-4xl mx-auto text-center px-6">
-          <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-800 mb-8">
+          <h2 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-10">
             قصص نجاح حقيقية
           </h2>
-          <p class="text-xl text-slate-700 mb-10 max-w-2xl mx-auto leading-relaxed">
+          <p class="text-xl md:text-2xl text-slate-700 mb-12 max-w-3xl mx-auto leading-relaxed">
             آلاف الأشخاص وجدوا فرصهم أو موظفيهم المثاليين من خلال سَهلة
           </p>
           <a routerLink="/success-stories"
-             class="btn-primary px-10 py-4 rounded-full inline-flex items-center gap-3 transition hover:scale-105 font-semibold">
-            <i class="fas fa-trophy"></i>
+             class="btn-primary px-12 py-5 md:px-16 md:py-6 rounded-full inline-flex items-center gap-5 text-xl md:text-2xl font-bold transition-all hover:scale-105 shadow-2xl">
+            <i class="fas fa-trophy text-2xl"></i>
             شوف قصص عملائنا
           </a>
         </div>
@@ -105,48 +100,23 @@ import { AuthService } from '../../services/auth.service';
     </div>
   `,
   styles: [`
+    /* تنسيقات خاصة بالـ Home Page - متناسقة مع الفوتر والنافبار */
     .btn-primary {
-      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-      color: #475569;
-      font-weight: bold;
-      box-shadow: 0 4px 15px rgba(71, 85, 105, 0.2);
+      @apply bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full shadow-2xl transition-all duration-300 hover:shadow-3xl hover:-translate-y-1;
     }
-
-    .btn-primary:hover {
-      box-shadow: 0 8px 25px rgba(71, 85, 105, 0.3);
-    }
-
     .btn-secondary {
-      background: transparent;
-      border: 2px solid #ffffff;
-      color: #ffffff;
-      font-weight: bold;
+      @apply bg-transparent hover:bg-white/20 text-white font-bold rounded-full border-2 border-white transition-all duration-300 backdrop-blur-sm;
     }
-
-    .btn-secondary:hover {
-      background: #ffffff;
-      color: #475569;
+    .home-card {
+      @apply bg-white rounded-2xl shadow-xl border border-slate-200 p-10 transition-all duration-500 hover:border-indigo-300;
     }
-
-    .card {
-      background: white;
-      border-radius: 1rem;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      transition: all 0.3s ease;
+    /* تحسين الخلفية العامة */
+    body {
+      background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
     }
-
-    .card:hover {
-      box-shadow: 0 10px 30px rgba(71, 85, 105, 0.15);
-    }
-
-    .min-h-screen {
-      min-height: 100vh;
-      min-height: -webkit-fill-available;
-    }
-
-    /* منع الزوم على الموبايل */
-    * {
-      -webkit-text-size-adjust: 100%;
+    /* تحسين الـ Hero text */
+    .text-indigo-300 {
+      text-shadow: 0 2px 10px rgba(0,0,0,0.3);
     }
   `]
 })
