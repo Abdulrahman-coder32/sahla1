@@ -17,7 +17,7 @@ export class AuthService {
     const storedToken = localStorage.getItem('token');
     if (storedUser && storedToken) {
       const user = JSON.parse(storedUser);
-      this.refreshImageCache(user); // تجديد الكاش للصورة عند التحميل
+      this.refreshImageCache(user);
       this.userSubject.next(user);
       console.log('تم تحميل المستخدم من localStorage');
     }
@@ -33,8 +33,16 @@ export class AuthService {
   }
 
   updateCurrentUser(updatedUser: any) {
+    const current = this.userSubject.value;
     const userCopy = { ...updatedUser };
-    this.refreshImageCache(userCopy); // تجديد الكاش في كل تحديث
+
+    // حماية: لو الـ update مفيهوش profileImage → نحتفظ بالقديم
+    if (!userCopy.profileImage && current?.profileImage) {
+      userCopy.profileImage = current.profileImage;
+      console.log('حافظنا على الصورة القديمة في updateCurrentUser');
+    }
+
+    this.refreshImageCache(userCopy);
     localStorage.setItem('user', JSON.stringify(userCopy));
     this.userSubject.next(userCopy);
     console.log('تم تحديث بيانات المستخدم في AuthService:', userCopy);
@@ -42,10 +50,21 @@ export class AuthService {
 
   private refreshImageCache(user: any) {
     if (user?.profileImage) {
-      // نجدد الـ timestamp في كل مرة يتم فيها تحميل أو تحديث
       const timestamp = Date.now();
       const separator = user.profileImage.includes('?') ? '&' : '?';
       user.profileImage = `${user.profileImage}${separator}t=${timestamp}`;
+    }
+  }
+
+  // دالة جديدة: تجديد قسري للكاش (استخدمها في ngOnInit لو لزم)
+  forceRefreshCache() {
+    const current = this.userSubject.value;
+    if (current) {
+      const userCopy = { ...current };
+      this.refreshImageCache(userCopy);
+      localStorage.setItem('user', JSON.stringify(userCopy));
+      this.userSubject.next(userCopy);
+      console.log('تم تجديد الكاش قسريًا للصورة');
     }
   }
 
@@ -59,7 +78,7 @@ export class AuthService {
   getUser() {
     const user = this.userSubject.value;
     if (user) {
-      this.refreshImageCache(user); // تجديد عند كل get
+      this.refreshImageCache(user);
     }
     return user;
   }
