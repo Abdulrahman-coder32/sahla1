@@ -13,13 +13,13 @@ import { Router } from '@angular/router';
   styleUrls: ['./profile.component.css']
 })
 export class ProfileComponent implements OnInit {
-  user: any = { 
-    name: '', 
-    email: '', 
-    phone: '', 
-    role: '', 
+  user: any = {
+    name: '',
+    email: '',
+    phone: '',
+    role: '',
     profileImage: '',
-    bio: ''  // أضفنا bio هنا
+    bio: ''
   };
   originalUser: any = {};
   isEditing = false;
@@ -42,14 +42,18 @@ export class ProfileComponent implements OnInit {
 
   loadProfile() {
     this.loading = true;
+    this.cacheBuster = Date.now(); // تجديد الكاش عند كل تحميل
+
     this.api.getProfile().subscribe({
       next: (data: any) => {
-        this.user = { 
-          ...data, 
-          bio: data.bio || ''  // نضمن إن bio موجود حتى لو null
+        this.user = {
+          ...data,
+          bio: data.bio || ''
         };
         this.originalUser = { ...this.user };
-        this.previewUrl = data?.profileImage ? `${data.profileImage}?t=${this.cacheBuster}` : null;
+        this.previewUrl = data?.profileImage 
+          ? `${data.profileImage}?t=${this.cacheBuster}` 
+          : null;
         this.loading = false;
       },
       error: (err) => {
@@ -63,12 +67,10 @@ export class ProfileComponent implements OnInit {
   onFileSelected(event: any) {
     const file = event.target.files?.[0];
     if (!file) return;
-
     if (file.size > 5 * 1024 * 1024) {
       this.showMessage('حجم الصورة كبير جدًا، الحد الأقصى 5 ميجا', 'error');
       return;
     }
-
     this.selectedFile = file;
     const reader = new FileReader();
     reader.onload = () => {
@@ -90,7 +92,7 @@ export class ProfileComponent implements OnInit {
     const formData = new FormData();
     formData.append('name', this.user.name?.trim() || '');
     if (this.user.phone) formData.append('phone', this.user.phone.trim());
-    if (this.user.bio) formData.append('bio', this.user.bio.trim());  // أضفنا حفظ bio
+    if (this.user.bio) formData.append('bio', this.user.bio.trim());
     if (this.selectedFile) formData.append('profileImage', this.selectedFile);
 
     this.api.updateProfile(formData).subscribe({
@@ -99,8 +101,10 @@ export class ProfileComponent implements OnInit {
         this.authService.updateCurrentUser(updatedWithBio);
         this.user = { ...updatedWithBio };
         this.originalUser = { ...this.user };
-        this.cacheBuster = Date.now();
-        this.previewUrl = updatedWithBio?.profileImage ? `${updatedWithBio.profileImage}?t=${this.cacheBuster}` : null;
+        this.cacheBuster = Date.now(); // تجديد الكاش بعد الحفظ
+        this.previewUrl = updatedWithBio?.profileImage 
+          ? `${updatedWithBio.profileImage}?t=${this.cacheBuster}` 
+          : null;
         this.selectedFile = null;
         this.isEditing = false;
         this.saving = false;
@@ -116,7 +120,9 @@ export class ProfileComponent implements OnInit {
 
   cancelEdit() {
     this.user = { ...this.originalUser };
-    this.previewUrl = this.originalUser?.profileImage ? `${this.originalUser.profileImage}?t=${this.cacheBuster}` : null;
+    this.previewUrl = this.originalUser?.profileImage 
+      ? `${this.originalUser.profileImage}?t=${this.cacheBuster}` 
+      : null;
     this.selectedFile = null;
     this.isEditing = false;
     this.message = null;
@@ -124,11 +130,11 @@ export class ProfileComponent implements OnInit {
 
   showMessage(text: string, type: 'success' | 'error') {
     this.message = { text, type };
-    setTimeout(() => this.message = null, 4000);  // زدنا الوقت شوية عشان الناس تقرأ
+    setTimeout(() => this.message = null, 4000);
   }
 
-  // دالة مساعدة للـ HTML عشان الصورة تتحدث
   getProfileImageUrl(): string {
-    return this.previewUrl || this.user?.profileImage || `https://via.placeholder.com/200?text=${encodeURIComponent(this.user?.name?.charAt(0) || 'م')}`;
+    return this.previewUrl || this.user?.profileImage 
+      || `https://via.placeholder.com/200?text=${encodeURIComponent(this.user?.name?.charAt(0) || 'م')}`;
   }
 }
