@@ -38,7 +38,7 @@ export class ProfileComponent implements OnInit {
 
   ngOnInit(): void {
     this.cacheBuster = Date.now();
-    this.authService.forceRefreshCache();
+    this.authService.forceRefreshCache(); // تجديد قسري
     this.loadProfile();
   }
 
@@ -48,7 +48,9 @@ export class ProfileComponent implements OnInit {
 
     this.api.getProfile().subscribe({
       next: (data: any) => {
-        // حماية: لو الـ response مفيهوش profileImage → نستخدم القديم
+        console.log('Response from getProfile:', data); // ← للتصحيح: شوف profileImage جاي إيه
+
+        // حماية قوية
         if (!data.profileImage && this.originalUser.profileImage) {
           data.profileImage = this.originalUser.profileImage;
         }
@@ -59,12 +61,13 @@ export class ProfileComponent implements OnInit {
         };
         this.originalUser = { ...this.user };
 
-        // تحديث previewUrl دايمًا
         if (this.user.profileImage) {
           const clean = this.user.profileImage.split('?')[0];
           this.previewUrl = `${clean}?t=${this.cacheBuster}`;
+          console.log('previewUrl set to:', this.previewUrl);
         } else {
           this.previewUrl = null;
+          console.log('previewUrl set to null - showing initials');
         }
 
         this.loading = false;
@@ -110,7 +113,8 @@ export class ProfileComponent implements OnInit {
 
     this.api.updateProfile(formData).subscribe({
       next: (updatedUser: any) => {
-        // حماية: لو الـ response مفيهوش profileImage → نحافظ على القديم
+        console.log('Response from updateProfile:', updatedUser);
+
         if (!updatedUser.profileImage && this.originalUser.profileImage) {
           updatedUser.profileImage = this.originalUser.profileImage;
         }
