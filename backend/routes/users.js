@@ -11,10 +11,13 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// دالة URL - رجع null لو مفيش
+// الصورة الديفولت اللي عايزها (اللي رفعتها)
+const DEFAULT_AVATAR = 'https://res.cloudinary.com/dv48puhaq/image/upload/c_fill,g_face,h_400,q_auto,r_max,w_400/v1767034237/photo_2025-12-29_20-47-41_ovo0fn.jpg';
+
+// دالة URL - رجع الصورة الديفولت لو مفيش
 const getProfileImageUrl = (publicId) => {
   if (!publicId) {
-    return null;
+    return DEFAULT_AVATAR; // دي هتظهر لكل يوزر بدون صورة
   }
   return cloudinary.url(publicId, {
     secure: true,
@@ -33,6 +36,7 @@ router.get('/me', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
     if (!user) return res.status(404).json({ msg: 'المستخدم غير موجود' });
+
     user.profileImage = getProfileImageUrl(user.profileImage);
     res.json(user);
   } catch (err) {
@@ -45,6 +49,7 @@ router.get('/me', auth, async (req, res) => {
 router.put('/profile', auth, async (req, res) => {
   try {
     const { name, phone, bio, profileImage } = req.body;
+
     const updates = {};
     if (name !== undefined) updates.name = name;
     if (phone !== undefined) updates.phone = phone;
@@ -58,8 +63,8 @@ router.put('/profile', auth, async (req, res) => {
         resource_type: 'image'
       });
       updates.profileImage = result.public_id;
-    } else if (!profileImage) {
-      updates.profileImage = null; // لو اليوزر مسح الصورة
+    } else if (profileImage === null || profileImage === '') {
+      updates.profileImage = null; // لو اليوزر مسح الصورة يدويًا
     }
 
     const updatedUser = await User.findByIdAndUpdate(
