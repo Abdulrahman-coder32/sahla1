@@ -1,19 +1,22 @@
 <div class="profile-container">
   <div class="profile-card">
+    <!-- Header -->
     <div class="profile-header">
       <h1>الملف الشخصي</h1>
       <p>إدارة بياناتك الشخصية بسهولة وأمان</p>
     </div>
 
+    <!-- Content -->
     <div class="profile-content">
+      <!-- Loading -->
       <div *ngIf="loading" class="flex justify-center py-24">
         <div class="w-20 h-20 border-6 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
 
-      <div *ngIf="!loading" class="space-y-16">
-        <!-- Toast -->
-        <div *ngIf="message" class="fixed top-24 left-1/2 -translate-x-1/2 z-50 px-10 py-5 rounded-2xl shadow-2xl text-white font-bold text-xl"
-             [ngClass]="message.type === 'success' ? 'bg-green-600' : 'bg-red-600'">
+      <!-- Main Content -->
+      <div *ngIf="!loading">
+        <!-- Toast Notification -->
+        <div *ngIf="message" class="profile-toast" [class.profile-toast-success]="message.type === 'success'" [class.profile-toast-error]="message.type === 'error'">
           {{ message.text }}
         </div>
 
@@ -22,6 +25,7 @@
           <div class="relative inline-block">
             <img [src]="previewUrl || getProfileImageUrl()" alt="صورة الملف الشخصي" class="profile-avatar">
 
+            <!-- زر الكاميرا -->
             <label class="profile-camera-btn" [class.hidden]="!isEditing">
               <i class="fas fa-camera"></i>
               <input type="file" accept="image/*" (change)="onFileSelected($event)" class="hidden">
