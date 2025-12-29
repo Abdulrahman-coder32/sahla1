@@ -38,7 +38,7 @@ export class ProfileComponent implements OnInit {
 
   ngOnInit(): void {
     this.cacheBuster = Date.now();
-    this.authService.forceRefreshCache(); // تجديد قسري
+    this.authService.forceRefreshImage();
     this.loadProfile();
   }
 
