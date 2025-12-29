@@ -102,13 +102,13 @@ import { AuthService } from '../../services/auth.service';
   styles: [`
     /* تنسيقات خاصة بالـ Home Page - متناسقة مع الفوتر والنافبار */
     .btn-primary {
-      @apply bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full shadow-2xl transition-all duration-300 hover:shadow-3xl hover:-translate-y-1;
+      @apply bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full shadow-2xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-1;
     }
     .btn-secondary {
       @apply bg-transparent hover:bg-white/20 text-white font-bold rounded-full border-2 border-white transition-all duration-300 backdrop-blur-sm;
     }
     .home-card {
-      @apply bg-white rounded-2xl shadow-xl border border-slate-200 p-10 transition-all duration-500 hover:border-indigo-300;
+      @apply bg-white rounded-2xl shadow-xl border border-slate-200 p-10 transition-all duration-500 hover:border-indigo-300 hover:shadow-2xl hover:-translate-y-2;
     }
     /* تحسين الخلفية العامة */
     body {
