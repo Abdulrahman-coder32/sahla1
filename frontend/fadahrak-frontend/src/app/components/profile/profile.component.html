@@ -17,7 +17,7 @@
         <!-- Main Content -->
         <div *ngIf="!loading" class="space-y-16">
           <!-- Toast -->
-          <div *ngIf="message" class="fixed top-24 left-1/2 -translate-x-1/2 z-50 px-10 py-5 rounded-2xl shadow-2xl text-white font-bold text-xl animate-pulse"
+          <div *ngIf="message" class="fixed top-24 left-1/2 -translate-x-1/2 z-50 px-10 py-5 rounded-2xl shadow-2xl text-white font-bold text-xl"
                [ngClass]="message.type === 'success' ? 'bg-green-600' : 'bg-red-600'">
             {{ message.text }}
           </div>
@@ -78,13 +78,13 @@
             </button>
 
             <div *ngIf="isEditing" class="flex flex-col sm:flex-row gap-8 w-full max-w-3xl">
-              <button (click)="saveProfile()" [disabled]="saving" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold text-2xl py-6 px-20 rounded-xl shadow-2xl hover:shadow-3xl hover:-translate-y-2 transition-all flex items-center justify-center gap-5">
+              <button (click)="saveProfile()" [disabled]="saving" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold text-2xl py-6 px-20 rounded-xl shadow-2xl hover:shadow-3xl hover:-translate-y-1 transition-all flex items-center justify-center gap-5">
                 <i class="fas fa-save text-2xl" *ngIf="!saving"></i>
                 <span *ngIf="saving">جاري الحفظ...</span>
                 <span *ngIf="!saving">حفظ التغييرات</span>
               </button>
 
-              <button (click)="cancelEdit()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold text-2xl py-6 px-20 rounded-xl shadow-2xl hover:shadow-3xl hover:-translate-y-2 transition-all flex items-center justify-center gap-5">
+              <button (click)="cancelEdit()" class="flex-1 btn-secondary text-2xl py-6 px-20 flex items-center justify-center gap-5 shadow-2xl hover:shadow-3xl hover:-translate-y-1 transition-all">
                 <i class="fas fa-times text-2xl"></i>
                 إلغاء
               </button>
