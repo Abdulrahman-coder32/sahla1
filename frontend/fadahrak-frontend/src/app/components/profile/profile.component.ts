@@ -38,7 +38,7 @@ export class ProfileComponent implements OnInit {
 
   ngOnInit(): void {
     this.cacheBuster = Date.now();
-    this.authService.forceRefreshCache(); // تجديد قسري للكاش عند الدخول
+    this.authService.forceRefreshCache();
     this.loadProfile();
   }
 
@@ -48,7 +48,7 @@ export class ProfileComponent implements OnInit {
 
     this.api.getProfile().subscribe({
       next: (data: any) => {
-        // حماية قوية: لو الـ response مفيهوش profileImage → نستخدم القديم
+        // حماية: لو الـ response مفيهوش profileImage → نستخدم القديم
         if (!data.profileImage && this.originalUser.profileImage) {
           data.profileImage = this.originalUser.profileImage;
         }
@@ -59,11 +59,12 @@ export class ProfileComponent implements OnInit {
         };
         this.originalUser = { ...this.user };
 
-        // تحديث previewUrl دايمًا مع timestamp جديد
-        if (this.user.profileImage && this.user.profileImage !== 'default.jpg') {
-          this.previewUrl = `${this.user.profileImage}?t=${this.cacheBuster}`;
+        // تحديث previewUrl دايمًا
+        if (this.user.profileImage) {
+          const clean = this.user.profileImage.split('?')[0];
+          this.previewUrl = `${clean}?t=${this.cacheBuster}`;
         } else {
-          this.previewUrl = null; // → هيعرض الـ initials
+          this.previewUrl = null;
         }
 
         this.loading = false;
@@ -120,10 +121,11 @@ export class ProfileComponent implements OnInit {
         this.originalUser = { ...this.user };
 
         this.cacheBuster = Date.now();
-        if (this.user.profileImage && this.user.profileImage !== 'default.jpg') {
-          this.previewUrl = `${this.user.profileImage}?t=${this.cacheBuster}`;
+        if (this.user.profileImage) {
+          const clean = this.user.profileImage.split('?')[0];
+          this.previewUrl = `${clean}?t=${this.cacheBuster}`;
         } else {
-          this.previewUrl = null; // → هيعرض الـ initials
+          this.previewUrl = null;
         }
 
         this.selectedFile = null;
@@ -142,8 +144,9 @@ export class ProfileComponent implements OnInit {
   cancelEdit() {
     this.user = { ...this.originalUser };
     this.cacheBuster = Date.now();
-    if (this.originalUser?.profileImage && this.originalUser.profileImage !== 'default.jpg') {
-      this.previewUrl = `${this.originalUser.profileImage}?t=${this.cacheBuster}`;
+    if (this.originalUser?.profileImage) {
+      const clean = this.originalUser.profileImage.split('?')[0];
+      this.previewUrl = `${clean}?t=${this.cacheBuster}`;
     } else {
       this.previewUrl = null;
     }
