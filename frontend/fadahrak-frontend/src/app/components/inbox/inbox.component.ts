@@ -45,12 +45,14 @@ import {
             رجوع
           </button>
         </div>
+
         <!-- Messages Area -->
         <div #messagesContainer class="flex-1 overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-gray-50 to-white">
           <!-- Loading -->
           <div *ngIf="loading" class="flex justify-center py-20">
             <div class="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600"></div>
           </div>
+
           <!-- No Messages -->
           <div *ngIf="!loading && messages.length === 0" class="text-center py-20 text-gray-500">
             <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -59,10 +61,12 @@ import {
             <p class="text-xl font-medium">لا توجد رسائل بعد</p>
             <p class="text-base mt-2">ابدأ المحادثة بإرسال رسالة</p>
           </div>
+
           <!-- Messages -->
           <div *ngFor="let msg of messages"
                class="flex items-start gap-4 max-w-full"
-               [ngClass]="{'flex-row-reverse': isMyMessage(msg)}">
+               [ngClass]="{'flex-row-reverse': isMyMessage(msg), 'flex-row': !isMyMessage(msg)}">
+            
             <!-- Avatar -->
             <img
               [src]="isMyMessage(msg) ? getCurrentUserImage() : getOtherUserImageUrl()"
@@ -70,17 +74,19 @@ import {
               class="w-10 h-10 rounded-full object-cover ring-4 ring-white shadow-lg flex-shrink-0"
               loading="lazy"
             >
+
             <!-- Message Bubble -->
             <div class="flex flex-col max-w-[80%]">
               <div class="px-5 py-3 rounded-3xl shadow-md"
                    [ngClass]="{
-                     'bg-blue-600 text-white rounded-br-none': isMyMessage(msg),
-                     'bg-gray-200 text-gray-900 rounded-bl-none': !isMyMessage(msg)
+                     'bg-blue-600 text-white rounded-bl-none': isMyMessage(msg),
+                     'bg-gray-200 text-gray-900 rounded-br-none': !isMyMessage(msg)
                    }">
                 <!-- Text Message -->
                 <p *ngIf="msg.type === 'text'" class="text-base leading-relaxed break-words whitespace-pre-wrap">
                   {{ msg.message }}
                 </p>
+
                 <!-- Media Message -->
                 <div *ngIf="msg.type !== 'text'" class="text-center">
                   <p class="text-sm font-medium">
@@ -92,14 +98,16 @@ import {
                   </a>
                 </div>
               </div>
+
               <!-- Timestamp -->
               <span class="text-xs text-gray-500 mt-2 px-2"
-                    [ngClass]="{'text-left': isMyMessage(msg), 'text-right': !isMyMessage(msg)}">
+                    [ngClass]="{'text-right': isMyMessage(msg), 'text-left': !isMyMessage(msg)}">
                 {{ msg.timestamp | date:'shortTime' }}
               </span>
             </div>
           </div>
         </div>
+
         <!-- Input Area -->
         <div class="p-4 bg-white border-t border-gray-200">
           <div class="flex items-end gap-3">
@@ -110,23 +118,27 @@ import {
                     class="w-12 h-12 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-all">
               <fa-icon [icon]="faPaperclip" class="text-xl text-gray-700"></fa-icon>
             </button>
+
             <!-- Voice Record -->
             <button (click)="toggleRecording()" [disabled]="isDisabledInput()"
                     class="w-12 h-12 rounded-full flex items-center justify-center transition-all"
                     [ngClass]="isRecording ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-gray-100 text-gray-700'">
               <fa-icon [icon]="isRecording ? faStop : faMicrophone" class="text-xl"></fa-icon>
             </button>
+
             <!-- Message Input -->
             <input [(ngModel)]="newMessage" (keyup.enter)="sendMessage()"
                    placeholder="اكتب رسالتك هنا..."
                    class="flex-1 px-5 py-4 rounded-3xl border border-gray-300 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 text-base bg-gray-50"
                    [disabled]="isDisabledInput()">
+
             <!-- Send Button -->
             <button (click)="sendMessage()" [disabled]="!newMessage.trim() || isDisabledInput()"
                     class="bg-blue-600 hover:bg-blue-700 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all">
               <fa-icon [icon]="faPaperPlane" class="text-lg"></fa-icon>
             </button>
           </div>
+
           <!-- File Upload Status -->
           <div *ngIf="selectedFiles.length" class="mt-4 flex flex-wrap gap-3">
             <div *ngFor="let f of selectedFiles"
@@ -144,6 +156,7 @@ import {
           </div>
         </div>
       </div>
+
       <!-- Toast Message -->
       <div *ngIf="toastMessage"
            class="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-fade-in-up">
@@ -201,12 +214,11 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
   toastMessage: string | null = null;
 
   private ngZone = inject(NgZone);
-  private cacheBuster = Date.now();
   private userSubscription!: Subscription;
 
   private readonly DEFAULT_IMAGE = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
 
-  // تعريف الأيقونات كـ properties عشان الـ template يشوفها
+  // Icons
   faArrowLeft = faArrowLeft;
   faPaperclip = faPaperclip;
   faMicrophone = faMicrophone;
@@ -229,7 +241,6 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
     this.userSubscription = this.authService.user$.subscribe(user => {
       if (user) {
         this.currentUser = user;
-        this.cacheBuster = Date.now();
       }
     });
 
@@ -286,7 +297,6 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
               }
               return;
             }
-
             if (!this.messages.some(m => m._id === normalized._id)) {
               this.ngZone.run(() => {
                 this.messages.push(normalized);
@@ -325,25 +335,32 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
     this.router.navigate(['/inbox']);
   }
 
+  // صورة المستخدم الحالي (أنت)
   getCurrentUserImage(): string {
-    if (!this.currentUser?.profileImage) return this.DEFAULT_IMAGE;
-    return `${this.currentUser.profileImage}?t=${this.cacheBuster}`;
+    const image = this.currentUser?.profileImage;
+    if (image && typeof image === 'string') {
+      const baseUrl = image.split('?')[0];
+      return `${baseUrl}?t=${Date.now()}`;
+    }
+    return this.DEFAULT_IMAGE;
   }
 
+  // صورة الطرف الآخر
   getOtherUserImageUrl(): string {
     if (!this.selectedApp) return this.DEFAULT_IMAGE;
 
     let otherUserImage: string | null = null;
-
     if (this.isJobSeeker) {
       otherUserImage = this.selectedApp.job_id?.owner_id?.profileImage || null;
     } else {
       otherUserImage = this.selectedApp.seeker_id?.profileImage || null;
     }
 
-    if (!otherUserImage) return this.DEFAULT_IMAGE;
-
-    return `${otherUserImage}?t=${this.cacheBuster}`;
+    if (otherUserImage && typeof otherUserImage === 'string') {
+      const baseUrl = otherUserImage.split('?')[0];
+      return `${baseUrl}?t=${Date.now()}`;
+    }
+    return this.DEFAULT_IMAGE;
   }
 
   getChatName(app: any) {
@@ -371,6 +388,7 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private uploadFile(fileObj: { file: File; status: 'uploading' | 'success' | 'error' }) {
     if (!this.selectedApp) return;
+
     const type = fileObj.file.type.startsWith('image/') ? 'image' :
                  fileObj.file.type.startsWith('audio/') ? 'audio' : 'file';
 
@@ -397,6 +415,7 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
       this.toastMessage = 'المتصفح لا يدعم التسجيل الصوتي';
       return;
     }
+
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then(stream => {
         this.mediaRecorder = new MediaRecorder(stream);
@@ -458,6 +477,7 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
 
   loadMessages() {
     if (!this.selectedApp) return;
+
     this.api.getMessages(this.selectedApp._id).subscribe({
       next: (msgs: any[]) => {
         this.messages = msgs.map(msg => this.normalizeMessage(msg));
