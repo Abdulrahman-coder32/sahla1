@@ -53,6 +53,7 @@ router.get('/me', auth, async (req, res) => {
 router.put('/profile', auth, async (req, res) => {
   try {
     const { name, phone, bio, profileImage } = req.body;
+
     const updates = {};
 
     if (name !== undefined) updates.name = name;
@@ -69,12 +70,12 @@ router.put('/profile', auth, async (req, res) => {
         resource_type: 'image'
       });
       updates.profileImage = result.public_id;
-      updates.$inc = { cacheBuster: 1 };
+      updates.cacheBuster = { $inc: 1 }; // ← الصحيح هنا
       cacheBusterIncremented = true;
     } else if (profileImage === null || profileImage === '') {
       updates.profileImage = null;
       updates.cacheBuster = 0;
-      cacheBusterIncremented = true; // عشان نكسر الكاش حتى لو رجع للديفولت
+      cacheBusterIncremented = true;
     }
 
     const updatedUser = await User.findByIdAndUpdate(
@@ -82,6 +83,10 @@ router.put('/profile', auth, async (req, res) => {
       updates,
       { new: true, runValidators: true }
     ).select('-password');
+
+    if (!updatedUser) {
+      return res.status(404).json({ msg: 'المستخدم غير موجود' });
+    }
 
     const finalCacheBuster = updatedUser.cacheBuster || 0;
     const imageUrl = getProfileImageUrl(updatedUser.profileImage, finalCacheBuster);
@@ -94,7 +99,7 @@ router.put('/profile', auth, async (req, res) => {
     res.json(responseUser);
 
     // إرسال تحديث real-time عبر Socket.IO إذا تغيرت الصورة
-    if (cacheBusterIncremented || profileImage) {
+    if (cacheBusterIncremented) {
       const io = req.app.get('io');
       if (io) {
         io.to(req.user.id.toString()).emit('profileUpdated', {
@@ -104,7 +109,6 @@ router.put('/profile', auth, async (req, res) => {
         });
       }
     }
-
   } catch (err) {
     console.error('خطأ تحديث البروفايل:', err);
     res.status(500).json({ msg: 'فشل رفع الصورة أو حفظ البيانات' });
