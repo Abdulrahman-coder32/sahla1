@@ -62,7 +62,6 @@ import { AuthService } from '../../services/auth.service';
               <i class="fas fa-paper-plane text-xl"></i>
               تقديم الآن
             </button>
-
             <div *ngIf="hasApplied"
                  class="bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 font-bold text-lg px-8 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl">
               <i class="fas fa-check-circle text-2xl"></i>
@@ -108,7 +107,7 @@ import { AuthService } from '../../services/auth.service';
   `]
 })
 export class JobCardComponent {
-  @Input() job: any;
+  @Input() job!: any; // استخدمنا ! عشان TypeScript ما يشتكيش
   @Input() hasApplied = false;
   @Output() applySuccess = new EventEmitter<void>();
 
@@ -116,7 +115,6 @@ export class JobCardComponent {
   toastMessage: string | null = null;
 
   private readonly DEFAULT_IMAGE = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
-  private cacheBuster = Date.now();
 
   constructor(
     private api: ApiService,
@@ -130,9 +128,14 @@ export class JobCardComponent {
 
   getOwnerImage(): string {
     const ownerImage = this.job?.owner_id?.profileImage;
-    if (ownerImage) {
-      return `${ownerImage}?t=${this.cacheBuster}`;
+
+    if (ownerImage && typeof ownerImage === 'string') {
+      // نزيل أي query parameters قديمة (مثل ?t=old) ونضيف واحدة جديدة
+      const baseUrl = ownerImage.split('?')[0];
+      return `${baseUrl}?t=${Date.now()}`;
     }
+
+    // لو مفيش صورة أو null
     return this.DEFAULT_IMAGE;
   }
 
