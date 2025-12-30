@@ -10,80 +10,84 @@ import { SocketService } from '../../services/socket.service';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <div class="min-h-screen bg-gray-50 py-12 px-4 sm:py-16 lg:py-20">
-      <div class="max-w-6xl mx-auto">
-        <!-- Header Section -->
-        <div class="text-center mb-12">
-          <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full mb-6 shadow-lg">
-            <i class="fas fa-comments text-white text-2xl"></i>
+    <div class="min-h-screen bg-gray-50 py-12 px-4 sm:py-16 lg:py-24">
+      <div class="max-w-5xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-16">
+          <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full mb-8 shadow-inner">
+            <i class="fas fa-comments text-4xl text-blue-600"></i>
           </div>
-          <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-4">الدردشات</h1>
-          <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-            تواصل مع المتقدمين أو أصحاب العمل في دردشات آمنة ومنظمة.
+          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6">الدردشات</h1>
+          <p class="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            تواصل مع {{ isOwner ? 'المتقدمين لوظائفك' : 'أصحاب العمل' }} بسهولة وأمان
           </p>
         </div>
 
-        <!-- Loading State -->
-        <div *ngIf="loading" class="flex flex-col items-center justify-center py-20">
-          <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 mb-6"></div>
-          <p class="text-xl text-gray-700 font-medium">جاري تحميل الدردشات...</p>
+        <!-- Loading -->
+        <div *ngIf="loading" class="flex flex-col items-center justify-center py-32">
+          <div class="animate-spin rounded-full h-20 w-20 border-4 border-gray-200 border-t-blue-600"></div>
+          <p class="mt-8 text-2xl text-gray-700 font-medium">جاري تحميل الدردشات...</p>
         </div>
 
         <!-- Empty State -->
-        <div *ngIf="!loading && chats.length === 0" class="bg-white rounded-3xl shadow-xl border border-gray-100 p-12 text-center">
-          <div class="inline-flex items-center justify-center w-24 h-24 bg-gray-100 rounded-full mb-8">
+        <div *ngIf="!loading && chats.length === 0" class="bg-white rounded-3xl shadow-xl border border-gray-100 p-12 sm:p-20 text-center">
+          <div class="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-10 shadow-inner">
             <i class="fas fa-comments text-6xl text-gray-400"></i>
           </div>
-          <h2 class="text-3xl font-bold text-gray-800 mb-4">لا توجد دردشات حاليًا</h2>
-          <p class="text-gray-600 text-lg leading-relaxed max-w-md mx-auto">
-            {{ isOwner ? 'ابدأ بقبول المتقدمين للوظائف لبدء التواصل.' : 'قدم على وظيفة وانتظر القبول لبدء المحادثة.' }}
+          <h2 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-6">لا توجد دردشات حاليًا</h2>
+          <p class="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto">
+            {{ isOwner ? 'عندما يتقدم أحد على وظائفك وتقبله، ستظهر الدردشة هنا.' : 'عندما يقبل صاحب العمل تقديمك، ستتمكن من بدء المحادثة.' }}
           </p>
         </div>
 
         <!-- Chats List -->
-        <div *ngIf="!loading && chats.length > 0" class="grid gap-6 md:grid-cols-2 lg:grid-cols-1">
-          <a *ngFor="let chat of chats"
-             [routerLink]="['/inbox', chat._id]"
-             class="group relative bg-white p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer border border-gray-100 overflow-hidden
-                     {{ chat.unreadCount > 0 ? 'ring-2 ring-blue-500/50 bg-blue-50/50' : 'hover:bg-gray-50' }}">
-
+        <div *ngIf="!loading && chats.length > 0" class="space-y-6">
+          <div *ngFor="let chat of chats"
+               class="group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden cursor-pointer"
+               [routerLink]="['/inbox', chat._id]">
+            
             <!-- Unread Badge -->
             <div *ngIf="chat.unreadCount > 0"
-                 class="absolute -top-3 -right-3 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-xl z-10 min-w-[24px] h-7 flex items-center justify-center animate-pulse">
+                 class="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-xl z-10 flex items-center justify-center min-w-[32px] animate-pulse">
               {{ chat.unreadCount > 99 ? '99+' : chat.unreadCount }}
             </div>
 
-            <!-- Chat Content -->
-            <div class="flex items-center space-x-4 rtl:space-x-reverse">
-              <!-- Avatar Placeholder -->
-              <div class="flex-shrink-0 w-14 h-14 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-md">
-                <i class="fas fa-user text-white text-lg"></i>
+            <!-- Chat Card -->
+            <div class="p-6 sm:p-8 flex items-center gap-6">
+              <!-- Avatar -->
+              <div class="flex-shrink-0">
+                <img
+                  [src]="getChatAvatar(chat)"
+                  alt="صورة {{ chat.name }}"
+                  class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover ring-4 ring-white shadow-xl"
+                  loading="lazy"
+                >
               </div>
 
-              <!-- Chat Details -->
+              <!-- Details -->
               <div class="flex-1 min-w-0">
-                <h3 class="text-xl font-bold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                <h3 class="text-xl sm:text-2xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors truncate">
                   {{ chat.name }}
                 </h3>
-                <p class="text-gray-600 text-sm mt-1 line-clamp-2 leading-relaxed">
-                  {{ chat.lastMessage || 'ابدأ المحادثة' }}
+                <p class="text-base sm:text-lg text-gray-600 mt-3 line-clamp-2 leading-relaxed">
+                  {{ chat.lastMessage || 'ابدأ المحادثة الآن' }}
                 </p>
               </div>
 
               <!-- Timestamp -->
-              <div class="flex-shrink-0 text-right">
-                <p class="text-xs text-gray-500 font-medium">
+              <div class="text-right">
+                <p class="text-sm font-medium text-gray-700">
                   {{ chat.lastUpdated | date:'shortTime' }}
                 </p>
-                <p class="text-xs text-gray-400 mt-1">
-                  {{ chat.lastUpdated | date:'shortDate' }}
+                <p class="text-xs text-gray-500 mt-1">
+                  {{ chat.lastUpdated | date:'mediumDate' }}
                 </p>
               </div>
             </div>
 
-            <!-- Hover Effect Line -->
-            <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
-          </a>
+            <!-- Hover Line -->
+            <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -95,6 +99,13 @@ import { SocketService } from '../../services/socket.service';
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
     }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .animate-pulse {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
   `]
 })
 export class InboxListComponent implements OnInit, OnDestroy {
@@ -102,6 +113,9 @@ export class InboxListComponent implements OnInit, OnDestroy {
   loading = true;
   isOwner = false;
   currentUserId: string | null = null;
+
+  private readonly DEFAULT_IMAGE = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
+  private cacheBuster = Date.now();
 
   constructor(
     private api: ApiService,
@@ -115,68 +129,46 @@ export class InboxListComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     window.scrollTo(0, 0);
-    this.socketService.connect(); // نتأكد إن السوكت متصل
+    this.socketService.connect();
     this.loadAcceptedChats();
     this.setupSocketListeners();
   }
 
   ngOnDestroy() {
-    // تنظيف الـ listeners عشان ما يتكررش
     this.socketService.onChatListUpdate(() => {});
     this.socketService.onUnreadUpdate(() => {});
   }
 
   private setupSocketListeners() {
-    // الحدث الجديد والأهم: تحديث قائمة الدردشات كاملة real-time
     this.socketService.onChatListUpdate((data: {
       application_id: string;
       lastMessage: string;
       lastTimestamp: Date;
       unreadCount: number;
     }) => {
-      console.log('chatListUpdate وصل:', data); // ← للتأكد من القيمة اللي جاية من الـ backend
-
       const chat = this.chats.find(c => c._id === data.application_id);
-
       if (chat) {
         chat.lastMessage = data.lastMessage || '[ملف مرفق]';
         chat.lastUpdated = new Date(data.lastTimestamp);
-
-        // نستخدم القيمة اللي جاية من الـ backend مباشرة
-        // لأن الـ backend بيرسل unreadCount الصحيح لكل مستخدم (0 للمرسل، +1 للمستقبل)
         chat.unreadCount = data.unreadCount;
-
-        console.log('تم تحديث الدردشة محليًا:', {
-          id: chat._id,
-          name: chat.name,
-          unreadCount_الجديد: chat.unreadCount,
-          isOwner: this.isOwner
-        });
       } else {
-        console.log('دردشة جديدة وصلت via socket، بنعمل reload');
         this.loadAcceptedChats();
         return;
       }
-
-      // نقل الدردشة للأعلى دائمًا
       this.chats = this.chats.filter(c => c._id !== data.application_id);
       this.chats.unshift(chat);
     });
 
-    // احتياطي: تحديث العداد فقط (من mark-read أو حالات أخرى)
     this.socketService.onUnreadUpdate((data: { application_id: string; unreadCount: number }) => {
       const chat = this.chats.find(c => c._id === data.application_id);
       if (chat) {
         chat.unreadCount = data.unreadCount;
-        console.log('unreadUpdate وصل:', data);
       }
     });
 
-    // حالات القبول الجديدة
     if (this.isOwner) {
       this.socketService.onNewApplication(() => this.loadAcceptedChats());
     }
-
     this.socketService.onApplicationUpdate((data: any) => {
       if (data.status === 'accepted') {
         this.loadAcceptedChats();
@@ -186,21 +178,22 @@ export class InboxListComponent implements OnInit, OnDestroy {
 
   private loadAcceptedChats() {
     this.loading = true;
-
     const apiCall = this.isOwner ? this.api.getApplicationsForOwner() : this.api.getMyApplications();
-
     apiCall.subscribe({
       next: (applications: any[]) => {
         const accepted = applications.filter(app => app.status === 'accepted');
-
         this.chats = accepted.map(app => {
-          // ← التعديل النهائي: عرض unreadCount الخاص بالمستخدم الحالي فقط
           let unreadCount = 0;
           if (this.isOwner) {
-            unreadCount = app.unreadCounts?.owner || 0;  // صاحب العمل يشوف unread بتاعه (owner)
+            unreadCount = app.unreadCounts?.owner || 0;
           } else {
-            unreadCount = app.unreadCounts?.seeker || 0; // المتقدم يشوف unread بتاعه (seeker)
+            unreadCount = app.unreadCounts?.seeker || 0;
           }
+
+          // استخراج الصورة للطرف الآخر
+          const otherUserImage = this.isOwner
+            ? app.seeker_id?.profileImage
+            : app.job_id?.owner_id?.profileImage;
 
           return {
             _id: app._id,
@@ -209,10 +202,10 @@ export class InboxListComponent implements OnInit, OnDestroy {
               : (app.job_id?.shop_name || 'صاحب العمل'),
             lastMessage: app.lastMessage || 'ابدأ المحادثة',
             lastUpdated: app.lastTimestamp || app.updatedAt || app.createdAt || new Date(),
-            unreadCount: unreadCount
+            unreadCount: unreadCount,
+            profileImage: otherUserImage // للاستخدام في getChatAvatar
           };
         });
-
         this.sortChats();
         this.loading = false;
       },
@@ -227,5 +220,12 @@ export class InboxListComponent implements OnInit, OnDestroy {
     this.chats.sort((a, b) =>
       new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
     );
+  }
+
+  getChatAvatar(chat: any): string {
+    if (chat.profileImage) {
+      return `${chat.profileImage}?t=${this.cacheBuster}`;
+    }
+    return this.DEFAULT_IMAGE;
   }
 }
