@@ -16,15 +16,18 @@ import { Observable, Subject } from 'rxjs';
           <!-- Logo -->
           <div class="flex items-center">
             <a routerLink="/" (click)="closeMobileMenu()">
-              <img src="assets/logo.png" alt="سَهلة" class="h-10 sm:h-12 lg:h-14 w-auto max-w-28 sm:max-w-32 lg:max-w-36 object-contain transition-transform duration-300 hover:scale-105">
+              <img src="assets/logo.png" alt="سَهلة"
+                   class="h-10 sm:h-12 lg:h-14 w-auto max-w-28 sm:max-w-32 lg:max-w-36 object-contain transition-transform duration-300 hover:scale-105">
             </a>
           </div>
+
           <!-- Desktop Navigation -->
           <div class="hidden md:flex items-center gap-4 lg:gap-6">
             <a routerLink="/" class="nav-link" routerLinkActive="active-link">الرئيسية</a>
             <a routerLink="/jobs" class="nav-link" routerLinkActive="active-link">الوظائف</a>
             <a routerLink="/about" class="nav-link" routerLinkActive="active-link">عننا</a>
             <a routerLink="/contact" class="nav-link" routerLinkActive="active-link">اتصل بنا</a>
+
             <ng-container *ngIf="currentUser$ | async as user; else guestDesktop">
               <!-- Notifications Dropdown -->
               <div class="relative group">
@@ -62,13 +65,15 @@ import { Observable, Subject } from 'rxjs';
                   </a>
                 </div>
               </div>
+
               <a routerLink="/inbox" class="nav-link" routerLinkActive="active-link">الرسائل</a>
               <a [routerLink]="user.role === 'shop_owner' ? '/owner-dashboard' : '/seeker-dashboard'"
                  class="nav-link" routerLinkActive="active-link">لوحة التحكم</a>
+
               <!-- Profile Dropdown -->
               <div class="relative group">
                 <button class="flex items-center gap-3 lg:gap-4 rounded-full focus:outline-none p-2">
-                  <img [src]="user.profileImage" alt="صورة الملف الشخصي"
+                  <img [src]="getProfileImage(user)" alt="صورة الملف الشخصي"
                        class="w-10 h-10 lg:w-12 lg:h-12 rounded-full object-cover ring-2 ring-gray-300 shadow-md">
                   <div class="hidden lg:block max-w-[180px]">
                     <span class="text-gray-700 font-medium text-base lg:text-lg show-start block">
@@ -89,11 +94,13 @@ import { Observable, Subject } from 'rxjs';
                 </div>
               </div>
             </ng-container>
+
             <ng-template #guestDesktop>
               <a routerLink="/login" class="nav-link" routerLinkActive="active-link">دخول</a>
               <a routerLink="/signup" class="btn-primary px-5 py-2 lg:px-7 lg:py-3 rounded-xl text-base lg:text-lg">إنشاء حساب</a>
             </ng-template>
           </div>
+
           <!-- Mobile Buttons -->
           <div class="md:hidden flex items-center gap-4">
             <ng-container *ngIf="currentUser$ | async">
@@ -116,6 +123,7 @@ import { Observable, Subject } from 'rxjs';
           </div>
         </div>
       </div>
+
       <!-- Overlay + Mobile Sidebar -->
       <div *ngIf="mobileMenuOpen || mobileNotificationsOpen"
            class="fixed inset-0 bg-black bg-opacity-60 z-40 md:hidden"
@@ -127,7 +135,7 @@ import { Observable, Subject } from 'rxjs';
         <!-- Header -->
         <div class="p-5 border-b border-gray-200 flex items-center gap-4 bg-white sticky top-0 z-10">
           <ng-container *ngIf="currentUser$ | async as user">
-            <img [src]="user.profileImage" alt="صورة الملف الشخصي"
+            <img [src]="getProfileImage(user)" alt="صورة الملف الشخصي"
                  class="w-14 h-14 rounded-full object-cover ring-2 ring-gray-200 shadow-md flex-shrink-0">
             <div class="flex-1 min-w-0">
               <h2 class="text-xl font-bold text-gray-800 show-start">{{ user.name || 'مستخدم' }}</h2>
@@ -138,6 +146,7 @@ import { Observable, Subject } from 'rxjs';
             <i class="fas fa-times text-2xl text-gray-600"></i>
           </button>
         </div>
+
         <!-- Content -->
         <div class="flex-1 overflow-y-auto pb-20">
           <!-- Notifications Mobile -->
@@ -160,6 +169,7 @@ import { Observable, Subject } from 'rxjs';
               <div class="p-8 text-center text-gray-400">جاري التحميل...</div>
             </ng-template>
           </div>
+
           <!-- Menu Mobile -->
           <div *ngIf="mobileMenuOpen && !mobileNotificationsOpen" class="p-5">
             <ng-container *ngIf="currentUser$ | async as user; else guestMobile">
@@ -184,6 +194,7 @@ import { Observable, Subject } from 'rxjs';
             </div>
           </div>
         </div>
+
         <!-- عرض جميع الإشعارات في الأسفل -->
         <div *ngIf="mobileNotificationsOpen" class="sticky bottom-0 bg-white border-t border-gray-200 p-4">
           <a routerLink="/notifications" (click)="closeMobileMenu()" class="block text-center bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-6 rounded-xl transition-all">
@@ -220,7 +231,7 @@ import { Observable, Subject } from 'rxjs';
   `]
 })
 export class NavbarComponent implements OnInit, OnDestroy {
-  private authService = inject(AuthService); // ← آمن وشغال في field initializer
+  private authService = inject(AuthService);
   currentUser$ = this.authService.user$;
 
   notificationCount$!: Observable<number>;
@@ -240,6 +251,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {}
+
+  getProfileImage(user: any): string {
+    const timestamp = new Date().getTime();
+    return user.profileImage ? `${user.profileImage}?v=${timestamp}` : 'assets/default-profile.png';
+  }
 
   toggleMenu(): void {
     this.mobileMenuOpen = !this.mobileMenuOpen;
