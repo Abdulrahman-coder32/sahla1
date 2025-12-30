@@ -19,7 +19,7 @@ import { SocketService } from '../../services/socket.service';
           </div>
           <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6">الدردشات</h1>
           <p class="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            تواصل مع {{ isOwner ? 'المتقدمين لوظائفك' : 'أصحاب العمل' }} بسهولة وأمان
+            تواصل مع {{ isOwner ? 'المتقدمين لوظائفك' : 'أصحاب العمل' }} بسهلة وأمان
           </p>
         </div>
 
@@ -45,7 +45,7 @@ import { SocketService } from '../../services/socket.service';
           <div *ngFor="let chat of chats"
                class="group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden cursor-pointer"
                [routerLink]="['/inbox', chat._id]">
-           
+          
             <!-- Unread Badge -->
             <div *ngIf="chat.unreadCount > 0"
                  class="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-xl z-10 flex items-center justify-center min-w-[32px] animate-pulse">
@@ -55,12 +55,13 @@ import { SocketService } from '../../services/socket.service';
             <!-- Chat Card -->
             <div class="p-6 sm:p-8 flex items-center gap-6">
               <!-- Avatar -->
-              <div class="flex-shrink-0">
+              <div class="flex-shrink-0 relative">
                 <img
                   [src]="getChatAvatar(chat)"
                   alt="صورة {{ chat.name }}"
-                  class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover ring-4 ring-white shadow-xl"
+                  class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover ring-4 ring-white shadow-xl transition-transform duration-300 group-hover:scale-105"
                   loading="lazy"
+                  (error)="onImageError($event)"
                 >
               </div>
 
@@ -114,7 +115,8 @@ export class InboxListComponent implements OnInit, OnDestroy {
   isOwner = false;
   currentUserId: string | null = null;
 
-  private readonly DEFAULT_IMAGE = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
+  private readonly DEFAULT_IMAGE = 
+    'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
 
   constructor(
     private api: ApiService,
@@ -154,10 +156,11 @@ export class InboxListComponent implements OnInit, OnDestroy {
         this.loadAcceptedChats();
         return;
       }
-      // إعادة ترتيب الدردشات عشان الجديدة تبقى فوق
+
+      // إعادة ترتيب الدردشات
       this.chats = this.chats.filter(c => c._id !== data.application_id);
       this.chats.unshift(chat);
-      this.sortChats(); // احتياطي
+      this.sortChats();
     });
 
     this.socketService.onUnreadUpdate((data: { application_id: string; unreadCount: number }) => {
@@ -180,7 +183,10 @@ export class InboxListComponent implements OnInit, OnDestroy {
 
   private loadAcceptedChats() {
     this.loading = true;
-    const apiCall = this.isOwner ? this.api.getApplicationsForOwner() : this.api.getMyApplications();
+    const apiCall = this.isOwner 
+      ? this.api.getApplicationsForOwner() 
+      : this.api.getMyApplications();
+
     apiCall.subscribe({
       next: (applications: any[]) => {
         const accepted = applications.filter(app => app.status === 'accepted');
@@ -204,9 +210,10 @@ export class InboxListComponent implements OnInit, OnDestroy {
             lastMessage: app.lastMessage || 'ابدأ المحادثة',
             lastUpdated: app.lastTimestamp || app.updatedAt || app.createdAt || new Date(),
             unreadCount: unreadCount,
-            profileImage: otherUserImage  // ممكن null → هيعرض الديفولت
+            profileImage: otherUserImage
           };
         });
+
         this.sortChats();
         this.loading = false;
       },
@@ -218,18 +225,39 @@ export class InboxListComponent implements OnInit, OnDestroy {
   }
 
   private sortChats() {
-    this.chats.sort((a, b) =>
+    this.chats.sort((a, b) => 
       new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
     );
   }
 
-  // دالة محسنة: تضيف cache buster جديد كل مرة
   getChatAvatar(chat: any): string {
-    if (chat.profileImage && typeof chat.profileImage === 'string') {
-      // لو الرابط فيه ?t= بالفعل (من ApiService)، هنضيف واحد جديد
-      const baseUrl = chat.profileImage.split('?')[0];
-      return `${baseUrl}?t=${Date.now()}`;
+    const img = chat?.profileImage;
+
+    if (!img || typeof img !== 'string') {
+      return this.DEFAULT_IMAGE;
     }
-    return this.DEFAULT_IMAGE;
+
+    // إذا كان الرابط يحتوي بالفعل على cache buster من ApiService
+    // نحدّث الـ timestamp فقط لضمان التحديث عند تغيير الصورة
+    if (img.includes('?t=')) {
+      const base = img.split('?')[0];
+      return `${base}?t=${Date.now()}`;
+    }
+
+    // لو رابط خارجي بدون query (مثل Cloudinary خام)
+    if (img.startsWith('http')) {
+      return `${img}?t=${Date.now()}`; // اختياري: ممكن تسيبه بدون إضافة
+    }
+
+    // حالة نادرة: مسار نسبي بدون معالجة من ApiService
+    return `${img}?t=${Date.now()}`;
+  }
+
+  onImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    if (img.src !== this.DEFAULT_IMAGE) {
+      img.src = this.DEFAULT_IMAGE;
+    }
+    img.onerror = null; // منع تكرار الخطأ
   }
 }
