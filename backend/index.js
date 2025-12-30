@@ -167,13 +167,17 @@ app.use(express.static(
   path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend')
 ));
 
-app.get('*', (req, res) => {
-  if (!req.path.startsWith('/api')) {
+// بدل app.get('*', ...) استخدم middleware
+app.use((req, res, next) => {
+  if (req.method === 'GET' && !req.path.startsWith('/api')) {
     res.sendFile(
       path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend/index.html')
     );
+  } else {
+    next();
   }
 });
+
 
 // ─────────────────────────────
 // Test route
