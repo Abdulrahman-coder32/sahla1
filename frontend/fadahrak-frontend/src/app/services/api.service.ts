@@ -10,7 +10,10 @@ export class ApiService {
   private apiUrl: string;
   private imageBaseUrl: string;
 
-  private readonly CLOUDINARY_BASE = 'https://res.cloudinary.com/dv48puhaq/image/upload/';
+  // الـ transformations اللي عايزها في كل الصور (نفس اللي في الرابط بتاعك)
+  private readonly CLOUDINARY_TRANSFORM = 'c_fill,f_auto,g_face,h_400,q_auto,r_max,w_400';
+
+  private readonly CLOUDINARY_BASE = `https://res.cloudinary.com/dv48puhaq/image/upload/${this.CLOUDINARY_TRANSFORM}/`;
 
   constructor(private http: HttpClient) {
     const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -32,28 +35,30 @@ export class ApiService {
     return headers;
   }
 
+  /**
+   * تحويل أي profileImage إلى رابط Cloudinary كامل بنفس الـ transformations
+   */
   private getFullImageUrl(path: string): string {
     if (!path) return '';
 
-    // 1. رابط كامل (من /users/me مثلاً) → نزيل query قديمة
-    if (path.startsWith('http')) {
+    // 1. لو الرابط كامل (من /me أو /profile) → نزيل query قديمة
+    if (path.startsWith('https://res.cloudinary.com/')) {
       return path.split('?')[0];
     }
 
-    // 2. مسار قديم /sahla-profiles/... → نحوله Cloudinary
+    // 2. استخراج public_id من أي شكل (مسار قديم أو خام)
+    let publicId = path;
     if (path.includes('/sahla-profiles/')) {
-      const publicId = path.split('/sahla-profiles/')[1]?.split('?')[0] || path.split('/').pop()?.split('?')[0] || '';
-      if (publicId) {
-        return `${this.CLOUDINARY_BASE}c_fill,f_auto,g_face,h_400,q_auto,r_max,w_400/v1/sahla-profiles/${publicId}`;
-      }
+      publicId = path.split('/sahla-profiles/')[1]?.split('?')[0] || path.split('/').pop()?.split('?')[0] || '';
+    } else if (path.includes('user_')) {
+      publicId = path.split('?')[0];
     }
 
-    // 3. public_id خام (user_...) → Cloudinary
-    if (!path.includes('/') && !path.startsWith('/')) {
-      return `${this.CLOUDINARY_BASE}c_fill,f_auto,g_face,h_400,q_auto,r_max,w_400/v1/sahla-profiles/${path}`;
+    if (publicId && publicId.startsWith('user_')) {
+      return `${this.CLOUDINARY_BASE}v1/sahla-profiles/${publicId}`;
     }
 
-    // 4. fallback (مسار نسبي نادر)
+    // 3. fallback (مسار نسبي نادر)
     let cleaned = path.startsWith('/') ? path.substring(1) : path;
     return this.imageBaseUrl ? `${this.imageBaseUrl}/${cleaned}` : `/${cleaned}`;
   }
@@ -66,19 +71,23 @@ export class ApiService {
     const processImage = (url: string | null | undefined): string | null => {
       if (!url || typeof url !== 'string') return null;
 
-      // نحصل على رابط نظيف بدون query قديمة
+      // رابط نظيف بدون query
       let fullUrl = this.getFullImageUrl(url);
-      fullUrl = fullUrl.split('?')[0]; // نزيل أي ?t= قديمة عشان ما يتكررش
+      fullUrl = fullUrl.split('?')[0];
 
+      // إضافة timestamp جديد دايماً
       return `${fullUrl}?t=${timestamp}`;
     };
 
+    // معالجة الحقول الرئيسية
     if (data.profileImage) data.profileImage = processImage(data.profileImage);
     if (data.owner_id?.profileImage) data.owner_id.profileImage = processImage(data.owner_id.profileImage);
     if (data.seeker_id?.profileImage) data.seeker_id.profileImage = processImage(data.seeker_id.profileImage);
 
+    // معالجة القوائم
     if (Array.isArray(data)) return data.map(item => this.addCacheBuster(item));
 
+    // معالجة الكائنات المتداخلة
     Object.keys(data).forEach(key => {
       if (data[key] && typeof data[key] === 'object' && !Array.isArray(data[key])) {
         data[key] = this.addCacheBuster(data[key]);
@@ -96,6 +105,7 @@ export class ApiService {
   // ────────────────────────────────────────────────────────────────────────
   // باقي الدوال (انسخها من ملفك القديم كاملة)
   // ────────────────────────────────────────────────────────────────────────
+
   login(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/auth/login`, data).pipe(catchError(this.handleError));
   }
