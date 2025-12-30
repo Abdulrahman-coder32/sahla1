@@ -4,6 +4,15 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const router = express.Router();
 
+const DEFAULT_AVATAR = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
+
+const getProfileImageUrl = (publicId, cacheBuster = 0) => {
+  const url = publicId
+    ? `https://res.cloudinary.com/dv48puhaq/image/upload/v${cacheBuster}/sahla-profiles/${publicId}`
+    : DEFAULT_AVATAR;
+  return `${url}?v=${cacheBuster}`;
+};
+
 // Signup
 router.post('/signup', async (req, res) => {
   const { email, password, role, ...profile } = req.body;
@@ -24,7 +33,7 @@ router.post('/signup', async (req, res) => {
       email,
       password: hashed,
       role,
-      // الديفولت هيجي من الـ Model تلقائي
+      cacheBuster: 0, // صراحة عشان الكاش يبدأ من 0
       ...profile
     });
 
@@ -36,19 +45,21 @@ router.post('/signup', async (req, res) => {
       { expiresIn: '30d' }
     );
 
+    const imageUrl = getProfileImageUrl(user.profileImage, user.cacheBuster || 0);
+
     res.json({
       token,
       user: {
         id: user._id,
         email: user.email,
         role: user.role,
-        profileImage: user.profileImage,
-        cacheBuster: user.cacheBuster,
+        profileImage: imageUrl,
+        cacheBuster: user.cacheBuster || 0,
         ...profile
       }
     });
   } catch (err) {
-    console.error(err);
+    console.error('خطأ في إنشاء الحساب:', err);
     res.status(500).json({ msg: 'خطأ في السيرفر' });
   }
 });
@@ -62,7 +73,7 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ email }).select('-password');
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ msg: 'بيانات غير صحيحة' });
     }
@@ -78,19 +89,24 @@ router.post('/login', async (req, res) => {
       { expiresIn: '30d' }
     );
 
+    const imageUrl = getProfileImageUrl(user.profileImage, user.cacheBuster || 0);
+
     res.json({
       token,
       user: {
         id: user._id,
         email: user.email,
         role: user.role,
-        profileImage: user.profileImage,
+        profileImage: imageUrl,
         cacheBuster: user.cacheBuster || 0,
-        ...user._doc
+        name: user.name,
+        phone: user.phone,
+        bio: user.bio,
+        // أي fields تانية عايز ترجعها
       }
     });
   } catch (err) {
-    console.error(err);
+    console.error('خطأ في تسجيل الدخول:', err);
     res.status(500).json({ msg: 'خطأ في السيرفر' });
   }
 });
