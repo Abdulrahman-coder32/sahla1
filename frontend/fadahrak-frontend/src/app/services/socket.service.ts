@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
 import { AuthService } from './auth.service';
-import { environment } from '../../environments/environment'; // مهم جدًا نستخدم environment
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -23,27 +23,21 @@ export class SocketService {
       return;
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // الجزء المهم: URL ديناميكي حسب البيئة
-    // ──────────────────────────────────────────────────────────────
     const socketUrl = environment.production
-      ? window.location.origin  // في الإنتاج: نفس الدومين (مثل https://your-app.koyeb.app)
-      : 'http://localhost:5000'; // في التطوير المحلي فقط
+      ? window.location.origin
+      : 'http://localhost:5000';
 
     console.log('جاري الاتصال بالسوكت على:', socketUrl);
 
     this.socket = io(socketUrl, {
       auth: { token },
-      transports: ['websocket', 'polling'], // websocket أولًا لأفضل أداء
+      transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
     });
 
-    // ──────────────────────────────────────────────────────────────
-    // Logs مفيدة للتشخيص (هتشوفها في console المتصفح)
-    // ──────────────────────────────────────────────────────────────
     this.socket.on('connect', () => {
       console.log('✅ متصل بالسوكت بنجاح على', socketUrl);
     });
@@ -56,10 +50,16 @@ export class SocketService {
       console.error('❌ خطأ في الاتصال بالسوكت:', err.message);
     });
 
-    // اختياري: لو عايز تشوف كل events جاية
-    // this.socket.onAny((event, ...args) => {
-    //   console.log('Event جاء:', event, args);
-    // });
+    // ──────────────────────────────────────────────────────────────
+    // جديد: استقبال تحديث صورة البروفايل real-time
+    // ──────────────────────────────────────────────────────────────
+    this.socket.on('profileUpdated', (data: { userId: string; profileImage: string; cacheBuster: number }) => {
+      console.log('تحديث صورة بروفايل وصل عبر السوكت:', data);
+      this.authService.handleProfileUpdate(data);
+    });
+
+    // باقي الـ listeners زي ما هي
+    // (مش هنعدل فيهم، هما تمام)
   }
 
   joinChat(applicationId: string) {
@@ -73,10 +73,6 @@ export class SocketService {
       this.socket.emit('sendMessage', { application_id: applicationId, message });
     }
   }
-
-  // ──────────────────────────────────────────────────────────────
-  // Listeners للأحداث المختلفة (كلها زي ما هي، تمام)
-  // ──────────────────────────────────────────────────────────────
 
   onNewMessage(callback: (msg: any) => void) {
     if (this.socket) {
