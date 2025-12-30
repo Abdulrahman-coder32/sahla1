@@ -24,7 +24,7 @@ router.post('/signup', async (req, res) => {
       email,
       password: hashed,
       role,
-      profilePicture: 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg',
+      // الديفولت هيجي من الـ Model تلقائي
       ...profile
     });
 
@@ -42,7 +42,8 @@ router.post('/signup', async (req, res) => {
         id: user._id,
         email: user.email,
         role: user.role,
-        profilePicture: user.profilePicture,
+        profileImage: user.profileImage,
+        cacheBuster: user.cacheBuster,
         ...profile
       }
     });
@@ -61,7 +62,7 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('-password');
     if (!user) {
       return res.status(400).json({ msg: 'بيانات غير صحيحة' });
     }
@@ -83,9 +84,9 @@ router.post('/login', async (req, res) => {
         id: user._id,
         email: user.email,
         role: user.role,
-        profilePicture: user.profilePicture,
-        ...user._doc,
-        password: undefined
+        profileImage: user.profileImage,
+        cacheBuster: user.cacheBuster || 0,
+        ...user._doc
       }
     });
   } catch (err) {
