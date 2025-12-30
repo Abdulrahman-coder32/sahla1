@@ -36,15 +36,33 @@ export class ApiService {
 
   private prependBaseUrl(path: string): string {
     if (!path) return '';
-    if (path.startsWith('http')) return path;
-    if (path.startsWith('/')) path = path.substring(1);
-    return this.imageBaseUrl === '' ? `/${path}` : `${this.imageBaseUrl}/${path}`;
+
+    // لو الرابط كامل (Cloudinary, S3, أي رابط خارجي) → نرجعه زي ما هو بدون تغيير
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+
+    let cleanedPath = path;
+
+    // تصليح المسار القديم الغلط (لو لسه موجود في الداتابيز)
+    if (cleanedPath.includes('/sahla-profiles/')) {
+      cleanedPath = cleanedPath.replace('/sahla-profiles/', '/uploads/');
+    }
+
+    // إزالة / من البداية لو موجود
+    if (cleanedPath.startsWith('/')) {
+      cleanedPath = cleanedPath.substring(1);
+    }
+
+    // إرجاع الرابط مع الـ base المناسب
+    return this.imageBaseUrl === '' 
+      ? `/${cleanedPath}` 
+      : `${this.imageBaseUrl}/${cleanedPath}`;
   }
 
   private cleanUrl(url: string): string {
     if (!url) return '';
-    // نزيل كل الـ query string (كل شيء بعد ? الأول)
-    return url.split('?')[0];
+    return url.split('?')[0]; // نزيل أي query string موجود
   }
 
   private addCacheBuster(data: any): any {
@@ -55,6 +73,13 @@ export class ApiService {
       if (!url || typeof url !== 'string') return null;
 
       const clean = this.cleanUrl(url);
+
+      // حالة 1: رابط كامل (Cloudinary مثلاً) → نضيف cache buster بس
+      if (clean.startsWith('http://') || clean.startsWith('https://')) {
+        return `${clean}?t=${timestamp}`;
+      }
+
+      // حالة 2: مسار نسبي → نضيف base URL + cache buster
       const base = this.prependBaseUrl(clean);
       return `${base}?t=${timestamp}`;
     };
@@ -66,7 +91,7 @@ export class ApiService {
       data.profileImage = null;
     }
 
-    // معالجة owner_id.profileImage
+    // owner_id.profileImage
     if (data.owner_id && typeof data.owner_id === 'object') {
       if (data.owner_id.profileImage && typeof data.owner_id.profileImage === 'string') {
         data.owner_id.profileImage = processProfileImage(data.owner_id.profileImage);
@@ -75,7 +100,7 @@ export class ApiService {
       }
     }
 
-    // معالجة seeker_id.profileImage
+    // seeker_id.profileImage
     if (data.seeker_id && typeof data.seeker_id === 'object') {
       if (data.seeker_id.profileImage && typeof data.seeker_id.profileImage === 'string') {
         data.seeker_id.profileImage = processProfileImage(data.seeker_id.profileImage);
@@ -108,7 +133,10 @@ export class ApiService {
     return throwError(() => new Error(error.message || 'خطأ في الاتصال بالسيرفر'));
   }
 
-  // Auth
+  // ────────────────────────────────────────────────────────────────────────
+  // باقي الدوال بدون تغيير
+  // ────────────────────────────────────────────────────────────────────────
+
   login(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/auth/login`, data).pipe(catchError(this.handleError));
   }
@@ -117,7 +145,6 @@ export class ApiService {
     return this.http.post(`${this.apiUrl}/auth/signup`, data).pipe(catchError(this.handleError));
   }
 
-  // Profile
   getProfile(): Observable<any> {
     return this.http.get(`${this.apiUrl}/users/me`, { headers: this.getHeaders() }).pipe(
       map(res => this.addCacheBuster(res)),
@@ -133,7 +160,6 @@ export class ApiService {
     );
   }
 
-  // Jobs
   getJobs(filters?: any): Observable<any> {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     return this.http.post(`${this.apiUrl}/jobs`, filters || {}, { headers }).pipe(
@@ -168,7 +194,6 @@ export class ApiService {
     );
   }
 
-  // Applications
   applyToJob(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/applications`, data, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
@@ -204,7 +229,6 @@ export class ApiService {
     ).pipe(catchError(this.handleError));
   }
 
-  // Messages
   getMessages(appId: string): Observable<any> {
     return this.http.get(`${this.apiUrl}/messages/${appId}`, { headers: this.getHeaders() }).pipe(
       map(res => this.addCacheBuster(res)),
@@ -238,7 +262,6 @@ export class ApiService {
     ).pipe(catchError(this.handleError));
   }
 
-  // Notifications
   getNotifications(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/notifications`, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
