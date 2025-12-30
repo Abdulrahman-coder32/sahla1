@@ -101,7 +101,13 @@ export class ApiService {
   updateProfile(formData: FormData): Observable<any> {
     const headers = this.getHeaders(true, true);
     return this.http.put(`${this.apiUrl}/users/profile`, formData, { headers }).pipe(
-      map(res => this.processProfileImages(res)),
+      map((res: any) => {
+        // ✅ تحديث فورّي للصورة بعد رفعها مع cache-buster جديد
+        if (res?.profileImage) {
+          res.profileImage = this.addCacheBusterToUrl(res.profileImage, Date.now());
+        }
+        return this.processProfileImages(res);
+      }),
       catchError(this.handleError)
     );
   }
