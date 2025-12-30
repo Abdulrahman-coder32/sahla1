@@ -17,27 +17,17 @@
         <div *ngIf="message" class="profile-toast" [class.profile-toast-success]="message.type === 'success'" [class.profile-toast-error]="message.type === 'error'">
           {{ message.text }}
         </div>
-        <!-- Avatar مع fallback لأول حرفين من الاسم -->
+        <!-- Avatar مع صورة ديفولت عادية -->
         <div class="profile-avatar-wrapper text-center">
           <div class="relative inline-block">
-            <div class="avatar-container w-48 h-48 mx-auto"> <!-- حجم كبير ومركز -->
-              <!-- الصورة الحقيقية لو موجودة (preview أو user.profileImage) -->
-              <img 
-                *ngIf="previewUrl || user.profileImage"
-                [src]="previewUrl || user.profileImage"
+            <div class="avatar-container w-48 h-48 mx-auto">
+              <!-- الصورة: preview أو الصورة الحالية أو الديفولت -->
+              <img
+                [src]="previewUrl || user.profileImage || 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg'"
                 alt="صورة الملف الشخصي لـ {{ user.name || 'المستخدم' }}"
                 class="profile-avatar w-full h-full object-cover rounded-full"
                 loading="lazy"
               >
-
-              <!-- Fallback: دايرة ملونة بأول حرفين من الاسم لو مفيش صورة -->
-              <div 
-                *ngIf="!(previewUrl || user.profileImage)"
-                class="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-6xl shadow-2xl border-8 border-white"
-              >
-                {{ getInitials(user.name) }}
-              </div>
-
               <!-- زر الكاميرا (يظهر فقط في وضع التعديل) -->
               <label class="profile-camera-btn" [class.hidden]="!isEditing">
                 <i class="fas fa-camera"></i>
