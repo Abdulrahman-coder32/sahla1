@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-profile',
@@ -12,7 +13,7 @@ import { Router } from '@angular/router';
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.css']
 })
-export class ProfileComponent implements OnInit {
+export class ProfileComponent implements OnInit, OnDestroy {
   user: any = {
     name: '',
     email: '',
@@ -29,6 +30,8 @@ export class ProfileComponent implements OnInit {
   saving = false;
   message: { text: string; type: 'success' | 'error' } | null = null;
 
+  private userSub?: Subscription;
+
   constructor(
     private api: ApiService,
     private authService: AuthService,
@@ -36,23 +39,38 @@ export class ProfileComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    // تحميل أول مرة من API
     this.loadProfile();
+
+    // الاشتراك في أي تحديث real-time (من سوكت أو تحديث تاني)
+    this.userSub = this.authService.user$.subscribe(currentUser => {
+      if (currentUser) {
+        this.user = { ...currentUser, bio: currentUser.bio || '' };
+        this.previewUrl = this.user.profileImage || null;
+        this.originalUser = { ...this.user };
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.userSub?.unsubscribe();
   }
 
   loadProfile() {
     this.loading = true;
     this.api.getProfile().subscribe({
       next: (data: any) => {
-        console.log('Response from getProfile:', data);
-        if (!data.profileImage && this.originalUser?.profileImage) {
-          data.profileImage = this.originalUser.profileImage;
-        }
+        console.log('البروفايل محمل من API:', data);
         this.user = {
           ...data,
           bio: data.bio || ''
         };
         this.originalUser = { ...this.user };
         this.previewUrl = this.user.profileImage || null;
+
+        // تحديث AuthService (مهم لو كان فيه تغيير خارجي)
+        this.authService.updateCurrentUser(this.user);
+
         this.loading = false;
       },
       error: (err) => {
@@ -66,35 +84,42 @@ export class ProfileComponent implements OnInit {
   onFileSelected(event: any) {
     const file = event.target.files?.[0];
     if (!file) return;
+
     if (file.size > 10 * 1024 * 1024) {
       this.showMessage('الصورة كبيرة جدًا، اختر أصغر من 10 ميجا', 'error');
       return;
     }
+
     this.selectedFile = file;
+
     const reader = new FileReader();
     reader.onload = (e: any) => {
       this.previewUrl = e.target.result as string;
 
-      // ضغط الصورة للحفظ
+      // ضغط الصورة (ممتاز اللي عملته)
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
         const MAX_WIDTH = 800;
         let width = img.width;
         let height = img.height;
+
         if (width > MAX_WIDTH) {
           height *= MAX_WIDTH / width;
           width = MAX_WIDTH;
         }
+
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
-        canvas.toBlob((blob) => {
-          if (blob) {
-            this.selectedFile = new File([blob], file.name, { type: 'image/jpeg' });
-          }
-        }, 'image/jpeg', 0.75);
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => {
+            if (blob) {
+              this.selectedFile = new File([blob], file.name, { type: 'image/jpeg' });
+            }
+          }, 'image/jpeg', 0.8);
+        }
       };
       img.src = e.target.result;
     };
@@ -106,7 +131,6 @@ export class ProfileComponent implements OnInit {
     this.message = null;
   }
 
-  // Validation: الاسم إجباري فقط
   private validateRequiredFields(): boolean {
     if (!this.user.name?.trim()) {
       this.showMessage('الاسم مطلوب ولا يمكن أن يكون فارغًا', 'error');
@@ -116,58 +140,41 @@ export class ProfileComponent implements OnInit {
   }
 
   saveProfile() {
-    if (this.saving) return;
-
-    if (!this.validateRequiredFields()) {
-      return;
-    }
+    if (this.saving || !this.validateRequiredFields()) return;
 
     this.saving = true;
     this.message = null;
 
-    const updateData: any = {
-      name: this.user.name?.trim(),
-      phone: this.user.phone?.trim() || '',
-      bio: this.user.bio?.trim() || ''
-      // الإيميل مش بنرسله خالص
-    };
+    const formData = new FormData();
+    formData.append('name', this.user.name.trim());
+    if (this.user.phone?.trim()) formData.append('phone', this.user.phone.trim());
+    if (this.user.bio?.trim()) formData.append('bio', this.user.bio.trim());
 
     if (this.selectedFile) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        updateData.profileImage = reader.result as string;
-        this.sendUpdate(updateData);
-      };
-      reader.onerror = () => {
-        this.showMessage('خطأ في قراءة الصورة', 'error');
-        this.saving = false;
-      };
-      reader.readAsDataURL(this.selectedFile);
-    } else {
-      this.sendUpdate(updateData);
+      formData.append('profileImage', this.selectedFile, this.selectedFile.name);
+    } else if (this.previewUrl === null) {
+      // لو اليوزر مسح الصورة تمامًا
+      formData.append('profileImage', '');
     }
-  }
 
-  private sendUpdate(updateData: any) {
-    this.api.updateProfile(updateData).subscribe({
+    this.api.updateProfile(formData).subscribe({
       next: (updatedUser: any) => {
-        console.log('Response from updateProfile:', updatedUser);
-        if (!updatedUser.profileImage && this.originalUser?.profileImage) {
-          updatedUser.profileImage = this.originalUser.profileImage;
-        }
-        const finalUser = { ...updatedUser, bio: updatedUser.bio || this.user.bio };
-        this.authService.updateCurrentUser(finalUser);
-        this.user = { ...finalUser };
+        console.log('تم التحديث بنجاح:', updatedUser);
+
+        // الـ api.service خلاص بيعمل cache buster، والسوكت هيبعت التحديث
+        this.authService.updateCurrentUser(updatedUser);
+
+        this.user = { ...updatedUser, bio: updatedUser.bio || '' };
         this.originalUser = { ...this.user };
-        this.previewUrl = finalUser.profileImage || null;
+        this.previewUrl = this.user.profileImage || null;
         this.selectedFile = null;
         this.isEditing = false;
         this.saving = false;
+
         this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
-        this.authService.forceRefreshImage();
       },
       error: (err) => {
-        console.error('فشل تحديث البروفايل', err);
+        console.error('فشل التحديث', err);
         this.showMessage('فشل حفظ التغييرات، حاول مرة أخرى', 'error');
         this.saving = false;
       }
@@ -189,12 +196,11 @@ export class ProfileComponent implements OnInit {
 
   getInitials(name: string | undefined): string {
     if (!name || !name.trim()) return '؟؟';
-    const trimmed = name.trim();
-    const parts = trimmed.split(/\s+/);
+    const parts = name.trim().split(/\s+/);
     if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     }
-    return trimmed.substring(0, 2).toUpperCase();
+    return name.substring(0, 2).toUpperCase();
   }
 
   getProfileImageUrl(): string {
