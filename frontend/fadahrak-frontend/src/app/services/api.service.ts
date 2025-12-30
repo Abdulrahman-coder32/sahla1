@@ -43,7 +43,6 @@ export class ApiService {
 
   private cleanUrl(url: string): string {
     if (!url) return '';
-    // نزيل كل query string (كل ? وما بعدها)
     return url.split('?')[0];
   }
 
@@ -52,7 +51,6 @@ export class ApiService {
 
     const timestamp = Date.now();
 
-    // دالة مساعدة للكشف عن default image وحذفها
     const cleanDefaultImage = (url: string | null | undefined): string | null => {
       if (!url || typeof url !== 'string') return null;
       if (url.includes('default.jpg') || url.includes('default-avatar')) {
@@ -69,19 +67,33 @@ export class ApiService {
         const clean = this.cleanUrl(cleanedUrl);
         const base = this.prependBaseUrl(clean);
         data.profileImage = `${base}?t=${timestamp}`;
-        console.log('addCacheBuster applied (real image):', data.profileImage);
       } else {
         data.profileImage = null;
-        console.log('profileImage تم تحويلها إلى null (كانت default)');
       }
     }
 
-    // لو array → نعمل recurse على كل عنصر
+    // جديد: معالجة owner_id.profileImage في الوظائف
+    if (data.owner_id && typeof data.owner_id === 'object') {
+      if (data.owner_id.profileImage && typeof data.owner_id.profileImage === 'string') {
+        const cleanedUrl = cleanDefaultImage(data.owner_id.profileImage);
+        if (cleanedUrl) {
+          const clean = this.cleanUrl(cleanedUrl);
+          const base = this.prependBaseUrl(clean);
+          data.owner_id.profileImage = `${base}?t=${timestamp}`;
+        } else {
+          data.owner_id.profileImage = null;
+        }
+      } else {
+        data.owner_id.profileImage = null;
+      }
+    }
+
+    // لو array (قائمة وظائف أو تطبيقات)
     if (Array.isArray(data)) {
       return data.map(item => this.addCacheBuster(item));
     }
 
-    // معالجة الـ nested objects وأي key اسمه profileImage
+    // معالجة أي key اسمه profileImage في nested objects
     Object.keys(data).forEach(key => {
       if (data[key] && typeof data[key] === 'object') {
         data[key] = this.addCacheBuster(data[key]);
