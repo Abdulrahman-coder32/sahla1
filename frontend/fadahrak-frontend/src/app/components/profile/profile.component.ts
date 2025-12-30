@@ -39,9 +39,11 @@ export class ProfileComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    console.log('ProfileComponent initialized');
     this.loadProfile();
 
     this.userSub = this.authService.user$.subscribe(currentUser => {
+      console.log('AuthService user$ emitted:', currentUser);
       if (currentUser) {
         this.user = { ...currentUser, bio: currentUser.bio || '' };
         this.previewUrl = this.user.profileImage || null;
@@ -56,17 +58,20 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   loadProfile() {
     this.loading = true;
+    console.log('Loading profile from API...');
     this.api.getProfile().subscribe({
       next: (data: any) => {
+        console.log('Data received from API:', data);
         this.user = { ...data, bio: data.bio || '' };
         this.originalUser = { ...this.user };
         this.previewUrl = this.user.profileImage || null;
 
         this.authService.updateCurrentUser(this.user);
+        console.log('Updated AuthService user:', this.user);
         this.loading = false;
       },
       error: (err) => {
-        console.error('فشل تحميل البروفايل', err);
+        console.error('Failed to load profile:', err);
         this.showMessage('فشل تحميل البيانات، حاول مرة أخرى', 'error');
         this.loading = false;
       }
@@ -76,6 +81,8 @@ export class ProfileComponent implements OnInit, OnDestroy {
   onFileSelected(event: any) {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    console.log('File selected:', file.name, file.size);
 
     if (file.size > 10 * 1024 * 1024) {
       this.showMessage('الصورة كبيرة جدًا، اختر أصغر من 10 ميجا', 'error');
@@ -106,6 +113,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
           canvas.toBlob((blob) => {
             if (blob) {
               this.selectedFile = new File([blob], file.name, { type: 'image/jpeg' });
+              console.log('Resized file ready:', this.selectedFile.name);
             }
           }, 'image/jpeg', 0.8);
         }
@@ -118,6 +126,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   toggleEdit() {
     this.isEditing = !this.isEditing;
     this.message = null;
+    console.log('Edit mode:', this.isEditing);
   }
 
   private validateRequiredFields(): boolean {
@@ -134,6 +143,8 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.saving = true;
     this.message = null;
 
+    console.log('Saving profile...', this.user);
+
     const formData = new FormData();
     formData.append('name', this.user.name.trim());
     if (this.user.phone?.trim()) formData.append('phone', this.user.phone.trim());
@@ -147,11 +158,12 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
     this.api.updateProfile(formData).subscribe({
       next: (updatedUser: any) => {
-        this.authService.updateCurrentUser(updatedUser);
+        console.log('Profile updated:', updatedUser);
 
+        this.authService.updateCurrentUser(updatedUser);
         this.user = { ...updatedUser, bio: updatedUser.bio || '' };
         this.originalUser = { ...this.user };
-        this.previewUrl = updatedUser.profileImage || null; // ✅ استخدم الصورة المحدثة مباشرة
+        this.previewUrl = updatedUser.profileImage || null;
         this.selectedFile = null;
         this.isEditing = false;
         this.saving = false;
@@ -159,7 +171,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
         this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
       },
       error: (err) => {
-        console.error('فشل التحديث', err);
+        console.error('Failed to save profile:', err);
         this.showMessage('فشل حفظ التغييرات، حاول مرة أخرى', 'error');
         this.saving = false;
       }
@@ -172,10 +184,12 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.selectedFile = null;
     this.isEditing = false;
     this.message = null;
+    console.log('Edit cancelled, reverted to original user');
   }
 
   showMessage(text: string, type: 'success' | 'error') {
     this.message = { text, type };
+    console.log('Message:', text, type);
     setTimeout(() => this.message = null, 4000);
   }
 
