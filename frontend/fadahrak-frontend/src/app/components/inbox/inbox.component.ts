@@ -339,11 +339,20 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
 
   getOtherUserImageUrl(): string {
     if (!this.selectedApp) return this.DEFAULT_IMAGE;
-    const otherUser = this.isJobSeeker
-      ? this.selectedApp.job_id?.owner_id
-      : this.selectedApp.seeker_id;
-    if (!otherUser?.profileImage) return this.DEFAULT_IMAGE;
-    return `${otherUser.profileImage}?t=${this.cacheBuster}`;
+
+    let otherUserImage: string | null = null;
+
+    if (this.isJobSeeker) {
+      // باحث عن عمل → الطرف الآخر هو صاحب العمل
+      otherUserImage = this.selectedApp.job_id?.owner_id?.profileImage || null;
+    } else {
+      // صاحب عمل → الطرف الآخر هو المتقدم
+      otherUserImage = this.selectedApp.seeker_id?.profileImage || null;
+    }
+
+    if (!otherUserImage) return this.DEFAULT_IMAGE;
+
+    return `${otherUserImage}?t=${this.cacheBuster}`;
   }
 
   getChatName(app: any) {
@@ -352,7 +361,9 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
       : app.seeker_id?.name || 'باحث عن عمل';
   }
 
-  // باقي الدوال (onFilesSelected, uploadFile, toggleRecording, etc.) زي ما هي مع تحسين الـ toast
+  // باقي الدوال (onFilesSelected, uploadFile, toggleRecording, etc.) زي ما هي تمام
+  // (مش محتاجة تغيير)
+
   onFilesSelected(event: any) {
     const files: FileList = event.target.files;
     if (!files?.length || !this.selectedApp) return;
@@ -389,7 +400,6 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  // باقي دوال التسجيل الصوتي وإرسال الرسالة نفسها مع toast بدل alert
   toggleRecording() {
     this.isRecording ? this.stopRecording() : this.startRecording();
   }
