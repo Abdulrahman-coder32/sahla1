@@ -38,6 +38,7 @@ router.get('/me', auth, async (req, res) => {
     if (!user) return res.status(404).json({ msg: 'المستخدم غير موجود' });
 
     const imageUrl = getProfileImageUrl(user.profileImage, user.cacheBuster || 0);
+
     res.json({
       ...user.toObject(),
       profileImage: imageUrl
@@ -52,13 +53,13 @@ router.get('/me', auth, async (req, res) => {
 router.put('/profile', auth, async (req, res) => {
   try {
     const { name, phone, bio, profileImage } = req.body;
-
     const updates = {};
+
     if (name !== undefined) updates.name = name;
     if (phone !== undefined) updates.phone = phone;
     if (bio !== undefined) updates.bio = bio;
 
-    let newCacheBuster = null;
+    let cacheBusterIncremented = false;
 
     if (profileImage && profileImage.startsWith('data:image')) {
       const result = await cloudinary.uploader.upload(profileImage, {
@@ -68,12 +69,12 @@ router.put('/profile', auth, async (req, res) => {
         resource_type: 'image'
       });
       updates.profileImage = result.public_id;
-      updates.$inc = { cacheBuster: 1 }; // نزود الكاش باستر
-      newCacheBuster = (await User.findById(req.user.id)).cacheBuster + 1 || 1;
+      updates.$inc = { cacheBuster: 1 };
+      cacheBusterIncremented = true;
     } else if (profileImage === null || profileImage === '') {
       updates.profileImage = null;
-      updates.cacheBuster = 0; // ريست الكاش للديفولت
-      newCacheBuster = 0;
+      updates.cacheBuster = 0;
+      cacheBusterIncremented = true; // عشان نكسر الكاش حتى لو رجع للديفولت
     }
 
     const updatedUser = await User.findByIdAndUpdate(
@@ -82,15 +83,28 @@ router.put('/profile', auth, async (req, res) => {
       { new: true, runValidators: true }
     ).select('-password');
 
-    const imageUrl = getProfileImageUrl(updatedUser.profileImage, updatedUser.cacheBuster || newCacheBuster || 0);
+    const finalCacheBuster = updatedUser.cacheBuster || 0;
+    const imageUrl = getProfileImageUrl(updatedUser.profileImage, finalCacheBuster);
 
     const responseUser = {
       ...updatedUser.toObject(),
       profileImage: imageUrl
     };
 
-    // هنا هنضيف emit socket في index.js بعدين عشان real-time
     res.json(responseUser);
+
+    // إرسال تحديث real-time عبر Socket.IO إذا تغيرت الصورة
+    if (cacheBusterIncremented || profileImage) {
+      const io = req.app.get('io');
+      if (io) {
+        io.to(req.user.id.toString()).emit('profileUpdated', {
+          userId: req.user.id,
+          profileImage: imageUrl,
+          cacheBuster: finalCacheBuster
+        });
+      }
+    }
+
   } catch (err) {
     console.error('خطأ تحديث البروفايل:', err);
     res.status(500).json({ msg: 'فشل رفع الصورة أو حفظ البيانات' });
