@@ -203,7 +203,7 @@ export class InboxListComponent implements OnInit, OnDestroy {
             lastMessage: app.lastMessage || 'ابدأ المحادثة',
             lastUpdated: app.lastTimestamp || app.updatedAt || app.createdAt || new Date(),
             unreadCount: unreadCount,
-            profileImage: otherUserImage // للاستخدام في getChatAvatar
+            profileImage: otherUserImage
           };
         });
         this.sortChats();
@@ -222,7 +222,6 @@ export class InboxListComponent implements OnInit, OnDestroy {
     );
   }
 
-  // دالة عرض الصورة
   getChatAvatar(chat: any): string {
     if (chat.profileImage) {
       return `${chat.profileImage}?t=${this.cacheBuster}`;
