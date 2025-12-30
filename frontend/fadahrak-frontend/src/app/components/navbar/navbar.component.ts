@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
-import { Observable, Subject, takeUntil } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 
 @Component({
   selector: 'app-navbar',
@@ -220,10 +220,11 @@ import { Observable, Subject, takeUntil } from 'rxjs';
   `]
 })
 export class NavbarComponent implements OnInit, OnDestroy {
-  currentUser$ = inject(AuthService).user$;  // ← التعديل المهم هنا
+  currentUser$ = inject(AuthService).user$;
 
   notificationCount$!: Observable<number>;
   notifications$!: Observable<any[]>;
+
   mobileMenuOpen = false;
   mobileNotificationsOpen = false;
 
@@ -237,9 +238,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.notifications$ = this.notificationService.getNotifications();
   }
 
-  ngOnInit(): void {
-    // الـ async pipe بيعمل كل حاجة
-  }
+  ngOnInit(): void {}
 
   toggleMenu(): void {
     this.mobileMenuOpen = !this.mobileMenuOpen;
@@ -258,7 +257,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   onLogout(): void {
-    this.authService.logout();
+    inject(AuthService).logout();
     this.closeMobileMenu();
     this.router.navigate(['/']);
   }
