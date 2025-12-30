@@ -10,7 +10,7 @@ export class ApiService {
   private apiUrl: string;
   private imageBaseUrl: string;
 
-  // الـ transformations اللي عايزها في كل الصور (نفس اللي في الرابط بتاعك)
+  // الـ transformations الدقيقة اللي عايزها في كل الصور (نفس اللي في الرابط بتاعك)
   private readonly CLOUDINARY_TRANSFORM = 'c_fill,f_auto,g_face,h_400,q_auto,r_max,w_400';
 
   private readonly CLOUDINARY_BASE = `https://res.cloudinary.com/dv48puhaq/image/upload/${this.CLOUDINARY_TRANSFORM}/`;
@@ -41,7 +41,7 @@ export class ApiService {
   private getFullImageUrl(path: string): string {
     if (!path) return '';
 
-    // 1. لو الرابط كامل (من /me أو /profile) → نزيل query قديمة
+    // 1. لو الرابط كامل بالفعل (من /me أو /profile) → نزيل أي query قديمة
     if (path.startsWith('https://res.cloudinary.com/')) {
       return path.split('?')[0];
     }
@@ -71,11 +71,11 @@ export class ApiService {
     const processImage = (url: string | null | undefined): string | null => {
       if (!url || typeof url !== 'string') return null;
 
-      // رابط نظيف بدون query
+      // رابط نظيف بدون أي query قديمة
       let fullUrl = this.getFullImageUrl(url);
       fullUrl = fullUrl.split('?')[0];
 
-      // إضافة timestamp جديد دايماً
+      // إضافة timestamp جديد دايماً (بدون تكرار)
       return `${fullUrl}?t=${timestamp}`;
     };
 
@@ -103,7 +103,7 @@ export class ApiService {
   }
 
   // ────────────────────────────────────────────────────────────────────────
-  // باقي الدوال (انسخها من ملفك القديم كاملة)
+  // باقي الدوال بدون تغيير (كاملة زي ما عندك)
   // ────────────────────────────────────────────────────────────────────────
 
   login(data: any): Observable<any> {
