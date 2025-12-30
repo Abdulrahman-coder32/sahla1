@@ -19,14 +19,12 @@ import { Observable, Subject, takeUntil } from 'rxjs';
               <img src="assets/logo.png" alt="سَهلة" class="h-10 sm:h-12 lg:h-14 w-auto max-w-28 sm:max-w-32 lg:max-w-36 object-contain transition-transform duration-300 hover:scale-105">
             </a>
           </div>
-
           <!-- Desktop Navigation -->
           <div class="hidden md:flex items-center gap-4 lg:gap-6">
             <a routerLink="/" class="nav-link" routerLinkActive="active-link">الرئيسية</a>
             <a routerLink="/jobs" class="nav-link" routerLinkActive="active-link">الوظائف</a>
             <a routerLink="/about" class="nav-link" routerLinkActive="active-link">عننا</a>
             <a routerLink="/contact" class="nav-link" routerLinkActive="active-link">اتصل بنا</a>
-
             <ng-container *ngIf="user; else guestDesktop">
               <!-- Notifications Dropdown -->
               <div class="relative group">
@@ -64,19 +62,22 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                   </a>
                 </div>
               </div>
-
               <a routerLink="/inbox" class="nav-link" routerLinkActive="active-link">الرسائل</a>
               <a [routerLink]="user.role === 'shop_owner' ? '/owner-dashboard' : '/seeker-dashboard'"
                  class="nav-link" routerLinkActive="active-link">لوحة التحكم</a>
-
               <!-- Profile Dropdown -->
               <div class="relative group">
                 <button class="flex items-center gap-3 lg:gap-4 rounded-full focus:outline-none p-2">
                   <img [src]="getProfileImageUrl()" alt="صورة الملف الشخصي"
                        class="w-10 h-10 lg:w-12 lg:h-12 rounded-full object-cover ring-2 ring-gray-300 shadow-md">
-                  <span class="text-gray-700 font-medium hidden lg:block text-base lg:text-lg whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px]">
-                    {{ user.name || 'مستخدم' }}
-                  </span>
+                  <div class="hidden lg:block text-right max-w-[150px]">
+                    <span class="text-gray-700 font-medium text-base lg:text-lg truncate-start block">
+                      {{ user.name || 'مستخدم' }}
+                    </span>
+                    <span class="text-gray-500 text-sm truncate-start block">
+                      {{ user.email || '' }}
+                    </span>
+                  </div>
                 </button>
                 <div class="absolute end-0 mt-3 w-56 lg:w-64 bg-white rounded-xl shadow-2xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
                   <a routerLink="/profile" class="block px-5 py-3 lg:px-6 lg:py-4 hover:bg-gray-50 text-right font-medium text-gray-700 border-b border-gray-100 rounded-t-xl">
@@ -88,13 +89,11 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                 </div>
               </div>
             </ng-container>
-
             <ng-template #guestDesktop>
               <a routerLink="/login" class="nav-link" routerLinkActive="active-link">دخول</a>
               <a routerLink="/signup" class="btn-primary px-5 py-2 lg:px-7 lg:py-3 rounded-xl text-base lg:text-lg">إنشاء حساب</a>
             </ng-template>
           </div>
-
           <!-- Mobile Buttons -->
           <div class="md:hidden flex items-center gap-4">
             <ng-container *ngIf="user">
@@ -117,12 +116,10 @@ import { Observable, Subject, takeUntil } from 'rxjs';
           </div>
         </div>
       </div>
-
       <!-- Overlay -->
       <div *ngIf="mobileMenuOpen || mobileNotificationsOpen"
            class="fixed inset-0 bg-black bg-opacity-60 z-40 md:hidden"
            (click)="closeMobileMenu()"></div>
-
       <!-- Mobile Sidebar -->
       <div [ngClass]="{
         'translate-x-0': mobileMenuOpen || mobileNotificationsOpen,
@@ -132,11 +129,11 @@ import { Observable, Subject, takeUntil } from 'rxjs';
         <div class="p-5 border-b border-gray-200 flex items-center gap-4 bg-white sticky top-0 z-10">
           <img *ngIf="user" [src]="getProfileImageUrl()" alt="صورة الملف الشخصي"
                class="w-14 h-14 rounded-full object-cover ring-2 ring-gray-200 shadow-md flex-shrink-0">
-          <div class="flex-1 min-w-0">
-            <h2 class="text-xl font-bold text-gray-800 truncate">
+          <div class="flex-1 min-w-0 text-right">
+            <h2 class="text-xl font-bold text-gray-800 truncate-start">
               {{ user?.name || 'مستخدم' }}
             </h2>
-            <p class="text-sm text-gray-500 truncate">
+            <p class="text-sm text-gray-500 truncate-start">
               {{ user?.email || '' }}
             </p>
           </div>
@@ -144,7 +141,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
             <i class="fas fa-times text-2xl text-gray-600"></i>
           </button>
         </div>
-
         <!-- Content -->
         <div class="flex-1 overflow-y-auto pb-20">
           <div *ngIf="mobileNotificationsOpen" class="p-5">
@@ -166,7 +162,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
               <div class="p-8 text-center text-gray-400">جاري التحميل...</div>
             </ng-template>
           </div>
-
           <!-- Mobile Menu Content -->
           <div *ngIf="mobileMenuOpen && !mobileNotificationsOpen" class="p-5">
             <ng-container *ngIf="user; else guestMobile">
@@ -191,7 +186,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
             </div>
           </div>
         </div>
-
         <!-- زر "عرض جميع الإشعارات" ثابت في الأسفل -->
         <div *ngIf="mobileNotificationsOpen" class="sticky bottom-0 bg-white border-t border-gray-200 p-4">
           <a routerLink="/notifications" (click)="closeMobileMenu()" class="block text-center bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-6 rounded-xl transition-all">
@@ -215,8 +209,15 @@ import { Observable, Subject, takeUntil } from 'rxjs';
     .mobile-link {
       @apply block px-8 py-6 text-xl font-medium text-gray-800 hover:bg-indigo-50 transition-all text-right border-b border-gray-100 whitespace-nowrap;
     }
-
-    /* تحسينات للاسم في الموبايل والديسكتوب */
+    /* كلاس جديد للـ truncate من البداية (أول النص يبان + نقط في الآخر) */
+    .truncate-start {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      direction: rtl; /* مهم جدًا عشان يقطع من اليمين */
+      text-align: right;
+      max-width: 100%;
+    }
     .truncate {
       white-space: nowrap;
       overflow: hidden;
@@ -273,7 +274,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   getProfileImageUrl(): string {
     if (!this.user?.profileImage) {
-     return 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
+      return 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
     }
     return `${this.user.profileImage}?t=${this.cacheBuster}`;
   }
