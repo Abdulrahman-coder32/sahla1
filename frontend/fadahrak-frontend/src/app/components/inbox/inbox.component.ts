@@ -7,7 +7,6 @@ import { SocketService } from '../../services/socket.service';
 import { NotificationService } from '../../services/notification.service';
 import { AuthService } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
-// Font Awesome imports
 import { FontAwesomeModule, FaIconLibrary } from '@fortawesome/angular-fontawesome';
 import {
   faMicrophone,
@@ -20,160 +19,187 @@ import {
 @Component({
   selector: 'app-inbox',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    FontAwesomeModule
-  ],
+  imports: [CommonModule, FormsModule, FontAwesomeModule],
   template: `
-  <div class="min-h-screen bg-gray-100 p-2 sm:p-4">
-    <div class="max-w-4xl mx-auto h-[95vh] flex flex-col bg-white rounded-2xl shadow-lg overflow-hidden">
-      <!-- Header -->
-      <div class="bg-blue-600 text-white p-3 sm:p-4 flex justify-between items-center flex-shrink-0">
-        <div class="text-right flex-1 min-w-0 pr-2">
-          <h1 class="text-lg sm:text-xl font-bold truncate">{{ chatName }}</h1>
-          <p class="text-xs sm:text-sm opacity-80 mt-1">
-            {{ selectedApp?.status === 'accepted' ? 'الدردشة مفتوحة' : 'في انتظار القبول' }}
-          </p>
-        </div>
-        <button (click)="goBack()"
-                class="bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-lg font-semibold text-sm transition-all shadow-md flex items-center gap-1">
-          <fa-icon icon="arrow-left" size="sm"></fa-icon>
-          رجوع
-        </button>
-      </div>
+    <div class="min-h-screen bg-gray-50 py-8 px-4">
+      <div class="max-w-4xl mx-auto h-[90vh] flex flex-col bg-white rounded-3xl shadow-2xl overflow-hidden">
 
-      <!-- Messages container -->
-      <div #messagesContainer class="flex-1 flex flex-col overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50 scrollbar-thin scrollbar-thumb-blue-400 scrollbar-track-transparent">
-        <!-- Loading -->
-        <div *ngIf="loading" class="flex-1 flex items-center justify-center">
-          <div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-        </div>
-        <!-- No messages -->
-        <div *ngIf="!loading && messages.length === 0" class="flex-1 flex items-center justify-center text-center p-6">
-          <div class="text-gray-400">
-            <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-            </svg>
-            <p class="text-lg font-medium text-gray-500">لا توجد رسائل بعد</p>
-            <p class="text-sm text-gray-400 mt-1">ابدأ المحادثة بإرسال رسالة</p>
-          </div>
-        </div>
-        <!-- Messages -->
-        <div *ngFor="let msg of messages"
-             class="flex items-start gap-2 sm:gap-3 max-w-full group"
-             [ngClass]="{'justify-end': isMyMessage(msg), 'justify-start': !isMyMessage(msg)}">
-          <!-- أفاتار المستخدم الحالي (أنت) -->
-          <div *ngIf="isMyMessage(msg)" class="flex-shrink-0 pt-1">
-            <img
-              [src]="getCurrentUserImage()"
-              alt="أنت"
-              class="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover ring-2 ring-blue-500 shadow-md">
-          </div>
-          <!-- محتوى الرسالة -->
-          <div class="flex flex-col max-w-[85%] sm:max-w-[75%]">
-            <div *ngIf="msg.type === 'text'"
-                 class="px-3 py-2 rounded-xl shadow-sm group-hover:shadow-md transition-all"
-                 [ngClass]="{
-                   'bg-blue-600 text-white rounded-tr-lg rounded-tl-lg rounded-br-lg ml-1': isMyMessage(msg),
-                   'bg-gray-200 text-gray-900 rounded-tr-lg rounded-tl-lg rounded-bl-lg mr-1': !isMyMessage(msg)
-                 }">
-              <p class="text-sm sm:text-base leading-relaxed break-words whitespace-pre-wrap">{{ msg.message }}</p>
-            </div>
-            <div *ngIf="msg.type !== 'text'" class="p-2 bg-gray-200 rounded-xl text-center shadow-sm">
-              <p class="text-sm text-gray-700">
-                [{{ msg.type === 'image' ? 'صورة' : msg.type === 'audio' ? 'تسجيل صوتي' : 'ملف' }}]
-              </p>
-              <p class="text-xs text-gray-500 mt-1">
-                <a *ngIf="msg.url" [href]="msg.url" target="_blank" class="text-blue-600 hover:underline">
-                  {{ msg.filename || 'تحميل' }}
-                </a>
-                <span *ngIf="!msg.url">{{ msg.filename || 'غير معروف' }}</span>
-              </p>
-            </div>
-            <span class="text-xs text-gray-500 mt-1 px-1 opacity-80 self-end"
-                  [ngClass]="{'text-right': !isMyMessage(msg), 'text-left': isMyMessage(msg)}">
-              {{ msg.timestamp | date:'shortTime' }}
-            </span>
-          </div>
-          <!-- أفاتار الطرف التاني -->
-          <div *ngIf="!isMyMessage(msg)" class="flex-shrink-0 pt-1">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-5 flex items-center justify-between">
+          <div class="flex items-center gap-4">
             <img
               [src]="getOtherUserImageUrl()"
-              alt="{{ msg.sender_name }}"
-              class="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover ring-2 ring-gray-400 shadow-md">
+              alt="{{ chatName }}"
+              class="w-12 h-12 rounded-full object-cover ring-4 ring-white shadow-lg"
+              loading="lazy"
+            >
+            <div>
+              <h1 class="text-xl font-bold truncate max-w-[200px]">{{ chatName }}</h1>
+              <p class="text-sm opacity-90">
+                {{ selectedApp?.status === 'accepted' ? 'متصل الآن' : 'في انتظار القبول' }}
+              </p>
+            </div>
+          </div>
+          <button (click)="goBack()"
+                  class="bg-white/20 hover:bg-white/30 px-5 py-3 rounded-2xl font-medium flex items-center gap-2 transition-all">
+            <fa-icon [icon]="faArrowLeft"></fa-icon>
+            رجوع
+          </button>
+        </div>
+
+        <!-- Messages Area -->
+        <div #messagesContainer class="flex-1 overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-gray-50 to-white">
+          <!-- Loading -->
+          <div *ngIf="loading" class="flex justify-center py-20">
+            <div class="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600"></div>
+          </div>
+
+          <!-- No Messages -->
+          <div *ngIf="!loading && messages.length === 0" class="text-center py-20 text-gray-500">
+            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <fa-icon [icon]="['fas', 'comments']" class="text-5xl text-gray-400"></fa-icon>
+            </div>
+            <p class="text-xl font-medium">لا توجد رسائل بعد</p>
+            <p class="text-base mt-2">ابدأ المحادثة بإرسال رسالة</p>
+          </div>
+
+          <!-- Messages -->
+          <div *ngFor="let msg of messages"
+               class="flex items-start gap-4 max-w-full"
+               [ngClass]="{'flex-row-reverse': isMyMessage(msg)}">
+
+            <!-- Avatar -->
+            <img
+              [src]="isMyMessage(msg) ? getCurrentUserImage() : getOtherUserImageUrl()"
+              alt="{{ isMyMessage(msg) ? 'أنت' : chatName }}"
+              class="w-10 h-10 rounded-full object-cover ring-4 ring-white shadow-lg flex-shrink-0"
+              loading="lazy"
+            >
+
+            <!-- Message Bubble -->
+            <div class="flex flex-col max-w-[80%]">
+              <div class="px-5 py-3 rounded-3xl shadow-md"
+                   [ngClass]="{
+                     'bg-blue-600 text-white rounded-br-none': isMyMessage(msg),
+                     'bg-gray-200 text-gray-900 rounded-bl-none': !isMyMessage(msg)
+                   }">
+                <!-- Text Message -->
+                <p *ngIf="msg.type === 'text'" class="text-base leading-relaxed break-words whitespace-pre-wrap">
+                  {{ msg.message }}
+                </p>
+
+                <!-- Media Message -->
+                <div *ngIf="msg.type !== 'text'" class="text-center">
+                  <p class="text-sm font-medium">
+                    {{ msg.type === 'image' ? '🖼 صورة' : msg.type === 'audio' ? '🎤 تسجيل صوتي' : '📎 ملف' }}
+                  </p>
+                  <a *ngIf="msg.url" [href]="msg.url" target="_blank"
+                     class="text-sm text-blue-300 hover:underline mt-2 block">
+                    {{ msg.filename || 'تحميل الملف' }}
+                  </a>
+                </div>
+              </div>
+
+              <!-- Timestamp -->
+              <span class="text-xs text-gray-500 mt-2 px-2"
+                    [ngClass]="{'text-left': isMyMessage(msg), 'text-right': !isMyMessage(msg)}">
+                {{ msg.timestamp | date:'shortTime' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="p-4 bg-white border-t border-gray-200">
+          <div class="flex items-end gap-3">
+            <!-- Attach Files -->
+            <input #fileInput type="file" multiple accept="image/*,audio/*,.pdf,.doc,.docx"
+                   (change)="onFilesSelected($event)" class="hidden" [disabled]="isDisabledInput()">
+            <button (click)="fileInput.click()" [disabled]="isDisabledInput()"
+                    class="w-12 h-12 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-all">
+              <fa-icon [icon]="faPaperclip" class="text-xl text-gray-700"></fa-icon>
+            </button>
+
+            <!-- Voice Record -->
+            <button (click)="toggleRecording()" [disabled]="isDisabledInput()"
+                    class="w-12 h-12 rounded-full flex items-center justify-center transition-all"
+                    [ngClass]="isRecording ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-gray-100 text-gray-700'">
+              <fa-icon [icon]="isRecording ? faStop : faMicrophone" class="text-xl"></fa-icon>
+            </button>
+
+            <!-- Message Input -->
+            <input [(ngModel)]="newMessage" (keyup.enter)="sendMessage()"
+                   placeholder="اكتب رسالتك هنا..."
+                   class="flex-1 px-5 py-4 rounded-3xl border border-gray-300 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 text-base bg-gray-50"
+                   [disabled]="isDisabledInput()">
+
+            <!-- Send Button -->
+            <button (click)="sendMessage()" [disabled]="!newMessage.trim() || isDisabledInput()"
+                    class="bg-blue-600 hover:bg-blue-700 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all">
+              <fa-icon [icon]="faPaperPlane" class="text-lg"></fa-icon>
+            </button>
+          </div>
+
+          <!-- File Upload Status -->
+          <div *ngIf="selectedFiles.length" class="mt-4 flex flex-wrap gap-3">
+            <div *ngFor="let f of selectedFiles"
+                 class="px-4 py-2 rounded-2xl text-sm flex items-center gap-2"
+                 [ngClass]="{
+                   'bg-blue-100 text-blue-700': f.status === 'uploading',
+                   'bg-green-100 text-green-700': f.status === 'success',
+                   'bg-red-100 text-red-700': f.status === 'error'
+                 }">
+              <span class="truncate max-w-[150px]">{{ f.file.name }}</span>
+              <span *ngIf="f.status === 'uploading'">جاري الرفع...</span>
+              <span *ngIf="f.status === 'success'">✓ تم</span>
+              <span *ngIf="f.status === 'error'">✗ فشل</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Input Area -->
-      <div class="flex-shrink-0 border-t border-gray-200 p-2 sm:p-3 bg-white">
-        <div class="flex items-end gap-1 sm:gap-2 h-auto sm:h-12">
-          <!-- File Input -->
-          <input #fileInput type="file" multiple accept="image/*,.pdf,.doc,.docx,.mp3,.wav"
-                 (change)="onFilesSelected($event)" class="hidden" [disabled]="isDisabledInput()">
-          <!-- Attachments Button -->
-          <button type="button" (click)="fileInput.click()" [disabled]="isDisabledInput()"
-                  class="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full flex items-center justify-center transition-all disabled:opacity-50 shadow-sm">
-            <fa-icon icon="paperclip" class="text-lg"></fa-icon>
-          </button>
-          <!-- Voice Record Button -->
-          <button type="button" (click)="toggleRecording()" [disabled]="isDisabledInput()"
-                  class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all shadow-sm"
-                  [ngClass]="{
-                    'bg-gray-100 hover:bg-gray-200 text-gray-700': !isRecording,
-                    'bg-red-100 text-red-600 animate-pulse': isRecording
-                  }">
-            <fa-icon [icon]="isRecording ? 'stop' : 'microphone'" class="text-lg"></fa-icon>
-          </button>
-          <!-- Message Input -->
-          <input [(ngModel)]="newMessage" (keyup.enter)="sendMessage()"
-                 placeholder="اكتب رسالتك هنا..." class="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-200 outline-none text-base bg-white"
-                 [disabled]="isDisabledInput()" maxlength="1000">
-          <!-- Send Button -->
-          <button (click)="sendMessage()" [disabled]="!newMessage.trim() || isDisabledInput()"
-                  class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm transition-all shadow-md hover:shadow-lg disabled:opacity-50 flex items-center gap-1">
-            <fa-icon icon="paper-plane" size="sm"></fa-icon>
-            إرسال
-          </button>
-        </div>
-        <!-- Uploaded Files Status -->
-        <div *ngIf="selectedFiles.length" class="mt-2 flex flex-wrap gap-2 text-xs">
-          <div *ngFor="let f of selectedFiles"
-               class="px-2 py-1 rounded bg-gray-100 flex items-center gap-1"
-               [ngClass]="{
-                 'bg-blue-100': f.status === 'uploading',
-                 'bg-green-100': f.status === 'success',
-                 'bg-red-100': f.status === 'error'
-               }">
-            {{ f.file.name | slice:0:18 }}{{ f.file.name.length > 18 ? '...' : '' }}
-            <span *ngIf="f.status === 'uploading'">جاري...</span>
-            <span *ngIf="f.status === 'success'">✓</span>
-            <span *ngIf="f.status === 'error'">×</span>
+      <!-- Toast Message -->
+      <div *ngIf="toastMessage"
+           class="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-fade-in-up">
+        <div class="bg-white rounded-3xl shadow-2xl border border-gray-200 px-8 py-6 flex items-center gap-5 min-w-[320px]">
+          <fa-icon [icon]="['fas', 'exclamation-triangle']" class="text-3xl text-red-500"></fa-icon>
+          <div>
+            <p class="font-bold text-gray-900 text-lg">فشل في الإرسال</p>
+            <p class="text-gray-700 mt-1">{{ toastMessage }}</p>
           </div>
+          <button (click)="toastMessage = null" class="ml-auto text-gray-400 hover:text-gray-600">
+            <fa-icon [icon]="['fas', 'times']" class="text-2xl"></fa-icon>
+          </button>
         </div>
       </div>
     </div>
-  </div>
   `,
   styles: [`
-    :host { display: block; height: 100%; }
-    .scrollbar-thin::-webkit-scrollbar { width: 4px; }
-    .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-    .scrollbar-thin::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
-    .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #2563eb; }
-    input[type="text"] {
-      font-size: 16px !important;
-      -webkit-text-size-adjust: 100%;
+    @keyframes fade-in-up {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-    .min-h-screen {
-      min-height: 100vh;
-      min-height: -webkit-fill-available;
+    .animate-fade-in-up {
+      animation: fade-in-up 0.5s ease-out;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
     }
   `]
 })
 export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('messagesContainer') messagesContainer!: ElementRef;
+
   selectedApp: any = null;
   messages: any[] = [];
   newMessage = '';
@@ -182,13 +208,17 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
   currentUser: any = null;
   chatName = '';
   isJobSeeker = false;
-  selectedFiles: { file: File; status: 'uploading' | 'success' | 'error'; }[] = [];
+  selectedFiles: { file: File; status: 'uploading' | 'success' | 'error' }[] = [];
   isRecording = false;
   mediaRecorder: MediaRecorder | null = null;
   recordedChunks: Blob[] = [];
+  toastMessage: string | null = null;
+
   private ngZone = inject(NgZone);
   private cacheBuster = Date.now();
   private userSubscription!: Subscription;
+
+  private readonly DEFAULT_IMAGE = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
 
   constructor(
     private route: ActivatedRoute,
@@ -240,42 +270,40 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (apps: any[]) => {
         this.selectedApp = apps.find(a => a._id === appId);
         if (!this.selectedApp || this.selectedApp.status !== 'accepted') {
-          alert('الدردشة غير متاحة');
+          this.toastMessage = 'الدردشة غير متاحة حاليًا';
           this.goBack();
           return;
         }
+
         this.chatName = this.getChatName(this.selectedApp);
         this.socketService.joinChat(this.selectedApp._id);
         this.markAsRead();
         this.loadMessages();
-this.socketService.onNewMessage((msg: any) => {
-  if (this.selectedApp && msg.application_id === this.selectedApp._id) {
-    const normalized = this.normalizeMessage(msg);
 
-    // لو الرسالة مني أنا → ما نضيفهاش تاني (خلاص أضفتها محليًا)
-    if (normalized.sender_id === this.currentUserId) {
-      // بس نستبدل الـ temp بالرسالة الحقيقية لو موجودة
-      const tempIndex = this.messages.findIndex(m => m._id.toString().startsWith('temp-'));
-      if (tempIndex !== -1 && this.messages[tempIndex].message === normalized.message) {
-        this.ngZone.run(() => {
-          this.messages[tempIndex] = normalized;
-          this.scrollToBottom();
+        this.socketService.onNewMessage((msg: any) => {
+          if (this.selectedApp && msg.application_id === this.selectedApp._id) {
+            const normalized = this.normalizeMessage(msg);
+            if (normalized.sender_id === this.currentUserId) {
+              const tempIndex = this.messages.findIndex(m => m._id.toString().startsWith('temp-'));
+              if (tempIndex !== -1 && this.messages[tempIndex].message === normalized.message) {
+                this.ngZone.run(() => {
+                  this.messages[tempIndex] = normalized;
+                  this.scrollToBottom();
+                });
+              }
+              return;
+            }
+
+            if (!this.messages.some(m => m._id === normalized._id)) {
+              this.ngZone.run(() => {
+                this.messages.push(normalized);
+                this.scrollToBottom();
+              });
+              this.notificationService.markChatNotificationsAsRead(this.selectedApp._id);
+              this.markAsRead();
+            }
+          }
         });
-      }
-      return;
-    }
-
-    // لو الرسالة من الطرف التاني → نضيفها عادي (مش موجودة أصلًا)
-    if (!this.messages.some(m => m._id === normalized._id)) {
-      this.ngZone.run(() => {
-        this.messages.push(normalized);
-        this.scrollToBottom();
-      });
-      this.notificationService.markChatNotificationsAsRead(this.selectedApp._id);
-      this.markAsRead();
-    }
-  }
-});
       },
       error: () => this.goBack()
     });
@@ -288,12 +316,9 @@ this.socketService.onNewMessage((msg: any) => {
   ngOnDestroy() {
     this.socketService.onNewMessage(() => {});
     this.userSubscription?.unsubscribe();
-    if (this.mediaRecorder) {
-      this.mediaRecorder.stop();
-    }
+    if (this.mediaRecorder) this.mediaRecorder.stop();
   }
 
-  // ── دوال مساعدة (جعلناها public عشان الـ template يشوفها) ──
   isMyMessage(msg: any): boolean {
     const senderId = msg.sender_id?._id || msg.sender_id || '';
     return senderId === this.currentUserId;
@@ -307,14 +332,36 @@ this.socketService.onNewMessage((msg: any) => {
     this.router.navigate(['/inbox']);
   }
 
-  // ── دوال الـ attachments والتسجيل الصوتي ──
+  getCurrentUserImage(): string {
+    if (!this.currentUser?.profileImage) return this.DEFAULT_IMAGE;
+    return `${this.currentUser.profileImage}?t=${this.cacheBuster}`;
+  }
+
+  getOtherUserImageUrl(): string {
+    if (!this.selectedApp) return this.DEFAULT_IMAGE;
+    const otherUser = this.isJobSeeker
+      ? this.selectedApp.job_id?.owner_id
+      : this.selectedApp.seeker_id;
+    if (!otherUser?.profileImage) return this.DEFAULT_IMAGE;
+    return `${otherUser.profileImage}?t=${this.cacheBuster}`;
+  }
+
+  getChatName(app: any) {
+    return this.isJobSeeker
+      ? app.job_id?.shop_name || 'صاحب العمل'
+      : app.seeker_id?.name || 'باحث عن عمل';
+  }
+
+  // باقي الدوال (onFilesSelected, uploadFile, toggleRecording, etc.) زي ما هي مع تحسين الـ toast
   onFilesSelected(event: any) {
     const files: FileList = event.target.files;
     if (!files?.length || !this.selectedApp) return;
+
     Array.from(files).forEach((file: File) => {
       const maxSize = 10 * 1024 * 1024;
       if (file.size > maxSize) {
-        alert(`الملف ${file.name} كبير جدًا (الحد الأقصى 10 ميجا)`);
+        this.toastMessage = `الملف ${file.name} كبير جدًا (الحد الأقصى 10 ميجا)`;
+        setTimeout(() => this.toastMessage = null, 6000);
         return;
       }
       const fileObj = { file, status: 'uploading' as const };
@@ -327,27 +374,29 @@ this.socketService.onNewMessage((msg: any) => {
     if (!this.selectedApp) return;
     const type = fileObj.file.type.startsWith('image/') ? 'image' :
                  fileObj.file.type.startsWith('audio/') ? 'audio' : 'file';
-    this.api.sendMedia(this.selectedApp._id, fileObj.file, type, fileObj.file.name)
-      .subscribe({
-        next: (savedMsg: any) => {
-          fileObj.status = 'success';
-          this.messages.push(this.normalizeMessage(savedMsg));
-          this.scrollToBottom();
-        },
-        error: (err: any) => {
-          console.error('Upload error:', err);
-          fileObj.status = 'error';
-        }
-      });
+
+    this.api.sendMedia(this.selectedApp._id, fileObj.file, type, fileObj.file.name).subscribe({
+      next: (savedMsg: any) => {
+        fileObj.status = 'success';
+        this.messages.push(this.normalizeMessage(savedMsg));
+        this.scrollToBottom();
+      },
+      error: () => {
+        fileObj.status = 'error';
+        this.toastMessage = 'فشل رفع الملف، حاول مرة أخرى';
+        setTimeout(() => this.toastMessage = null, 6000);
+      }
+    });
   }
 
+  // باقي دوال التسجيل الصوتي وإرسال الرسالة نفسها مع toast بدل alert
   toggleRecording() {
     this.isRecording ? this.stopRecording() : this.startRecording();
   }
 
   private startRecording() {
     if (!navigator.mediaDevices?.getUserMedia) {
-      alert('المتصفح لا يدعم التسجيل الصوتي أو يحتاج HTTPS');
+      this.toastMessage = 'المتصفح لا يدعم التسجيل الصوتي';
       return;
     }
     navigator.mediaDevices.getUserMedia({ audio: true })
@@ -355,20 +404,22 @@ this.socketService.onNewMessage((msg: any) => {
         this.mediaRecorder = new MediaRecorder(stream);
         this.recordedChunks = [];
         this.isRecording = true;
+
         this.mediaRecorder.ondataavailable = (event) => {
           if (event.data.size > 0) this.recordedChunks.push(event.data);
         };
+
         this.mediaRecorder.onstop = () => {
           const blob = new Blob(this.recordedChunks, { type: 'audio/webm' });
           this.uploadAudioFile(blob);
           this.isRecording = false;
           stream.getTracks().forEach(track => track.stop());
         };
+
         this.mediaRecorder.start();
       })
-      .catch(err => {
-        console.error('Microphone error:', err);
-        alert('خطأ في الوصول للميكروفون');
+      .catch(() => {
+        this.toastMessage = 'خطأ في الوصول للميكروفون';
         this.isRecording = false;
       });
   }
@@ -381,17 +432,13 @@ this.socketService.onNewMessage((msg: any) => {
   }
 
   private stopRecording() {
-    if (this.mediaRecorder) {
-      this.mediaRecorder.stop();
-    }
+    if (this.mediaRecorder) this.mediaRecorder.stop();
   }
 
-  // ── باقي الدوال ──
   private normalizeMessage(msg: any) {
     const senderId = msg.sender_id?._id || msg.sender_id || '';
-    const senderName = senderId === this.currentUserId
-      ? 'أنت'
-      : (msg.sender_id?.name || (this.isJobSeeker ? 'صاحب العمل' : 'الباحث عن عمل'));
+    const senderName = senderId === this.currentUserId ? 'أنت' : this.chatName;
+
     return {
       _id: msg._id || 'temp-' + Date.now(),
       sender_id: senderId,
@@ -407,42 +454,11 @@ this.socketService.onNewMessage((msg: any) => {
   private markAsRead() {
     if (!this.selectedApp?._id) return;
     this.api.markMessagesAsRead(this.selectedApp._id).subscribe({
-      next: () => {
-        console.log('تم تصفير unreadCount بنجاح للدردشة:', this.selectedApp._id);
-        this.notificationService.markChatNotificationsAsRead(this.selectedApp._id);
-      },
       error: (err: any) => console.error('خطأ في mark as read:', err)
     });
   }
 
-  private getOtherUserImage(): string | null {
-    if (!this.selectedApp) return null;
-    const otherUser = this.isJobSeeker
-      ? this.selectedApp.job_id?.owner_id
-      : this.selectedApp.seeker_id;
-    return otherUser?.profileImage || null;
-  }
-
-  getCurrentUserImage(): string {
-    if (!this.currentUser?.profileImage) {
-      return `https://via.placeholder.com/40?text=${this.currentUser?.name?.charAt(0) || 'أ'}`;
-    }
-    return `${this.currentUser.profileImage}?t=${this.cacheBuster}`;
-  }
-
-  getOtherUserImageUrl(): string {
-    const img = this.getOtherUserImage();
-    if (!img) {
-      return `https://via.placeholder.com/40?text=${this.getAvatarInitial(this.chatName || 'م')}`;
-    }
-    return `${img}?t=${this.cacheBuster}`;
-  }
-
-  private getAvatarInitial(name: string): string {
-    return name.charAt(0).toUpperCase() || 'م';
-  }
-
-  private loadMessages() {
+  loadMessages() {
     if (!this.selectedApp) return;
     this.api.getMessages(this.selectedApp._id).subscribe({
       next: (msgs: any[]) => {
@@ -450,39 +466,38 @@ this.socketService.onNewMessage((msg: any) => {
         this.loading = false;
         this.scrollToBottom();
       },
-      error: (err: any) => {
-        console.error('فشل تحميل الرسائل', err);
-        this.loading = false;
-      }
+      error: () => this.loading = false
     });
   }
 
   sendMessage() {
     if (!this.newMessage.trim() || !this.selectedApp) return;
+
     const text = this.newMessage.trim();
     this.newMessage = '';
-    const tempId = 'temp-' + Date.now();
-    const tempMsg = {
-      _id: tempId,
+
+    const tempMsg = this.normalizeMessage({
+      _id: 'temp-' + Date.now(),
       sender_id: this.currentUserId,
-      sender_name: 'أنت',
       message: text,
       type: 'text',
       timestamp: new Date()
-    };
-    this.messages.push(this.normalizeMessage(tempMsg));
+    });
+
+    this.messages.push(tempMsg);
     this.scrollToBottom();
+
     this.api.sendMessage({ application_id: this.selectedApp._id, message: text }).subscribe({
       next: (savedMsg: any) => {
-        const index = this.messages.findIndex(m => m._id === tempId);
+        const index = this.messages.findIndex(m => m._id === tempMsg._id);
         if (index !== -1) {
           this.messages[index] = this.normalizeMessage(savedMsg);
         }
       },
-      error: (err: any) => {
-        console.error('فشل الإرسال', err);
-        alert('فشل إرسال الرسالة');
-        this.messages = this.messages.filter(m => m._id !== tempId);
+      error: () => {
+        this.messages = this.messages.filter(m => m._id !== tempMsg._id);
+        this.toastMessage = 'فشل إرسال الرسالة، حاول مرة أخرى';
+        setTimeout(() => this.toastMessage = null, 6000);
       }
     });
   }
@@ -493,11 +508,5 @@ this.socketService.onNewMessage((msg: any) => {
         this.messagesContainer.nativeElement.scrollTop = this.messagesContainer.nativeElement.scrollHeight;
       }
     }, 100);
-  }
-
-  getChatName(app: any) {
-    return this.isJobSeeker
-      ? app.job_id?.shop_name || 'صاحب العمل'
-      : app.seeker_id?.name || 'باحث عن عمل';
   }
 }
