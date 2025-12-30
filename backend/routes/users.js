@@ -12,7 +12,8 @@ cloudinary.config({
 });
 
 // الصورة الديفولت
-const DEFAULT_AVATAR = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
+const DEFAULT_AVATAR =
+  'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
 
 const getProfileImageUrl = (publicId, cacheBuster = 0) => {
   const url = publicId
@@ -24,7 +25,7 @@ const getProfileImageUrl = (publicId, cacheBuster = 0) => {
         height: 400,
         crop: 'fill',
         gravity: 'face',
-        radius: 'max'
+        radius: 'max',
       })
     : DEFAULT_AVATAR;
 
@@ -37,11 +38,14 @@ router.get('/me', auth, async (req, res) => {
     const user = await User.findById(req.user.id).select('-password');
     if (!user) return res.status(404).json({ msg: 'المستخدم غير موجود' });
 
-    const imageUrl = getProfileImageUrl(user.profileImage, user.cacheBuster || 0);
+    const imageUrl = getProfileImageUrl(
+      user.profileImage,
+      user.cacheBuster || 0
+    );
 
     res.json({
       ...user.toObject(),
-      profileImage: imageUrl
+      profileImage: imageUrl,
     });
   } catch (err) {
     console.error('خطأ جلب البروفايل:', err);
@@ -55,6 +59,7 @@ router.put('/profile', auth, async (req, res) => {
     const { name, phone, bio, profileImage } = req.body;
 
     const updates = {};
+    const inc = {};
 
     if (name !== undefined) updates.name = name;
     if (phone !== undefined) updates.phone = phone;
@@ -67,10 +72,11 @@ router.put('/profile', auth, async (req, res) => {
         folder: 'sahla-profiles',
         public_id: `user_${req.user.id}`,
         overwrite: true,
-        resource_type: 'image'
+        resource_type: 'image',
       });
+
       updates.profileImage = result.public_id;
-      updates.cacheBuster = { $inc: 1 }; // ← الصحيح هنا
+      inc.cacheBuster = 1; // ✅ الصح
       cacheBusterIncremented = true;
     } else if (profileImage === null || profileImage === '') {
       updates.profileImage = null;
@@ -80,7 +86,10 @@ router.put('/profile', auth, async (req, res) => {
 
     const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
-      updates,
+      {
+        ...(Object.keys(updates).length && { $set: updates }),
+        ...(Object.keys(inc).length && { $inc: inc }),
+      },
       { new: true, runValidators: true }
     ).select('-password');
 
@@ -89,14 +98,15 @@ router.put('/profile', auth, async (req, res) => {
     }
 
     const finalCacheBuster = updatedUser.cacheBuster || 0;
-    const imageUrl = getProfileImageUrl(updatedUser.profileImage, finalCacheBuster);
+    const imageUrl = getProfileImageUrl(
+      updatedUser.profileImage,
+      finalCacheBuster
+    );
 
-    const responseUser = {
+    res.json({
       ...updatedUser.toObject(),
-      profileImage: imageUrl
-    };
-
-    res.json(responseUser);
+      profileImage: imageUrl,
+    });
 
     // إرسال تحديث real-time عبر Socket.IO إذا تغيرت الصورة
     if (cacheBusterIncremented) {
@@ -105,7 +115,7 @@ router.put('/profile', auth, async (req, res) => {
         io.to(req.user.id.toString()).emit('profileUpdated', {
           userId: req.user.id,
           profileImage: imageUrl,
-          cacheBuster: finalCacheBuster
+          cacheBuster: finalCacheBuster,
         });
       }
     }
