@@ -10,7 +10,7 @@ export class ApiService {
   private apiUrl: string;
   private imageBaseUrl: string;
 
-  // رابط Cloudinary الأساسي (يمكن نقله لـ environment.ts لاحقًا)
+  // رابط Cloudinary الأساسي
   private readonly CLOUDINARY_BASE = 'https://res.cloudinary.com/dv48puhaq/image/upload/';
 
   constructor(private http: HttpClient) {
@@ -34,22 +34,31 @@ export class ApiService {
   }
 
   /**
-   * تحويل public_id أو أي مسار إلى رابط صورة كامل
+   * تحويل أي شكل من profileImage إلى رابط صورة كامل
    */
   private getFullImageUrl(path: string): string {
     if (!path) return '';
 
-    // 1. الرابط كامل بالفعل (Cloudinary أو غيره) → نرجعه كما هو
+    // 1. الرابط كامل بالفعل (Cloudinary أو غيره)
     if (path.startsWith('http://') || path.startsWith('https://')) {
       return path;
     }
 
-    // 2. public_id خام (مثل: user_64f...) → نبني رابط Cloudinary كامل مع transformations
+    // 2. مسار قديم يبدأ بـ /sahla-profiles/
+    if (path.includes('/sahla-profiles/')) {
+      const parts = path.split('/sahla-profiles/');
+      const publicIdPart = parts[1]?.split('?')[0] || '';
+      if (publicIdPart) {
+        return `${this.CLOUDINARY_BASE}c_fill,f_auto,g_face,h_400,q_auto,r_max,w_400/v1/sahla-profiles/${publicIdPart}`;
+      }
+    }
+
+    // 3. public_id خام بدون / (user_xxxxxx)
     if (!path.includes('/') && !path.startsWith('/')) {
       return `${this.CLOUDINARY_BASE}c_fill,f_auto,g_face,h_400,q_auto,r_max,w_400/v1/sahla-profiles/${path}`;
     }
 
-    // 3. مسار نسبي قديم (نادر جدًا الآن) → نضيف الـ base
+    // 4. أي مسار نسبي آخر (نادر جدًا)
     let cleaned = path.startsWith('/') ? path.substring(1) : path;
     return this.imageBaseUrl ? `${this.imageBaseUrl}/${cleaned}` : `/${cleaned}`;
   }
@@ -62,15 +71,9 @@ export class ApiService {
     const processImage = (url: string | null | undefined): string | null => {
       if (!url || typeof url !== 'string') return null;
 
-      // حالة الرابط الكامل (غالباً Cloudinary)
-      if (url.startsWith('http')) {
-        const separator = url.includes('?') ? '&' : '?';
-        return `${url}${separator}t=${timestamp}`;
-      }
-
-      // حالة public_id أو مسار → نحوله لرابط كامل + cache buster
-      const full = this.getFullImageUrl(url);
-      return `${full}?t=${timestamp}`;
+      const fullUrl = this.getFullImageUrl(url);
+      const separator = fullUrl.includes('?') ? '&' : '?';
+      return `${fullUrl}${separator}t=${timestamp}`;
     };
 
     // معالجة الحقول الرئيسية
@@ -86,12 +89,12 @@ export class ApiService {
       data.seeker_id.profileImage = processImage(data.seeker_id.profileImage);
     }
 
-    // معالجة القوائم (arrays)
+    // معالجة القوائم
     if (Array.isArray(data)) {
       return data.map(item => this.addCacheBuster(item));
     }
 
-    // معالجة كل المفاتيح المتداخلة بشكل recursive
+    // معالجة الكائنات المتداخلة
     Object.keys(data).forEach(key => {
       if (data[key] && typeof data[key] === 'object' && !Array.isArray(data[key])) {
         data[key] = this.addCacheBuster(data[key]);
@@ -107,7 +110,7 @@ export class ApiService {
   }
 
   // ────────────────────────────────────────────────────────────────────────
-  // باقي الدوال بدون تغيير
+  // باقي الدوال بدون تغيير (انسخها من ملفك القديم)
   // ────────────────────────────────────────────────────────────────────────
 
   login(data: any): Observable<any> {
