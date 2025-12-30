@@ -70,11 +70,11 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                 <button class="flex items-center gap-3 lg:gap-4 rounded-full focus:outline-none p-2">
                   <img [src]="getProfileImageUrl()" alt="صورة الملف الشخصي"
                        class="w-10 h-10 lg:w-12 lg:h-12 rounded-full object-cover ring-2 ring-gray-300 shadow-md">
-                  <div class="hidden lg:block text-right max-w-[150px]">
-                    <span class="text-gray-700 font-medium text-base lg:text-lg truncate-start block">
+                  <div class="hidden lg:block max-w-[180px]">
+                    <span class="text-gray-700 font-medium text-base lg:text-lg truncate-left block">
                       {{ user.name || 'مستخدم' }}
                     </span>
-                    <span class="text-gray-500 text-sm truncate-start block">
+                    <span class="text-gray-500 text-sm truncate-left block mt-1">
                       {{ user.email || '' }}
                     </span>
                   </div>
@@ -129,11 +129,11 @@ import { Observable, Subject, takeUntil } from 'rxjs';
         <div class="p-5 border-b border-gray-200 flex items-center gap-4 bg-white sticky top-0 z-10">
           <img *ngIf="user" [src]="getProfileImageUrl()" alt="صورة الملف الشخصي"
                class="w-14 h-14 rounded-full object-cover ring-2 ring-gray-200 shadow-md flex-shrink-0">
-          <div class="flex-1 min-w-0 text-right">
-            <h2 class="text-xl font-bold text-gray-800 truncate-start">
+          <div class="flex-1 min-w-0">
+            <h2 class="text-xl font-bold text-gray-800 truncate-left">
               {{ user?.name || 'مستخدم' }}
             </h2>
-            <p class="text-sm text-gray-500 truncate-start">
+            <p class="text-sm text-gray-500 truncate-left mt-1">
               {{ user?.email || '' }}
             </p>
           </div>
@@ -209,19 +209,15 @@ import { Observable, Subject, takeUntil } from 'rxjs';
     .mobile-link {
       @apply block px-8 py-6 text-xl font-medium text-gray-800 hover:bg-indigo-50 transition-all text-right border-b border-gray-100 whitespace-nowrap;
     }
-    /* كلاس جديد للـ truncate من البداية (أول النص يبان + نقط في الآخر) */
-    .truncate-start {
+    /* كلاس جديد: يقطع النص من اليمين ويظهر النقط في الآخر (يعمل للعربي والإنجليزي) */
+    .truncate-left {
+      display: block;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      direction: rtl; /* مهم جدًا عشان يقطع من اليمين */
-      text-align: right;
+      direction: ltr;    /* يخلي النص يبدأ من اليسار دايمًا */
+      text-align: left;  /* يضمن الاتجاه الصحيح */
       max-width: 100%;
-    }
-    .truncate {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
   `]
 })
