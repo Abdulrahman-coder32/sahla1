@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+رimport { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
@@ -13,12 +13,13 @@ import { AuthService } from '../../services/auth.service';
     <div class="bg-white rounded-3xl shadow-lg border border-gray-100 hover:shadow-2xl transition-all duration-300 overflow-hidden max-w-full">
       <!-- Header: صورة صاحب الوظيفة + اسم المتجر -->
       <div class="p-6 flex items-center gap-5 bg-gradient-to-r from-sky-50 to-blue-50">
-        <div class="flex-shrink-0">
+        <div class="flex-shrink-0 relative">
           <img
             [src]="getOwnerImage()"
             alt="صورة {{ job.shop_name }}"
-            class="w-20 h-20 rounded-full object-cover ring-4 ring-white shadow-xl"
+            class="w-20 h-20 rounded-full object-cover ring-4 ring-white shadow-xl transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
+            (error)="onImageError($event)"
           >
         </div>
         <div class="flex-1 min-w-0">
@@ -107,7 +108,7 @@ import { AuthService } from '../../services/auth.service';
   `]
 })
 export class JobCardComponent {
-  @Input() job!: any; // استخدمنا ! عشان TypeScript ما يشتكيش
+  @Input() job!: any;
   @Input() hasApplied = false;
   @Output() applySuccess = new EventEmitter<void>();
 
@@ -129,14 +130,35 @@ export class JobCardComponent {
   getOwnerImage(): string {
     const ownerImage = this.job?.owner_id?.profileImage;
 
-    if (ownerImage && typeof ownerImage === 'string') {
-      // نزيل أي query parameters قديمة (مثل ?t=old) ونضيف واحدة جديدة
-      const baseUrl = ownerImage.split('?')[0];
-      return `${baseUrl}?t=${Date.now()}`;
+    if (!ownerImage || typeof ownerImage !== 'string') {
+      return this.DEFAULT_IMAGE;
     }
 
-    // لو مفيش صورة أو null
-    return this.DEFAULT_IMAGE;
+    // لو ApiService معالج الصورة بالفعل (غالباً بيضيف ?t=)
+    if (ownerImage.includes('?t=')) {
+      // نحدث الـ timestamp فقط
+      const base = ownerImage.split('?')[0];
+      return `${base}?t=${Date.now()}`;
+    }
+
+    // لو رابط Cloudinary كامل بدون query
+    if (ownerImage.startsWith('https://res.cloudinary.com/')) {
+      return `${ownerImage}?t=${Date.now()}`;
+    }
+
+    // حالة fallback: لو جاي public_id خام أو مسار قديم
+    // (ApiService المعدل هيحوله، لكن لو لسه مش معالج)
+    return ownerImage.includes('?') 
+      ? ownerImage 
+      : `${ownerImage}?t=${Date.now()}`;
+  }
+
+  onImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    if (img.src !== this.DEFAULT_IMAGE) {
+      img.src = this.DEFAULT_IMAGE;
+    }
+    img.onerror = null; // منع loop
   }
 
   openModal() {
