@@ -3,13 +3,15 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const Application = require('../models/Application');
 const JobListing = require('../models/JobListing');
-const Notification = require('../models/Notification');
+const Notification = require('../models/Notification'); // ← جديد: لحفظ الإشعارات في الـ DB
 
 router.post('/', auth, async (req, res) => {
   if (req.user.role !== 'job_seeker') return res.status(403).json({ msg: 'غير مصرح' });
+
   const { job_id, message } = req.body;
+
   try {
-    const job = await JobListing.findById(job_id).populate('owner_id', 'name profileImage');
+    const job = await JobListing.findById(job_id).populate('owner_id', 'name');
     if (!job) return res.status(404).json({ msg: 'الوظيفة غير موجودة' });
 
     const existing = await Application.findOne({ job_id, seeker_id: req.user.id });
@@ -22,15 +24,12 @@ router.post('/', auth, async (req, res) => {
     });
     await application.save();
 
-    // populate كامل مع profileImage للطرفين
     const populatedApp = await Application.findById(application._id)
-      .populate('seeker_id', 'name email governorate city age work_experience profileImage')
-      .populate({
-        path: 'job_id',
-        populate: { path: 'owner_id', select: 'name shop_name profileImage' }
-      });
+      .populate('seeker_id', 'name email governorate city age work_experience')
+      .populate('job_id');
 
     const io = req.app.get('io');
+
     if (io) {
       const notificationData = {
         type: 'new_application',
@@ -40,14 +39,17 @@ router.post('/', auth, async (req, res) => {
         createdAt: new Date()
       };
 
+      // إرسال الإشعار عبر السوكت
       io.to(job.owner_id._id.toString()).emit('newNotification', notificationData);
 
+      // حفظ في الـ database
       const newNotif = new Notification({
         user_id: job.owner_id._id,
         ...notificationData
       });
       await newNotif.save();
 
+      // الإشعار القديم (اختياري)
       io.to(job.owner_id._id.toString()).emit('newApplication', {
         type: 'new_application',
         application: populatedApp,
@@ -67,14 +69,11 @@ router.get('/my', auth, async (req, res) => {
   if (req.user.role !== 'job_seeker') {
     return res.status(403).json({ msg: 'غير مصرح - يجب أن تكون باحثًا عن عمل' });
   }
+
   try {
     const apps = await Application.find({ seeker_id: req.user.id })
-      .populate({
-        path: 'job_id',
-        populate: { path: 'owner_id', select: 'name shop_name profileImage' }
-      })
+      .populate('job_id')
       .sort({ createdAt: -1 });
-
     res.json(apps);
   } catch (err) {
     console.error('خطأ في جلب تقديماتي:', err);
@@ -87,15 +86,17 @@ router.get('/my-jobs', auth, async (req, res) => {
   if (req.user.role !== 'shop_owner') {
     return res.status(403).json({ msg: 'غير مصرح - يجب أن تكون صاحب عمل' });
   }
+
   try {
     const jobs = await JobListing.find({ owner_id: req.user.id }).select('_id');
     const jobIds = jobs.map(j => j._id);
+
     if (jobIds.length === 0) {
       return res.json([]);
     }
 
     const apps = await Application.find({ job_id: { $in: jobIds } })
-      .populate('seeker_id', 'name email governorate city age work_experience profileImage')
+      .populate('seeker_id', 'name email governorate city age work_experience')
       .populate('job_id', 'shop_name category')
       .sort({ createdAt: -1 });
 
@@ -115,7 +116,7 @@ router.get('/job/:jobId', auth, async (req, res) => {
     }
 
     const apps = await Application.find({ job_id: req.params.jobId })
-      .populate('seeker_id', 'name email governorate city age work_experience profileImage')
+      .populate('seeker_id', 'name email governorate city age work_experience')
       .sort({ createdAt: -1 });
 
     res.json(apps);
@@ -131,6 +132,7 @@ router.patch('/:id', auth, async (req, res) => {
   if (!['accepted', 'rejected'].includes(status)) {
     return res.status(400).json({ msg: 'حالة غير صالحة' });
   }
+
   try {
     const app = await Application.findById(req.params.id)
       .populate('job_id seeker_id');
@@ -144,13 +146,10 @@ router.patch('/:id', auth, async (req, res) => {
     await app.save();
 
     const populatedApp = await Application.findById(app._id)
-      .populate('seeker_id', 'name email profileImage')
-      .populate({
-        path: 'job_id',
-        populate: { path: 'owner_id', select: 'name shop_name profileImage' }
-      });
+      .populate('job_id seeker_id');
 
     const io = req.app.get('io');
+
     if (io) {
       const statusMessage = status === 'accepted'
         ? `تم قبول تقديمك على وظيفة "${app.job_id.shop_name}"! يمكنك الآن الدردشة مع صاحب العمل 🎉`
@@ -166,14 +165,17 @@ router.patch('/:id', auth, async (req, res) => {
         createdAt: new Date()
       };
 
+      // إشعار للمتقدم
       io.to(app.seeker_id._id.toString()).emit('newNotification', seekerNotificationData);
 
+      // حفظ في الـ DB للمتقدم
       const seekerNotif = new Notification({
         user_id: app.seeker_id._id,
         ...seekerNotificationData
       });
       await seekerNotif.save();
 
+      // الإشعار القديم
       io.to(app.seeker_id._id.toString()).emit('applicationStatusUpdate', {
         type: 'status_update',
         application_id: app._id,
@@ -181,6 +183,7 @@ router.patch('/:id', auth, async (req, res) => {
         message: statusMessage
       });
 
+      // إشعار لصاحب العمل عند القبول فقط
       if (status === 'accepted') {
         const ownerNotificationData = {
           type: 'application_accepted',
@@ -192,12 +195,14 @@ router.patch('/:id', auth, async (req, res) => {
 
         io.to(app.job_id.owner_id.toString()).emit('newNotification', ownerNotificationData);
 
+        // حفظ في الـ DB لصاحب العمل
         const ownerNotif = new Notification({
           user_id: app.job_id.owner_id,
           ...ownerNotificationData
         });
         await ownerNotif.save();
 
+        // الإشعار القديم
         io.to(app.job_id.owner_id.toString()).emit('chatOpened', {
           type: 'chat_opened',
           application_id: app._id,
