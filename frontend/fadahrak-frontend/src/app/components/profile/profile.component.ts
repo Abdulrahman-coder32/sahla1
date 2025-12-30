@@ -163,7 +163,11 @@ export class ProfileComponent implements OnInit, OnDestroy {
         this.authService.updateCurrentUser(updatedUser);
         this.user = { ...updatedUser, bio: updatedUser.bio || '' };
         this.originalUser = { ...this.user };
-        this.previewUrl = updatedUser.profileImage || null;
+
+        // تحديث previewUrl مع cache buster لتجنب مشاكل الكاش
+        const ts = Date.now();
+        this.previewUrl = updatedUser.profileImage ? updatedUser.profileImage.split('?')[0] + '?v=' + ts : null;
+
         this.selectedFile = null;
         this.isEditing = false;
         this.saving = false;
@@ -203,6 +207,10 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   getProfileImageUrl(): string {
-    return this.previewUrl || this.user.profileImage || '';
+    // كل مرة يرجع رابط جديد لتفادي الكاش
+    if (!this.previewUrl && !this.user.profileImage) return '';
+    const baseUrl = this.previewUrl || this.user.profileImage;
+    const ts = Date.now();
+    return baseUrl.split('?')[0] + '?v=' + ts;
   }
 }
