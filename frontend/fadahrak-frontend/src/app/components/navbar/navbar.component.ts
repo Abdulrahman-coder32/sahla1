@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -19,14 +19,12 @@ import { Observable, Subject, takeUntil } from 'rxjs';
               <img src="assets/logo.png" alt="سَهلة" class="h-10 sm:h-12 lg:h-14 w-auto max-w-28 sm:max-w-32 lg:max-w-36 object-contain transition-transform duration-300 hover:scale-105">
             </a>
           </div>
-
           <!-- Desktop Navigation -->
           <div class="hidden md:flex items-center gap-4 lg:gap-6">
             <a routerLink="/" class="nav-link" routerLinkActive="active-link">الرئيسية</a>
             <a routerLink="/jobs" class="nav-link" routerLinkActive="active-link">الوظائف</a>
             <a routerLink="/about" class="nav-link" routerLinkActive="active-link">عننا</a>
             <a routerLink="/contact" class="nav-link" routerLinkActive="active-link">اتصل بنا</a>
-
             <ng-container *ngIf="currentUser$ | async as user; else guestDesktop">
               <!-- Notifications Dropdown -->
               <div class="relative group">
@@ -64,11 +62,9 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                   </a>
                 </div>
               </div>
-
               <a routerLink="/inbox" class="nav-link" routerLinkActive="active-link">الرسائل</a>
               <a [routerLink]="user.role === 'shop_owner' ? '/owner-dashboard' : '/seeker-dashboard'"
                  class="nav-link" routerLinkActive="active-link">لوحة التحكم</a>
-
               <!-- Profile Dropdown -->
               <div class="relative group">
                 <button class="flex items-center gap-3 lg:gap-4 rounded-full focus:outline-none p-2">
@@ -93,13 +89,11 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                 </div>
               </div>
             </ng-container>
-
             <ng-template #guestDesktop>
               <a routerLink="/login" class="nav-link" routerLinkActive="active-link">دخول</a>
               <a routerLink="/signup" class="btn-primary px-5 py-2 lg:px-7 lg:py-3 rounded-xl text-base lg:text-lg">إنشاء حساب</a>
             </ng-template>
           </div>
-
           <!-- Mobile Buttons -->
           <div class="md:hidden flex items-center gap-4">
             <ng-container *ngIf="currentUser$ | async">
@@ -122,17 +116,14 @@ import { Observable, Subject, takeUntil } from 'rxjs';
           </div>
         </div>
       </div>
-
       <!-- Overlay + Mobile Sidebar -->
       <div *ngIf="mobileMenuOpen || mobileNotificationsOpen"
            class="fixed inset-0 bg-black bg-opacity-60 z-40 md:hidden"
            (click)="closeMobileMenu()"></div>
-
       <div [ngClass]="{
         'translate-x-0': mobileMenuOpen || mobileNotificationsOpen,
         'translate-x-full': !(mobileMenuOpen || mobileNotificationsOpen)
       }" class="fixed inset-y-0 right-0 w-80 max-w-full bg-white shadow-2xl z-50 transition-transform duration-500 ease-in-out md:hidden flex flex-col">
-
         <!-- Header -->
         <div class="p-5 border-b border-gray-200 flex items-center gap-4 bg-white sticky top-0 z-10">
           <ng-container *ngIf="currentUser$ | async as user">
@@ -147,7 +138,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
             <i class="fas fa-times text-2xl text-gray-600"></i>
           </button>
         </div>
-
         <!-- Content -->
         <div class="flex-1 overflow-y-auto pb-20">
           <!-- Notifications Mobile -->
@@ -170,7 +160,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
               <div class="p-8 text-center text-gray-400">جاري التحميل...</div>
             </ng-template>
           </div>
-
           <!-- Menu Mobile -->
           <div *ngIf="mobileMenuOpen && !mobileNotificationsOpen" class="p-5">
             <ng-container *ngIf="currentUser$ | async as user; else guestMobile">
@@ -195,7 +184,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
             </div>
           </div>
         </div>
-
         <!-- عرض جميع الإشعارات في الأسفل -->
         <div *ngIf="mobileNotificationsOpen" class="sticky bottom-0 bg-white border-t border-gray-200 p-4">
           <a routerLink="/notifications" (click)="closeMobileMenu()" class="block text-center bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-6 rounded-xl transition-all">
@@ -232,7 +220,8 @@ import { Observable, Subject, takeUntil } from 'rxjs';
   `]
 })
 export class NavbarComponent implements OnInit, OnDestroy {
-  currentUser$ = this.authService.user$;
+  currentUser$ = inject(AuthService).user$;  // ← التعديل المهم هنا
+
   notificationCount$!: Observable<number>;
   notifications$!: Observable<any[]>;
   mobileMenuOpen = false;
@@ -241,7 +230,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
-    private authService: AuthService,
     private router: Router,
     private notificationService: NotificationService
   ) {
@@ -250,7 +238,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // مش محتاجين نعمل subscribe هنا، الـ async pipe بيعمل كل حاجة
+    // الـ async pipe بيعمل كل حاجة
   }
 
   toggleMenu(): void {
