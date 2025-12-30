@@ -22,7 +22,7 @@ const io = socketIo(server, {
   }
 });
 
-app.set('io', io);
+app.set('io', io); // عشان نستخدمه في الـ routes لو عايزين
 
 // خدمة مجلد uploads كـ static
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -44,7 +44,19 @@ app.use('/api/messages', require('./routes/messages'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/notifications', require('./routes/notifications'));
 
-// Socket.IO Logic (نفس الكود بتاعك تمام)
+// دالة مساعدة لإرسال تحديث الصورة عبر Socket
+const emitProfileUpdate = (userId, profileImageUrl, cacheBuster) => {
+  io.to(userId.toString()).emit('profileUpdated', {
+    userId,
+    profileImage: profileImageUrl,
+    cacheBuster
+  });
+};
+
+// نعمل export للدالة عشان نستخدمها في users.js
+app.set('emitProfileUpdate', emitProfileUpdate);
+
+// Socket.IO Logic
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('لا يوجد توكن'));
@@ -71,7 +83,6 @@ io.on('connection', (socket) => {
 
   socket.on('sendMessage', async ({ application_id, message }) => {
     if (!message.trim()) return;
-
     try {
       const newMessage = new Message({
         application_id,
@@ -144,9 +155,7 @@ io.on('connection', (socket) => {
 // ────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend')));
 
-// Catch-all route آمن ومتوافق مع Express 5+ (بدل app.get('*'))
 app.use((req, res, next) => {
-  // لو الطلب GET ومش يبدأ بـ /api → ارجع index.html للـ Angular routing
   if (req.method === 'GET' && !req.path.startsWith('/api')) {
     res.sendFile(path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend/index.html'));
   } else {
