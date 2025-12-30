@@ -43,6 +43,7 @@ export class ApiService {
 
   private cleanUrl(url: string): string {
     if (!url) return '';
+    // نزيل كل الـ query string (كل شيء بعد ? الأول)
     return url.split('?')[0];
   }
 
@@ -54,7 +55,6 @@ export class ApiService {
     const cleanDefaultImage = (url: string | null | undefined): string | null => {
       if (!url || typeof url !== 'string') return null;
       if (url.includes('default.jpg') || url.includes('default-avatar')) {
-        console.log('تم اكتشاف default image من الـ backend وحذفها → تحول إلى null');
         return null;
       }
       return url;
@@ -72,7 +72,7 @@ export class ApiService {
       }
     }
 
-    // جديد: معالجة owner_id.profileImage في الوظائف
+    // معالجة owner_id.profileImage في الوظائف
     if (data.owner_id && typeof data.owner_id === 'object') {
       if (data.owner_id.profileImage && typeof data.owner_id.profileImage === 'string') {
         const cleanedUrl = cleanDefaultImage(data.owner_id.profileImage);
@@ -85,6 +85,22 @@ export class ApiService {
         }
       } else {
         data.owner_id.profileImage = null;
+      }
+    }
+
+    // معالجة seeker_id.profileImage في التقديمات والدردشات
+    if (data.seeker_id && typeof data.seeker_id === 'object') {
+      if (data.seeker_id.profileImage && typeof data.seeker_id.profileImage === 'string') {
+        const cleanedUrl = cleanDefaultImage(data.seeker_id.profileImage);
+        if (cleanedUrl) {
+          const clean = this.cleanUrl(cleanedUrl);
+          const base = this.prependBaseUrl(clean);
+          data.seeker_id.profileImage = `${base}?t=${timestamp}`;
+        } else {
+          data.seeker_id.profileImage = null;
+        }
+      } else {
+        data.seeker_id.profileImage = null;
       }
     }
 
