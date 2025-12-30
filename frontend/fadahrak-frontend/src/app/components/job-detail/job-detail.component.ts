@@ -22,7 +22,6 @@ import { ApplyModalComponent } from '../apply-modal/apply-modal.component';
     <div class="min-h-screen bg-gray-50 py-12 px-4 sm:py-16 lg:py-24">
       <div class="max-w-5xl mx-auto">
         <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
-
           <!-- زر الرجوع -->
           <div class="p-6 sm:p-8">
             <button
@@ -47,8 +46,9 @@ import { ApplyModalComponent } from '../apply-modal/apply-modal.component';
                 <img
                   [src]="getOwnerImage()"
                   alt="صورة {{ job.shop_name }}"
-                  class="w-40 h-40 sm:w-52 sm:h-52 rounded-full object-cover ring-8 ring-white shadow-2xl"
+                  class="w-40 h-40 sm:w-52 sm:h-52 rounded-full object-cover ring-8 ring-white shadow-2xl transition-transform duration-300 hover:scale-105"
                   loading="lazy"
+                  (error)="onImageError($event)"
                 >
                 <div class="absolute inset-0 rounded-full ring-6 ring-blue-100 opacity-40"></div>
               </div>
@@ -77,7 +77,6 @@ import { ApplyModalComponent } from '../apply-modal/apply-modal.component';
                 <h3 class="text-2xl font-bold text-gray-800 mb-3">ساعات العمل</h3>
                 <p class="text-xl text-gray-700">{{ job.working_hours }}</p>
               </div>
-
               <div class="bg-gradient-to-br from-green-50 to-emerald-100 p-10 rounded-3xl shadow-xl hover:shadow-2xl transition-shadow text-center">
                 <div class="w-20 h-20 bg-green-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
                   <i class="fas fa-money-bill-wave text-4xl text-green-700"></i>
@@ -85,7 +84,6 @@ import { ApplyModalComponent } from '../apply-modal/apply-modal.component';
                 <h3 class="text-2xl font-bold text-gray-800 mb-3">الراتب</h3>
                 <p class="text-xl text-gray-700 font-bold">{{ job.salary || 'حسب الاتفاق' }}</p>
               </div>
-
               <div class="bg-gradient-to-br from-indigo-50 to-purple-100 p-10 rounded-3xl shadow-xl hover:shadow-2xl transition-shadow md:col-span-3 lg:col-span-1">
                 <div class="w-20 h-20 bg-indigo-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
                   <i class="fas fa-list-ul text-4xl text-indigo-700"></i>
@@ -109,7 +107,6 @@ import { ApplyModalComponent } from '../apply-modal/apply-modal.component';
                     <i class="fas fa-paper-plane text-3xl" *ngIf="!applying"></i>
                     {{ applying ? 'جاري التقديم...' : 'تقديم على الوظيفة الآن' }}
                   </button>
-
                   <div *ngIf="hasApplied"
                        class="inline-flex items-center gap-6 bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 px-16 py-7 rounded-full text-3xl font-bold shadow-2xl">
                     <i class="fas fa-check-circle text-5xl"></i>
@@ -206,18 +203,37 @@ export class JobDetailComponent implements OnInit {
     }
   }
 
-  // دالة محسنة لعرض صورة صاحب الوظيفة مع cache busting ديناميكي
+  // الدالة المعدلة: تعتمد على ApiService لمعالجة الصورة + تحديث cache + fallback
   getOwnerImage(): string {
     const ownerImage = this.job?.owner_id?.profileImage;
 
-    if (ownerImage && typeof ownerImage === 'string') {
-      // نزيل أي query params قديمة ونضيف timestamp جديد
-      const baseUrl = ownerImage.split('?')[0];
-      return `${baseUrl}?t=${Date.now()}`;
+    if (!ownerImage || typeof ownerImage !== 'string') {
+      return this.DEFAULT_IMAGE;
     }
 
-    // لو مفيش صورة أو null
-    return this.DEFAULT_IMAGE;
+    // لو ApiService أضاف ?t= بالفعل (الحالة الأكثر شيوعًا الآن)
+    if (ownerImage.includes('?t=')) {
+      const base = ownerImage.split('?')[0];
+      return `${base}?t=${Date.now()}`; // تحديث timestamp جديد
+    }
+
+    // لو رابط Cloudinary كامل بدون query
+    if (ownerImage.startsWith('https://res.cloudinary.com/')) {
+      return `${ownerImage}?t=${Date.now()}`;
+    }
+
+    // fallback: أي رابط آخر (نادر)
+    const separator = ownerImage.includes('?') ? '&' : '?';
+    return `${ownerImage}${separator}t=${Date.now()}`;
+  }
+
+  // معالجة خطأ تحميل الصورة (fallback تلقائي)
+  onImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    if (img.src !== this.DEFAULT_IMAGE) {
+      img.src = this.DEFAULT_IMAGE;
+    }
+    img.onerror = null; // منع تكرار الخطأ
   }
 
   checkApplicationStatus() {
@@ -247,8 +263,8 @@ export class JobDetailComponent implements OnInit {
 
   apply(message: string) {
     if (!message.trim()) return;
-
     this.applying = true;
+
     this.api.applyToJob({
       job_id: this.job._id,
       message: message.trim()
