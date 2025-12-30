@@ -151,7 +151,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
         this.user = { ...updatedUser, bio: updatedUser.bio || '' };
         this.originalUser = { ...this.user };
-        this.previewUrl = this.user.profileImage || null;
+        this.previewUrl = updatedUser.profileImage || null; // ✅ استخدم الصورة المحدثة مباشرة
         this.selectedFile = null;
         this.isEditing = false;
         this.saving = false;
