@@ -15,6 +15,9 @@ export class ApiService {
 
   private readonly CLOUDINARY_BASE = `https://res.cloudinary.com/dv48puhaq/image/upload/${this.CLOUDINARY_TRANSFORM}/`;
 
+  // الديفولت اللي عايزها لو مفيش صورة (نفس الرابط اللي بعته)
+  private readonly DEFAULT_PROFILE_IMAGE = 'https://res.cloudinary.com/dv48puhaq/image/upload/c_fill,f_auto,g_face,h_400,q_auto,r_max,w_400/v1/sahla-profiles/user_6952db5df93f29893fdccc59';
+
   constructor(private http: HttpClient) {
     const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     this.apiUrl = '/api';
@@ -39,7 +42,7 @@ export class ApiService {
    * تحويل أي profileImage إلى رابط Cloudinary كامل بنفس الـ transformations
    */
   private getFullImageUrl(path: string): string {
-    if (!path) return '';
+    if (!path) return this.DEFAULT_PROFILE_IMAGE;
 
     // 1. لو الرابط كامل بالفعل (من /me أو /profile) → نزيل أي query قديمة
     if (path.startsWith('https://res.cloudinary.com/')) {
@@ -68,8 +71,11 @@ export class ApiService {
 
     const timestamp = Date.now();
 
-    const processImage = (url: string | null | undefined): string | null => {
-      if (!url || typeof url !== 'string') return null;
+    const processImage = (url: string | null | undefined): string => {
+      // لو مفيش صورة أو null → نرجع الديفولت اللي عايزه + timestamp
+      if (!url || typeof url !== 'string') {
+        return `${this.DEFAULT_PROFILE_IMAGE}?t=${timestamp}`;
+      }
 
       // رابط نظيف بدون أي query قديمة
       let fullUrl = this.getFullImageUrl(url);
