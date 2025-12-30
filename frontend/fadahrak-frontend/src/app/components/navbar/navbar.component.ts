@@ -220,7 +220,8 @@ import { Observable, Subject } from 'rxjs';
   `]
 })
 export class NavbarComponent implements OnInit, OnDestroy {
-  currentUser$ = inject(AuthService).user$;
+  private authService = inject(AuthService); // ← آمن وشغال في field initializer
+  currentUser$ = this.authService.user$;
 
   notificationCount$!: Observable<number>;
   notifications$!: Observable<any[]>;
@@ -257,7 +258,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   onLogout(): void {
-    inject(AuthService).logout();
+    this.authService.logout();
     this.closeMobileMenu();
     this.router.navigate(['/']);
   }
