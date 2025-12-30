@@ -45,7 +45,7 @@ import { SocketService } from '../../services/socket.service';
           <div *ngFor="let chat of chats"
                class="group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden cursor-pointer"
                [routerLink]="['/inbox', chat._id]">
-            
+           
             <!-- Unread Badge -->
             <div *ngIf="chat.unreadCount > 0"
                  class="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-xl z-10 flex items-center justify-center min-w-[32px] animate-pulse">
@@ -54,7 +54,7 @@ import { SocketService } from '../../services/socket.service';
 
             <!-- Chat Card -->
             <div class="p-6 sm:p-8 flex items-center gap-6">
-              <!-- Avatar: صورة الطرف الآخر (صاحب الإعلان أو المتقدم) -->
+              <!-- Avatar -->
               <div class="flex-shrink-0">
                 <img
                   [src]="getChatAvatar(chat)"
@@ -115,7 +115,6 @@ export class InboxListComponent implements OnInit, OnDestroy {
   currentUserId: string | null = null;
 
   private readonly DEFAULT_IMAGE = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
-  private cacheBuster = Date.now();
 
   constructor(
     private api: ApiService,
@@ -155,8 +154,10 @@ export class InboxListComponent implements OnInit, OnDestroy {
         this.loadAcceptedChats();
         return;
       }
+      // إعادة ترتيب الدردشات عشان الجديدة تبقى فوق
       this.chats = this.chats.filter(c => c._id !== data.application_id);
       this.chats.unshift(chat);
+      this.sortChats(); // احتياطي
     });
 
     this.socketService.onUnreadUpdate((data: { application_id: string; unreadCount: number }) => {
@@ -169,6 +170,7 @@ export class InboxListComponent implements OnInit, OnDestroy {
     if (this.isOwner) {
       this.socketService.onNewApplication(() => this.loadAcceptedChats());
     }
+
     this.socketService.onApplicationUpdate((data: any) => {
       if (data.status === 'accepted') {
         this.loadAcceptedChats();
@@ -190,7 +192,6 @@ export class InboxListComponent implements OnInit, OnDestroy {
             unreadCount = app.unreadCounts?.seeker || 0;
           }
 
-          // صورة الطرف الآخر (صاحب الإعلان أو المتقدم)
           const otherUserImage = this.isOwner
             ? app.seeker_id?.profileImage
             : app.job_id?.owner_id?.profileImage;
@@ -203,7 +204,7 @@ export class InboxListComponent implements OnInit, OnDestroy {
             lastMessage: app.lastMessage || 'ابدأ المحادثة',
             lastUpdated: app.lastTimestamp || app.updatedAt || app.createdAt || new Date(),
             unreadCount: unreadCount,
-            profileImage: otherUserImage
+            profileImage: otherUserImage  // ممكن null → هيعرض الديفولت
           };
         });
         this.sortChats();
@@ -222,9 +223,12 @@ export class InboxListComponent implements OnInit, OnDestroy {
     );
   }
 
+  // دالة محسنة: تضيف cache buster جديد كل مرة
   getChatAvatar(chat: any): string {
-    if (chat.profileImage) {
-      return `${chat.profileImage}?t=${this.cacheBuster}`;
+    if (chat.profileImage && typeof chat.profileImage === 'string') {
+      // لو الرابط فيه ?t= بالفعل (من ApiService)، هنضيف واحد جديد
+      const baseUrl = chat.profileImage.split('?')[0];
+      return `${baseUrl}?t=${Date.now()}`;
     }
     return this.DEFAULT_IMAGE;
   }
