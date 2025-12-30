@@ -10,14 +10,13 @@ export class ApiService {
   private apiUrl: string;
   private imageBaseUrl: string;
 
+  // رابط Cloudinary الأساسي (يمكن نقله لـ environment.ts لاحقًا)
+  private readonly CLOUDINARY_BASE = 'https://res.cloudinary.com/dv48puhaq/image/upload/';
+
   constructor(private http: HttpClient) {
     const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     this.apiUrl = '/api';
-    if (isDev) {
-      this.imageBaseUrl = '';
-    } else {
-      this.imageBaseUrl = 'https://positive-christiana-sahla-18a86cd2.koyeb.app';
-    }
+    this.imageBaseUrl = isDev ? '' : 'https://positive-christiana-sahla-18a86cd2.koyeb.app';
   }
 
   private getHeaders(includeToken: boolean = true, isMultipart: boolean = false): HttpHeaders {
@@ -34,94 +33,68 @@ export class ApiService {
     return headers;
   }
 
-  private prependBaseUrl(path: string): string {
+  /**
+   * تحويل public_id أو أي مسار إلى رابط صورة كامل
+   */
+  private getFullImageUrl(path: string): string {
     if (!path) return '';
 
-    // لو الرابط كامل (Cloudinary, S3, أي رابط خارجي) → نرجعه زي ما هو بدون تغيير
+    // 1. الرابط كامل بالفعل (Cloudinary أو غيره) → نرجعه كما هو
     if (path.startsWith('http://') || path.startsWith('https://')) {
       return path;
     }
 
-    let cleanedPath = path;
-
-    // تصليح المسار القديم الغلط (لو لسه موجود في الداتابيز)
-    if (cleanedPath.includes('/sahla-profiles/')) {
-      cleanedPath = cleanedPath.replace('/sahla-profiles/', '/uploads/');
+    // 2. public_id خام (مثل: user_64f...) → نبني رابط Cloudinary كامل مع transformations
+    if (!path.includes('/') && !path.startsWith('/')) {
+      return `${this.CLOUDINARY_BASE}c_fill,f_auto,g_face,h_400,q_auto,r_max,w_400/v1/sahla-profiles/${path}`;
     }
 
-    // إزالة / من البداية لو موجود
-    if (cleanedPath.startsWith('/')) {
-      cleanedPath = cleanedPath.substring(1);
-    }
-
-    // إرجاع الرابط مع الـ base المناسب
-    return this.imageBaseUrl === '' 
-      ? `/${cleanedPath}` 
-      : `${this.imageBaseUrl}/${cleanedPath}`;
-  }
-
-  private cleanUrl(url: string): string {
-    if (!url) return '';
-    return url.split('?')[0]; // نزيل أي query string موجود
+    // 3. مسار نسبي قديم (نادر جدًا الآن) → نضيف الـ base
+    let cleaned = path.startsWith('/') ? path.substring(1) : path;
+    return this.imageBaseUrl ? `${this.imageBaseUrl}/${cleaned}` : `/${cleaned}`;
   }
 
   private addCacheBuster(data: any): any {
     if (!data) return data;
+
     const timestamp = Date.now();
 
-    const processProfileImage = (url: string | null | undefined): string | null => {
+    const processImage = (url: string | null | undefined): string | null => {
       if (!url || typeof url !== 'string') return null;
 
-      const clean = this.cleanUrl(url);
-
-      // حالة 1: رابط كامل (Cloudinary مثلاً) → نضيف cache buster بس
-      if (clean.startsWith('http://') || clean.startsWith('https://')) {
-        return `${clean}?t=${timestamp}`;
+      // حالة الرابط الكامل (غالباً Cloudinary)
+      if (url.startsWith('http')) {
+        const separator = url.includes('?') ? '&' : '?';
+        return `${url}${separator}t=${timestamp}`;
       }
 
-      // حالة 2: مسار نسبي → نضيف base URL + cache buster
-      const base = this.prependBaseUrl(clean);
-      return `${base}?t=${timestamp}`;
+      // حالة public_id أو مسار → نحوله لرابط كامل + cache buster
+      const full = this.getFullImageUrl(url);
+      return `${full}?t=${timestamp}`;
     };
 
-    // معالجة profileImage في الـ object الرئيسي
-    if (data.profileImage && typeof data.profileImage === 'string') {
-      data.profileImage = processProfileImage(data.profileImage);
-    } else if (data.hasOwnProperty('profileImage')) {
-      data.profileImage = null;
+    // معالجة الحقول الرئيسية
+    if (data.profileImage) {
+      data.profileImage = processImage(data.profileImage);
     }
 
-    // owner_id.profileImage
-    if (data.owner_id && typeof data.owner_id === 'object') {
-      if (data.owner_id.profileImage && typeof data.owner_id.profileImage === 'string') {
-        data.owner_id.profileImage = processProfileImage(data.owner_id.profileImage);
-      } else {
-        data.owner_id.profileImage = null;
-      }
+    if (data.owner_id?.profileImage) {
+      data.owner_id.profileImage = processImage(data.owner_id.profileImage);
     }
 
-    // seeker_id.profileImage
-    if (data.seeker_id && typeof data.seeker_id === 'object') {
-      if (data.seeker_id.profileImage && typeof data.seeker_id.profileImage === 'string') {
-        data.seeker_id.profileImage = processProfileImage(data.seeker_id.profileImage);
-      } else {
-        data.seeker_id.profileImage = null;
-      }
+    if (data.seeker_id?.profileImage) {
+      data.seeker_id.profileImage = processImage(data.seeker_id.profileImage);
     }
 
-    // لو array (قائمة وظائف أو تقديمات)
+    // معالجة القوائم (arrays)
     if (Array.isArray(data)) {
       return data.map(item => this.addCacheBuster(item));
     }
 
-    // معالجة أي key اسمه profileImage في أي nested object
+    // معالجة كل المفاتيح المتداخلة بشكل recursive
     Object.keys(data).forEach(key => {
-      if (data[key] && typeof data[key] === 'object') {
+      if (data[key] && typeof data[key] === 'object' && !Array.isArray(data[key])) {
         data[key] = this.addCacheBuster(data[key]);
-      } else if (key === 'profileImage' && typeof data[key] === 'string') {
-        data[key] = processProfileImage(data[key]);
-      } else if (key === 'profileImage') {
-        data[key] = null;
       }
     });
 
