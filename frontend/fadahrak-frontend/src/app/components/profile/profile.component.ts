@@ -29,8 +29,6 @@ export class ProfileComponent implements OnInit {
   saving = false;
   message: { text: string; type: 'success' | 'error' } | null = null;
 
-  private readonly DEFAULT_IMAGE = 'https://res.cloudinary.com/dv48puhaq/image/upload/c_fill,f_auto,g_face,h_400,q_auto,r_max,w_400/v1/sahla-profiles/user_6952db5df93f29893fdccc59';
-
   constructor(
     private api: ApiService,
     private authService: AuthService,
@@ -46,10 +44,12 @@ export class ProfileComponent implements OnInit {
     this.api.getProfile().subscribe({
       next: (data: any) => {
         console.log('Response from getProfile:', data);
+        if (!data.profileImage && this.originalUser?.profileImage) {
+          data.profileImage = this.originalUser.profileImage;
+        }
         this.user = {
           ...data,
-          bio: data.bio || '',
-          profileImage: data.profileImage || null
+          bio: data.bio || ''
         };
         this.originalUser = { ...this.user };
         this.previewUrl = this.user.profileImage || null;
@@ -74,7 +74,8 @@ export class ProfileComponent implements OnInit {
     const reader = new FileReader();
     reader.onload = (e: any) => {
       this.previewUrl = e.target.result as string;
-      // ضغط الصورة (اختياري)
+
+      // ضغط الصورة للحفظ
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
@@ -105,6 +106,7 @@ export class ProfileComponent implements OnInit {
     this.message = null;
   }
 
+  // Validation: الاسم إجباري فقط
   private validateRequiredFields(): boolean {
     if (!this.user.name?.trim()) {
       this.showMessage('الاسم مطلوب ولا يمكن أن يكون فارغًا', 'error');
@@ -115,7 +117,10 @@ export class ProfileComponent implements OnInit {
 
   saveProfile() {
     if (this.saving) return;
-    if (!this.validateRequiredFields()) return;
+
+    if (!this.validateRequiredFields()) {
+      return;
+    }
 
     this.saving = true;
     this.message = null;
@@ -124,14 +129,18 @@ export class ProfileComponent implements OnInit {
       name: this.user.name?.trim(),
       phone: this.user.phone?.trim() || '',
       bio: this.user.bio?.trim() || ''
+      // الإيميل مش بنرسله خالص
     };
 
-    // إذا اختار صورة جديدة → نرسلها كـ base64
     if (this.selectedFile) {
       const reader = new FileReader();
       reader.onload = () => {
         updateData.profileImage = reader.result as string;
         this.sendUpdate(updateData);
+      };
+      reader.onerror = () => {
+        this.showMessage('خطأ في قراءة الصورة', 'error');
+        this.saving = false;
       };
       reader.readAsDataURL(this.selectedFile);
     } else {
@@ -143,55 +152,19 @@ export class ProfileComponent implements OnInit {
     this.api.updateProfile(updateData).subscribe({
       next: (updatedUser: any) => {
         console.log('Response from updateProfile:', updatedUser);
-
-        // **الحل النهائي**: بعد التحديث الناجح، اعمل reload كامل للبروفايل من /users/me
-        // عشان نجيب الرابط الكامل الجديد للصورة من Cloudinary
-        this.api.getProfile().subscribe({
-          next: (freshUser: any) => {
-            console.log('Fresh profile from /me after update:', freshUser);
-
-            // استخدم البيانات الجديدة الكاملة (الصورة هتكون الجديدة بالتأكيد)
-            const finalUser = {
-              ...freshUser,
-              bio: freshUser.bio || this.user.bio,
-              profileImage: freshUser.profileImage || null
-            };
-
-            // تحديث AuthService بالبيانات الجديدة
-            this.authService.updateCurrentUser(finalUser);
-
-            // تحديث الـ component
-            this.user = { ...finalUser };
-            this.originalUser = { ...this.user };
-            this.previewUrl = finalUser.profileImage || null;
-            this.selectedFile = null;
-            this.isEditing = false;
-            this.saving = false;
-
-            this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
-
-            // تجديد كاش الصورة في كل الأماكن
-            this.authService.forceRefreshImage();
-          },
-          error: (err) => {
-            console.error('خطأ في reload /me بعد التحديث:', err);
-            // fallback: استخدم الـ updatedUser على الأقل
-            const finalUser = {
-              ...updatedUser,
-              bio: updatedUser.bio || this.user.bio,
-              profileImage: updatedUser.profileImage || null
-            };
-            this.authService.updateCurrentUser(finalUser);
-            this.user = { ...finalUser };
-            this.originalUser = { ...this.user };
-            this.previewUrl = finalUser.profileImage || null;
-            this.selectedFile = null;
-            this.isEditing = false;
-            this.saving = false;
-            this.showMessage('تم التحديث لكن حصل تأخير في تحميل الصورة الجديدة', 'success');
-            this.authService.forceRefreshImage();
-          }
-        });
+        if (!updatedUser.profileImage && this.originalUser?.profileImage) {
+          updatedUser.profileImage = this.originalUser.profileImage;
+        }
+        const finalUser = { ...updatedUser, bio: updatedUser.bio || this.user.bio };
+        this.authService.updateCurrentUser(finalUser);
+        this.user = { ...finalUser };
+        this.originalUser = { ...this.user };
+        this.previewUrl = finalUser.profileImage || null;
+        this.selectedFile = null;
+        this.isEditing = false;
+        this.saving = false;
+        this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
+        this.authService.forceRefreshImage();
       },
       error: (err) => {
         console.error('فشل تحديث البروفايل', err);
@@ -225,6 +198,6 @@ export class ProfileComponent implements OnInit {
   }
 
   getProfileImageUrl(): string {
-    return this.previewUrl || this.user.profileImage || this.DEFAULT_IMAGE;
+    return this.previewUrl || this.user.profileImage || '';
   }
 }
