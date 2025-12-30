@@ -39,10 +39,8 @@ export class ProfileComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // تحميل أول مرة من API
     this.loadProfile();
 
-    // الاشتراك في أي تحديث real-time (من سوكت أو تحديث تاني)
     this.userSub = this.authService.user$.subscribe(currentUser => {
       if (currentUser) {
         this.user = { ...currentUser, bio: currentUser.bio || '' };
@@ -60,17 +58,11 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.api.getProfile().subscribe({
       next: (data: any) => {
-        console.log('البروفايل محمل من API:', data);
-        this.user = {
-          ...data,
-          bio: data.bio || ''
-        };
+        this.user = { ...data, bio: data.bio || '' };
         this.originalUser = { ...this.user };
         this.previewUrl = this.user.profileImage || null;
 
-        // تحديث AuthService (مهم لو كان فيه تغيير خارجي)
         this.authService.updateCurrentUser(this.user);
-
         this.loading = false;
       },
       error: (err) => {
@@ -90,13 +82,10 @@ export class ProfileComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.selectedFile = file;
-
     const reader = new FileReader();
     reader.onload = (e: any) => {
       this.previewUrl = e.target.result as string;
 
-      // ضغط الصورة (ممتاز اللي عملته)
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
@@ -153,15 +142,11 @@ export class ProfileComponent implements OnInit, OnDestroy {
     if (this.selectedFile) {
       formData.append('profileImage', this.selectedFile, this.selectedFile.name);
     } else if (this.previewUrl === null) {
-      // لو اليوزر مسح الصورة تمامًا
       formData.append('profileImage', '');
     }
 
     this.api.updateProfile(formData).subscribe({
       next: (updatedUser: any) => {
-        console.log('تم التحديث بنجاح:', updatedUser);
-
-        // الـ api.service خلاص بيعمل cache buster، والسوكت هيبعت التحديث
         this.authService.updateCurrentUser(updatedUser);
 
         this.user = { ...updatedUser, bio: updatedUser.bio || '' };
