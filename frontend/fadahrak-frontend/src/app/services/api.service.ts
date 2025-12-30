@@ -140,7 +140,7 @@ export class ApiService {
     );
   }
 
-  // Applications & Messages & Notifications (نفس الشيء، نضيف الكاش باستر)
+  // Applications & Messages & Notifications
   applyToJob(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/applications`, data, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
@@ -181,7 +181,6 @@ export class ApiService {
     );
   }
 
-  // باقي الدوال زي ما هي...
   sendMessage(data: { application_id: string; message: string }): Observable<any> {
     return this.http.post(`${this.apiUrl}/messages`, data, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
