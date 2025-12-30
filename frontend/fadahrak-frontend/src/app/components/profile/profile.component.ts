@@ -29,6 +29,8 @@ export class ProfileComponent implements OnInit {
   saving = false;
   message: { text: string; type: 'success' | 'error' } | null = null;
 
+  private readonly DEFAULT_IMAGE = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
+
   constructor(
     private api: ApiService,
     private authService: AuthService,
@@ -44,12 +46,11 @@ export class ProfileComponent implements OnInit {
     this.api.getProfile().subscribe({
       next: (data: any) => {
         console.log('Response from getProfile:', data);
-        if (!data.profileImage && this.originalUser?.profileImage) {
-          data.profileImage = this.originalUser.profileImage;
-        }
+        // ما نحتاجش نحافظ على الصورة القديمة، الباك بيرجع الرابط الجديد
         this.user = {
           ...data,
-          bio: data.bio || ''
+          bio: data.bio || '',
+          profileImage: data.profileImage || null
         };
         this.originalUser = { ...this.user };
         this.previewUrl = this.user.profileImage || null;
@@ -74,8 +75,7 @@ export class ProfileComponent implements OnInit {
     const reader = new FileReader();
     reader.onload = (e: any) => {
       this.previewUrl = e.target.result as string;
-
-      // ضغط الصورة للحفظ
+      // ضغط الصورة (اختياري)
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
@@ -106,7 +106,6 @@ export class ProfileComponent implements OnInit {
     this.message = null;
   }
 
-  // Validation: الاسم إجباري فقط
   private validateRequiredFields(): boolean {
     if (!this.user.name?.trim()) {
       this.showMessage('الاسم مطلوب ولا يمكن أن يكون فارغًا', 'error');
@@ -117,10 +116,7 @@ export class ProfileComponent implements OnInit {
 
   saveProfile() {
     if (this.saving) return;
-
-    if (!this.validateRequiredFields()) {
-      return;
-    }
+    if (!this.validateRequiredFields()) return;
 
     this.saving = true;
     this.message = null;
@@ -129,18 +125,14 @@ export class ProfileComponent implements OnInit {
       name: this.user.name?.trim(),
       phone: this.user.phone?.trim() || '',
       bio: this.user.bio?.trim() || ''
-      // الإيميل مش بنرسله خالص
     };
 
+    // إذا اختار صورة جديدة → نرسلها كـ base64
     if (this.selectedFile) {
       const reader = new FileReader();
       reader.onload = () => {
         updateData.profileImage = reader.result as string;
         this.sendUpdate(updateData);
-      };
-      reader.onerror = () => {
-        this.showMessage('خطأ في قراءة الصورة', 'error');
-        this.saving = false;
       };
       reader.readAsDataURL(this.selectedFile);
     } else {
@@ -152,18 +144,27 @@ export class ProfileComponent implements OnInit {
     this.api.updateProfile(updateData).subscribe({
       next: (updatedUser: any) => {
         console.log('Response from updateProfile:', updatedUser);
-        if (!updatedUser.profileImage && this.originalUser?.profileImage) {
-          updatedUser.profileImage = this.originalUser.profileImage;
-        }
-        const finalUser = { ...updatedUser, bio: updatedUser.bio || this.user.bio };
+        // ما نحتاجش نحافظ على القديمة، الباك بيرجع الجديدة
+        const finalUser = {
+          ...updatedUser,
+          bio: updatedUser.bio || this.user.bio,
+          profileImage: updatedUser.profileImage || null
+        };
+
+        // تحديث AuthService بالبيانات الجديدة
         this.authService.updateCurrentUser(finalUser);
+
+        // تحديث الـ component
         this.user = { ...finalUser };
         this.originalUser = { ...this.user };
         this.previewUrl = finalUser.profileImage || null;
         this.selectedFile = null;
         this.isEditing = false;
         this.saving = false;
+
         this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
+
+        // Force refresh للصورة في كل الأماكن
         this.authService.forceRefreshImage();
       },
       error: (err) => {
@@ -198,6 +199,6 @@ export class ProfileComponent implements OnInit {
   }
 
   getProfileImageUrl(): string {
-    return this.previewUrl || this.user.profileImage || '';
+    return this.previewUrl || this.user.profileImage || this.DEFAULT_IMAGE;
   }
 }
