@@ -1,131 +1,174 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, AsyncPipe } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { ApplyModalComponent } from '../apply-modal/apply-modal.component';
-import { AsyncPipe } from '@angular/common';
 
 @Component({
   selector: 'app-job-detail',
   standalone: true,
   imports: [CommonModule, ApplyModalComponent, AsyncPipe],
   template: `
+    <!-- Apply Modal -->
     <app-apply-modal
-      *ngIf="authService.user$ | async as user; else noUser"
+      *ngIf="authService.user$ | async as user"
       [isOpen]="modalOpen && user.role === 'job_seeker'"
       [jobTitle]="job?.shop_name || ''"
       (onClose)="closeModal()"
       (onSubmit)="apply($event)">
     </app-apply-modal>
-    <ng-template #noUser></ng-template>
-    <div class="min-h-screen bg-gray-50 py-12 px-4 sm:py-16 lg:py-20">
-      <div class="max-w-4xl sm:max-w-5xl mx-auto">
-        <div class="bg-white p-6 sm:p-8 md:p-12 shadow-2xl rounded-2xl border border-gray-100">
+
+    <div class="min-h-screen bg-gray-50 py-12 px-4 sm:py-16 lg:py-24">
+      <div class="max-w-5xl mx-auto">
+        <div class="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+
           <!-- زر الرجوع -->
-          <button
-            (click)="goBack()"
-            class="mb-10 flex items-center gap-3 bg-blue-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:bg-blue-700 transition text-lg sm:text-xl font-semibold shadow-md hover:shadow-lg">
-            <i class="fas fa-arrow-right text-2xl"></i>
-            رجوع للوظائف
-          </button>
-          <!-- Loading -->
-          <div *ngIf="loading" class="flex flex-col items-center justify-center py-20">
-            <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 mb-6"></div>
-            <p class="text-xl text-gray-700 font-medium">جاري تحميل تفاصيل الوظيفة...</p>
+          <div class="p-6 sm:p-8">
+            <button
+              (click)="goBack()"
+              class="inline-flex items-center gap-3 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300">
+              <i class="fas fa-arrow-right text-xl"></i>
+              رجوع إلى الوظائف
+            </button>
           </div>
+
+          <!-- Loading -->
+          <div *ngIf="loading" class="flex flex-col items-center justify-center py-32">
+            <div class="animate-spin rounded-full h-20 w-20 border-4 border-blue-200 border-t-blue-600"></div>
+            <p class="mt-8 text-2xl text-gray-700 font-medium">جاري تحميل تفاصيل الوظيفة...</p>
+          </div>
+
           <!-- تفاصيل الوظيفة -->
-          <div *ngIf="!loading && job" class="space-y-10">
-            <!-- الهيدر مع الصورة -->
-            <div class="text-center space-y-4">
-              <div class="flex justify-center">
-                <div class="relative">
-                  <img
-                    [src]="getOwnerImage()"
-                    alt="{{ job.shop_name }}"
-                    class="w-32 h-32 sm:w-40 sm:h-40 rounded-full object-cover ring-4 ring-white shadow-2xl">
-                  <div class="absolute inset-0 rounded-full border-4 border-blue-500 opacity-20"></div>
+          <div *ngIf="!loading && job" class="px-6 sm:px-8 lg:px-12 pb-12">
+            <div class="text-center space-y-8">
+              <!-- صورة صاحب الوظيفة -->
+              <div class="relative inline-block">
+                <img
+                  [src]="getOwnerImage()"
+                  alt="صورة {{ job.shop_name }}"
+                  class="w-36 h-36 sm:w-44 sm:h-44 rounded-full object-cover ring-8 ring-white shadow-2xl"
+                  loading="lazy"
+                >
+                <div class="absolute inset-0 rounded-full ring-4 ring-blue-200 opacity-30"></div>
+              </div>
+
+              <!-- العنوان والتصنيف -->
+              <div>
+                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 leading-tight">
+                  {{ job.shop_name }}
+                </h1>
+                <p class="mt-4 text-2xl sm:text-3xl text-blue-700 font-semibold">
+                  {{ job.category }}
+                </p>
+                <p class="mt-6 text-xl sm:text-2xl text-gray-600 flex items-center justify-center gap-3">
+                  <i class="fas fa-map-marker-alt text-blue-600 text-2xl"></i>
+                  {{ job.governorate }} - {{ job.city }}
+                </p>
+              </div>
+            </div>
+
+            <!-- بطاقات المعلومات -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
+              <div class="bg-gradient-to-br from-blue-50 to-sky-50 p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow text-center">
+                <div class="w-16 h-16 bg-blue-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <i class="fas fa-clock text-3xl text-blue-700"></i>
                 </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">ساعات العمل</h3>
+                <p class="text-lg text-gray-700">{{ job.working_hours }}</p>
               </div>
-              <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900">{{ job.shop_name }}</h1>
-              <p class="text-2xl sm:text-3xl text-gray-800 font-semibold">{{ job.category }}</p>
-              <p class="text-xl sm:text-2xl text-gray-600 flex items-center justify-center gap-2">
-                <i class="fas fa-map-marker-alt text-blue-500"></i>
-                {{ job.governorate }} - {{ job.city }}
-              </p>
-            </div>
-            <!-- معلومات الوظيفة -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div class="bg-indigo-50 p-6 rounded-xl shadow-lg text-center hover:shadow-xl transition-shadow">
-                <h3 class="text-xl font-bold mb-2 flex items-center justify-center gap-2 text-blue-600">
-                  <i class="fas fa-clock text-2xl"></i> ساعات العمل
-                </h3>
-                <p class="text-lg text-gray-800">{{ job.working_hours }}</p>
+
+              <div class="bg-gradient-to-br from-green-50 to-emerald-50 p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow text-center">
+                <div class="w-16 h-16 bg-green-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <i class="fas fa-money-bill-wave text-3xl text-green-700"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">الراتب</h3>
+                <p class="text-lg text-gray-700 font-medium">{{ job.salary || 'حسب الاتفاق' }}</p>
               </div>
-              <div class="bg-green-50 p-6 rounded-xl shadow-lg text-center hover:shadow-xl transition-shadow">
-                <h3 class="text-xl font-bold mb-2 flex items-center justify-center gap-2 text-green-600">
-                  <i class="fas fa-money-bill-wave text-2xl"></i> الراتب
-                </h3>
-                <p class="text-lg text-gray-800">{{ job.salary || 'حسب الاتفاق' }}</p>
-              </div>
-              <div class="bg-blue-50 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow md:col-span-2 lg:col-span-1">
-                <h3 class="text-xl font-bold mb-2 flex items-center justify-center gap-2 text-blue-600">
-                  <i class="fas fa-list-ul text-2xl"></i> المتطلبات
-                </h3>
-                <p class="text-lg text-gray-800 leading-relaxed text-left break-words">{{ job.requirements }}</p>
+
+              <div class="bg-gradient-to-br from-indigo-50 to-purple-50 p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow md:col-span-3 lg:col-span-1">
+                <div class="w-16 h-16 bg-indigo-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <i class="fas fa-list-ul text-3xl text-indigo-700"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-4 text-center">المتطلبات</h3>
+                <p class="text-lg text-gray-700 leading-relaxed text-right">{{ job.requirements }}</p>
               </div>
             </div>
-            <!-- التقديم -->
-            <div class="text-center mt-12 space-y-4">
+
+            <!-- منطقة التقديم -->
+            <div class="mt-20 text-center">
               <div *ngIf="authService.user$ | async as user">
-                <!-- زر التقديم -->
-                <button
-                  *ngIf="user.role === 'job_seeker' && !hasApplied"
-                  (click)="openModal()"
-                  [disabled]="applying"
-                  class="bg-blue-600 text-white px-10 sm:px-12 py-4 sm:py-5 rounded-full text-xl font-bold flex items-center justify-center gap-3 hover:bg-blue-700 transition shadow-lg hover:shadow-xl">
-                  <i class="fas fa-file-alt" *ngIf="!applying"></i>
-                  <i class="fas fa-spinner fa-spin" *ngIf="applying"></i>
-                  {{ applying ? 'جاري التقديم...' : 'تقديم على الوظيفة الآن' }}
-                </button>
-                <!-- تم التقديم -->
-                <div *ngIf="user.role === 'job_seeker' && hasApplied"
-                     class="inline-flex items-center gap-4 bg-green-100 text-green-800 px-10 sm:px-12 py-4 sm:py-5 rounded-full text-xl font-bold shadow-lg">
-                  <i class="fas fa-check-circle text-3xl"></i>
-                  تم التقديم بنجاح!
+                <!-- باحث عن عمل -->
+                <div *ngIf="user.role === 'job_seeker'">
+                  <button
+                    *ngIf="!hasApplied"
+                    (click)="openModal()"
+                    [disabled]="applying"
+                    class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold text-xl px-12 py-6 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 flex items-center justify-center gap-4 mx-auto">
+                    <i class="fas fa-spinner fa-spin text-2xl" *ngIf="applying"></i>
+                    <i class="fas fa-paper-plane text-2xl" *ngIf="!applying"></i>
+                    {{ applying ? 'جاري التقديم...' : 'تقديم على الوظيفة الآن' }}
+                  </button>
+
+                  <div *ngIf="hasApplied"
+                       class="inline-flex items-center gap-5 bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 px-12 py-6 rounded-full text-2xl font-bold shadow-xl">
+                    <i class="fas fa-check-circle text-4xl"></i>
+                    تم التقديم بنجاح!
+                  </div>
                 </div>
-                <!-- صاحب المحل -->
+
+                <!-- صاحب عمل -->
                 <div *ngIf="user.role === 'shop_owner'"
-                     class="inline-flex items-center gap-4 bg-indigo-100 text-indigo-800 px-10 sm:px-12 py-4 sm:py-5 rounded-full text-xl font-bold shadow-lg">
+                     class="inline-flex items-center gap-5 bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-800 px-12 py-6 rounded-full text-xl font-bold shadow-xl">
                   <i class="fas fa-building text-3xl"></i>
                   هذه إحدى وظائفك! تابع المتقدمين من لوحة التحكم
                 </div>
               </div>
-              <!-- لغير المسجلين -->
-              <p *ngIf="!(authService.user$ | async)" class="text-lg text-gray-600">
-                لازم
-                <a routerLink="/login" class="text-blue-500 font-semibold hover:underline transition">تسجل دخول</a> أو
-                <a routerLink="/signup" class="text-blue-500 font-semibold hover:underline transition"> تنشئ حساب</a>
-                عشان تتقدم على الوظيفة
+
+              <!-- غير مسجل دخول -->
+              <p *ngIf="!(authService.user$ | async)" class="text-xl text-gray-600 mt-10">
+                يجب
+                <a routerLink="/login" class="text-blue-600 font-bold hover:underline">تسجيل الدخول</a> أو
+                <a routerLink="/signup" class="text-blue-600 font-bold hover:underline">إنشاء حساب</a>
+                للتقديم على الوظيفة
               </p>
             </div>
           </div>
+
           <!-- الوظيفة غير موجودة -->
-          <div *ngIf="!loading && !job" class="text-center py-20">
-            <div class="inline-flex items-center justify-center w-24 h-24 bg-gray-100 rounded-full mb-6">
-              <i class="fas fa-exclamation-triangle text-5xl text-gray-400"></i>
+          <div *ngIf="!loading && !job" class="text-center py-32">
+            <div class="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-8">
+              <i class="fas fa-exclamation-triangle text-6xl text-gray-400"></i>
             </div>
-            <h3 class="text-2xl font-bold text-gray-800 mb-4">الوظيفة غير موجودة أو تم حذفها</h3>
+            <h2 class="text-3xl font-bold text-gray-800 mb-4">الوظيفة غير موجودة</h2>
+            <p class="text-xl text-gray-600">ربما تم حذفها أو انتهت صلاحيتها</p>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Toast Message مخصص (بدل alert) -->
+    <div *ngIf="toastMessage"
+         class="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-fade-in-up">
+      <div class="bg-white rounded-2xl shadow-2xl border border-gray-200 px-8 py-6 flex items-center gap-5 min-w-[320px]">
+        <i class="fas fa-exclamation-triangle text-3xl text-red-500"></i>
+        <div>
+          <p class="font-bold text-gray-900 text-lg">فشل التقديم</p>
+          <p class="text-gray-700 mt-1">{{ toastMessage }}</p>
+        </div>
+        <button (click)="toastMessage = null" class="text-gray-400 hover:text-gray-600 ml-auto">
+          <i class="fas fa-times text-2xl"></i>
+        </button>
+      </div>
+    </div>
   `,
   styles: [`
-    .card {
-      background: white;
-      border-radius: 1rem;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    @keyframes fade-in-up {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in-up {
+      animation: fade-in-up 0.5s ease-out;
     }
   `]
 })
@@ -135,7 +178,10 @@ export class JobDetailComponent implements OnInit {
   hasApplied = false;
   modalOpen = false;
   applying = false;
+  toastMessage: string | null = null;
   private cacheBuster = Date.now();
+
+  private readonly DEFAULT_IMAGE = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
 
   constructor(
     private route: ActivatedRoute,
@@ -164,7 +210,7 @@ export class JobDetailComponent implements OnInit {
   getOwnerImage(): string {
     const ownerImage = this.job?.owner_id?.profileImage;
     if (!ownerImage) {
-      return `https://ui-avatars.com/api/?name=${encodeURIComponent(this.job?.shop_name || 'متجر')}&background=3b82f6&color=fff&size=128&bold=true&font-size=0.33`;
+      return this.DEFAULT_IMAGE;
     }
     return `${ownerImage}?t=${this.cacheBuster}`;
   }
@@ -179,8 +225,7 @@ export class JobDetailComponent implements OnInit {
           app.job_id === this.job._id || (app.job_id && app.job_id._id === this.job._id)
         );
       },
-      error: (err: any) => {
-        console.error('خطأ في جلب حالة التقديم:', err);
+      error: () => {
         this.hasApplied = false;
       }
     });
@@ -197,24 +242,23 @@ export class JobDetailComponent implements OnInit {
 
   apply(message: string) {
     if (!message.trim()) return;
+
     this.applying = true;
 
-    this.api.applyToJob({ 
-      jobId: this.job._id,           // ← التعديل الرئيسي: job_id → jobId
-      message: message.trim() 
+    this.api.applyToJob({
+      job_id: this.job._id,
+      message: message.trim()
     }).subscribe({
       next: () => {
         this.modalOpen = false;
         this.hasApplied = true;
         this.applying = false;
-        // رسالة نجاح أوضح (اختياري)
-        // alert('تم التقديم بنجاح!');
       },
       error: (err: any) => {
-        console.error('خطأ في التقديم:', err);
-        const errorMsg = err.error?.msg || err.error?.message || 'حاول مرة أخرى';
-        alert('فشل التقديم: ' + errorMsg);
+        const errorMsg = err.error?.msg || err.error?.message || 'حدث خطأ أثناء التقديم، حاول مرة أخرى';
+        this.toastMessage = errorMsg;
         this.applying = false;
+        setTimeout(() => this.toastMessage = null, 6000);
       }
     });
   }
