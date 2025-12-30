@@ -15,7 +15,7 @@ import { AuthService } from '../../services/auth.service';
       <div class="p-6 flex items-center gap-5 bg-gradient-to-r from-sky-50 to-blue-50">
         <div class="flex-shrink-0 relative">
           <img
-            [src]="getOwnerImage()"
+            [src]="job?.owner_id?.profileImage || defaultImage"
             alt="صورة {{ job.shop_name }}"
             class="w-20 h-20 rounded-full object-cover ring-4 ring-white shadow-xl transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
@@ -115,7 +115,7 @@ export class JobCardComponent {
   modalOpen = false;
   toastMessage: string | null = null;
 
-  private readonly DEFAULT_IMAGE = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
+  readonly defaultImage = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
 
   constructor(
     private api: ApiService,
@@ -127,36 +127,10 @@ export class JobCardComponent {
     return this.authService.isLoggedIn() && user?.role === 'job_seeker';
   }
 
-  getOwnerImage(): string {
-    const ownerImage = this.job?.owner_id?.profileImage;
-
-    if (!ownerImage || typeof ownerImage !== 'string') {
-      return this.DEFAULT_IMAGE;
-    }
-
-    // لو ApiService معالج الصورة بالفعل (غالباً بيضيف ?t=)
-    if (ownerImage.includes('?t=')) {
-      // نحدث الـ timestamp فقط
-      const base = ownerImage.split('?')[0];
-      return `${base}?t=${Date.now()}`;
-    }
-
-    // لو رابط Cloudinary كامل بدون query
-    if (ownerImage.startsWith('https://res.cloudinary.com/')) {
-      return `${ownerImage}?t=${Date.now()}`;
-    }
-
-    // حالة fallback: لو جاي public_id خام أو مسار قديم
-    // (ApiService المعدل هيحوله، لكن لو لسه مش معالج)
-    return ownerImage.includes('?') 
-      ? ownerImage 
-      : `${ownerImage}?t=${Date.now()}`;
-  }
-
   onImageError(event: Event) {
     const img = event.target as HTMLImageElement;
-    if (img.src !== this.DEFAULT_IMAGE) {
-      img.src = this.DEFAULT_IMAGE;
+    if (img.src !== this.defaultImage) {
+      img.src = this.defaultImage;
     }
     img.onerror = null; // منع loop
   }
