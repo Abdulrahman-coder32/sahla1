@@ -54,7 +54,7 @@ import { SocketService } from '../../services/socket.service';
 
             <!-- Chat Card -->
             <div class="p-6 sm:p-8 flex items-center gap-6">
-              <!-- Avatar - الصورة الحقيقية أو الديفولت -->
+              <!-- Avatar: صورة الطرف الآخر (صاحب الإعلان أو المتقدم) -->
               <div class="flex-shrink-0">
                 <img
                   [src]="getChatAvatar(chat)"
@@ -190,7 +190,7 @@ export class InboxListComponent implements OnInit, OnDestroy {
             unreadCount = app.unreadCounts?.seeker || 0;
           }
 
-          // استخراج صورة الطرف الآخر
+          // صورة الطرف الآخر (صاحب الإعلان أو المتقدم)
           const otherUserImage = this.isOwner
             ? app.seeker_id?.profileImage
             : app.job_id?.owner_id?.profileImage;
@@ -203,7 +203,7 @@ export class InboxListComponent implements OnInit, OnDestroy {
             lastMessage: app.lastMessage || 'ابدأ المحادثة',
             lastUpdated: app.lastTimestamp || app.updatedAt || app.createdAt || new Date(),
             unreadCount: unreadCount,
-            profileImage: otherUserImage  // لاستخدامها في getChatAvatar
+            profileImage: otherUserImage // للاستخدام في getChatAvatar
           };
         });
         this.sortChats();
@@ -222,7 +222,7 @@ export class InboxListComponent implements OnInit, OnDestroy {
     );
   }
 
-  // دالة جديدة لعرض الصورة
+  // دالة عرض الصورة
   getChatAvatar(chat: any): string {
     if (chat.profileImage) {
       return `${chat.profileImage}?t=${this.cacheBuster}`;
