@@ -71,10 +71,10 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                   <img [src]="getProfileImageUrl()" alt="صورة الملف الشخصي"
                        class="w-10 h-10 lg:w-12 lg:h-12 rounded-full object-cover ring-2 ring-gray-300 shadow-md">
                   <div class="hidden lg:block max-w-[180px]">
-                    <span class="text-gray-700 font-medium text-base lg:text-lg truncate-left block">
+                    <span class="text-gray-700 font-medium text-base lg:text-lg show-start block">
                       {{ user.name || 'مستخدم' }}
                     </span>
-                    <span class="text-gray-500 text-sm truncate-left block mt-1">
+                    <span class="text-gray-500 text-sm show-start block mt-1">
                       {{ user.email || '' }}
                     </span>
                   </div>
@@ -130,10 +130,10 @@ import { Observable, Subject, takeUntil } from 'rxjs';
           <img *ngIf="user" [src]="getProfileImageUrl()" alt="صورة الملف الشخصي"
                class="w-14 h-14 rounded-full object-cover ring-2 ring-gray-200 shadow-md flex-shrink-0">
           <div class="flex-1 min-w-0">
-            <h2 class="text-xl font-bold text-gray-800 truncate-left">
+            <h2 class="text-xl font-bold text-gray-800 show-start">
               {{ user?.name || 'مستخدم' }}
             </h2>
-            <p class="text-sm text-gray-500 truncate-left mt-1">
+            <p class="text-sm text-gray-500 show-start mt-1">
               {{ user?.email || '' }}
             </p>
           </div>
@@ -209,14 +209,15 @@ import { Observable, Subject, takeUntil } from 'rxjs';
     .mobile-link {
       @apply block px-8 py-6 text-xl font-medium text-gray-800 hover:bg-indigo-50 transition-all text-right border-b border-gray-100 whitespace-nowrap;
     }
-    /* كلاس جديد: يقطع النص من اليمين ويظهر النقط في الآخر (يعمل للعربي والإنجليزي) */
-    .truncate-left {
+    /* الكلاس النهائي: يظهر أول النص + نقط في الآخر سواء عربي أو إنجليزي */
+    .show-start {
       display: block;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      direction: ltr;    /* يخلي النص يبدأ من اليسار دايمًا */
-      text-align: left;  /* يضمن الاتجاه الصحيح */
+      direction: ltr !important;
+      text-align: left !important;
+      unicode-bidi: plaintext;
       max-width: 100%;
     }
   `]
