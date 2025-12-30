@@ -10,7 +10,7 @@ export class ApiService {
   private apiUrl: string;
   private imageBaseUrl: string;
 
-  // رابط Cloudinary الأساسي
+  // Cloudinary base URL الرسمي مع transformations افتراضية
   private readonly CLOUDINARY_BASE = 'https://res.cloudinary.com/dv48puhaq/image/upload/';
 
   constructor(private http: HttpClient) {
@@ -34,31 +34,30 @@ export class ApiService {
   }
 
   /**
-   * تحويل أي شكل من profileImage إلى رابط صورة كامل
+   * تحويل أي قيمة profileImage إلى رابط Cloudinary كامل مع transformations
    */
   private getFullImageUrl(path: string): string {
     if (!path) return '';
 
-    // 1. الرابط كامل بالفعل (Cloudinary أو غيره)
+    // 1. رابط كامل (غالباً من /users/me أو /profile)
     if (path.startsWith('http://') || path.startsWith('https://')) {
-      return path;
+      return path.split('?')[0]; // نزيل أي query قديمة عشان نتحكم في cache buster
     }
 
-    // 2. مسار قديم يبدأ بـ /sahla-profiles/
+    // 2. مسار قديم يحتوي /sahla-profiles/
     if (path.includes('/sahla-profiles/')) {
-      const parts = path.split('/sahla-profiles/');
-      const publicIdPart = parts[1]?.split('?')[0] || '';
-      if (publicIdPart) {
-        return `${this.CLOUDINARY_BASE}c_fill,f_auto,g_face,h_400,q_auto,r_max,w_400/v1/sahla-profiles/${publicIdPart}`;
+      const publicId = path.split('/sahla-profiles/')[1]?.split('?')[0] || path.split('/').pop()?.split('?')[0] || '';
+      if (publicId) {
+        return `${this.CLOUDINARY_BASE}c_fill,f_auto,g_face,h_400,q_auto,r_max,w_400/v1/sahla-profiles/${publicId}`;
       }
     }
 
-    // 3. public_id خام بدون / (user_xxxxxx)
+    // 3. public_id خام فقط (user_6952d7d31024a0a8ef7fd7ab)
     if (!path.includes('/') && !path.startsWith('/')) {
       return `${this.CLOUDINARY_BASE}c_fill,f_auto,g_face,h_400,q_auto,r_max,w_400/v1/sahla-profiles/${path}`;
     }
 
-    // 4. أي مسار نسبي آخر (نادر جدًا)
+    // 4. أي مسار نسبي آخر (fallback نادر)
     let cleaned = path.startsWith('/') ? path.substring(1) : path;
     return this.imageBaseUrl ? `${this.imageBaseUrl}/${cleaned}` : `/${cleaned}`;
   }
@@ -71,28 +70,20 @@ export class ApiService {
     const processImage = (url: string | null | undefined): string | null => {
       if (!url || typeof url !== 'string') return null;
 
-      const fullUrl = this.getFullImageUrl(url);
-      const separator = fullUrl.includes('?') ? '&' : '?';
-      return `${fullUrl}${separator}t=${timestamp}`;
+      // نحصل على الرابط النظيف بدون أي query قديمة
+      let fullUrl = this.getFullImageUrl(url);
+      fullUrl = fullUrl.split('?')[0]; // نزيل أي ?t= قديمة
+
+      return `${fullUrl}?t=${timestamp}`;
     };
 
     // معالجة الحقول الرئيسية
-    if (data.profileImage) {
-      data.profileImage = processImage(data.profileImage);
-    }
-
-    if (data.owner_id?.profileImage) {
-      data.owner_id.profileImage = processImage(data.owner_id.profileImage);
-    }
-
-    if (data.seeker_id?.profileImage) {
-      data.seeker_id.profileImage = processImage(data.seeker_id.profileImage);
-    }
+    if (data.profileImage) data.profileImage = processImage(data.profileImage);
+    if (data.owner_id?.profileImage) data.owner_id.profileImage = processImage(data.owner_id.profileImage);
+    if (data.seeker_id?.profileImage) data.seeker_id.profileImage = processImage(data.seeker_id.profileImage);
 
     // معالجة القوائم
-    if (Array.isArray(data)) {
-      return data.map(item => this.addCacheBuster(item));
-    }
+    if (Array.isArray(data)) return data.map(item => this.addCacheBuster(item));
 
     // معالجة الكائنات المتداخلة
     Object.keys(data).forEach(key => {
@@ -110,7 +101,7 @@ export class ApiService {
   }
 
   // ────────────────────────────────────────────────────────────────────────
-  // باقي الدوال بدون تغيير (انسخها من ملفك القديم)
+  // باقي الدوال بدون تغيير
   // ────────────────────────────────────────────────────────────────────────
 
   login(data: any): Observable<any> {
