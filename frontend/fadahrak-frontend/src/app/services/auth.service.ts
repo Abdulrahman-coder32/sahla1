@@ -8,6 +8,8 @@ export class AuthService {
   private userSubject = new BehaviorSubject<any>(null);
   user$ = this.userSubject.asObservable();
 
+  private readonly DEFAULT_PROFILE_IMAGE = 'https://res.cloudinary.com/dv48puhaq/image/upload/c_fill,f_auto,g_face,h_400,q_auto,r_max,w_400/v1/sahla-profiles/user_6952db5df93f29893fdccc59';
+
   constructor() {
     this.loadStoredUser();
   }
@@ -15,18 +17,14 @@ export class AuthService {
   private loadStoredUser() {
     const storedUser = localStorage.getItem('user');
     const storedToken = localStorage.getItem('token');
-
     if (storedUser && storedToken) {
       let user = JSON.parse(storedUser);
 
-      // تنظيف أي default image قديمة من localStorage
-      if (user.profileImage && (
-        user.profileImage.includes('default.jpg') ||
-        user.profileImage.includes('default-avatar') ||
-        user.profileImage.includes('photo_2025-12-29_21-17-37') // إضافة الديفولت بتاعتك
-      )) {
-        user.profileImage = null;
-        console.log('تم حذف default image قديمة من localStorage وتحويلها إلى null');
+      // تنظيف أي default قديمة
+      if (!user.profileImage || user.profileImage.includes('default.jpg') ||
+          user.profileImage.includes('default-avatar') ||
+          user.profileImage.includes('photo_2025-12-29_21-17-37')) {
+        user.profileImage = `${this.DEFAULT_PROFILE_IMAGE}?t=${Date.now()}`;
       }
 
       this.userSubject.next(user);
@@ -35,59 +33,61 @@ export class AuthService {
   }
 
   setUser(user: any, token: string) {
-    // تنظيف قبل الحفظ
-    if (user.profileImage && (
-      user.profileImage.includes('default.jpg') ||
-      user.profileImage.includes('default-avatar')
-    )) {
-      user.profileImage = null;
+    if (!user.profileImage) {
+      user.profileImage = `${this.DEFAULT_PROFILE_IMAGE}?t=${Date.now()}`;
     }
 
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
     this.userSubject.next(user);
-    console.log('تم حفظ التوكن والمستخدم في localStorage:', user);
+    console.log('تم حفظ التوكن والمستخدم:', user);
   }
 
   updateCurrentUser(updatedUser: any) {
     const current = this.userSubject.value;
     const mergedUser = { ...current, ...updatedUser };
 
-    // حذف الشرط القديم اللي بيحافظ على الصورة القديمة
-    // → الباك بيرجع الرابط الجديد دايماً، فما نحتاجش نحميه
+    // **الحل الأساسي**: نأخذ الصورة الجديدة دايماً من الـ backend (مش نحتفظ بالقديمة)
+    // لو الـ backend رد بدون profileImage، نستخدم الديفولت الجديد
+    if (!mergedUser.profileImage) {
+      mergedUser.profileImage = `${this.DEFAULT_PROFILE_IMAGE}?t=${Date.now()}`;
+    }
 
-    // تنظيف default image لو موجودة في التحديث
+    // تنظيف أي default قديمة
     if (mergedUser.profileImage && (
       mergedUser.profileImage.includes('default.jpg') ||
       mergedUser.profileImage.includes('default-avatar')
     )) {
-      mergedUser.profileImage = null;
+      mergedUser.profileImage = `${this.DEFAULT_PROFILE_IMAGE}?t=${Date.now()}`;
     }
 
     localStorage.setItem('user', JSON.stringify(mergedUser));
     this.userSubject.next(mergedUser);
-    console.log('تم تحديث بيانات المستخدم في AuthService:', mergedUser);
+    console.log('تم تحديث المستخدم:', mergedUser);
 
-    // تجديد كاش الصورة تلقائيًا بعد كل تحديث
+    // **تجديد قوي للصورة** بعد كل تحديث
     this.forceRefreshImage();
   }
 
   forceRefreshImage() {
     const current = this.userSubject.value;
-    if (current && current.profileImage) {
-      const userCopy = { ...current };
+    if (!current) return;
 
-      // نزيل أي query parameters قديمة (تجنب التكرار)
+    const userCopy = { ...current };
+
+    // إذا كان فيه صورة جديدة → نجدد الـ timestamp
+    if (userCopy.profileImage) {
+      // نزيل أي query قديمة
       let base = userCopy.profileImage.split('?')[0];
-
-      // إضافة timestamp جديد + refresh لضمان تحديث فوري
-      const separator = base.includes('?') ? '&' : '?';
-      userCopy.profileImage = `${base}${separator}t=${Date.now()}&refresh=${Date.now()}`;
-
-      localStorage.setItem('user', JSON.stringify(userCopy));
-      this.userSubject.next(userCopy);
-      console.log('تم تجديد كاش الصورة قسريًا:', userCopy.profileImage);
+      userCopy.profileImage = `${base}?t=${Date.now()}&refresh=${Date.now()}`;
+    } else {
+      // لو مفيش صورة → نستخدم الديفولت الجديد
+      userCopy.profileImage = `${this.DEFAULT_PROFILE_IMAGE}?t=${Date.now()}`;
     }
+
+    localStorage.setItem('user', JSON.stringify(userCopy));
+    this.userSubject.next(userCopy);
+    console.log('تم تجديد كاش الصورة بقوة:', userCopy.profileImage);
   }
 
   logout() {
