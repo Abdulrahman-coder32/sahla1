@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const router = express.Router();
 
+// الصورة الديفولت والدالة المساعدة (نفس اللي في users.js)
 const DEFAULT_AVATAR = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
 
 const getProfileImageUrl = (publicId, cacheBuster = 0) => {
@@ -33,7 +34,7 @@ router.post('/signup', async (req, res) => {
       email,
       password: hashed,
       role,
-      cacheBuster: 0, // صراحة عشان الكاش يبدأ من 0
+      cacheBuster: 0, // صراحة عشان الكاش يبدأ صح
       ...profile
     });
 
@@ -55,6 +56,15 @@ router.post('/signup', async (req, res) => {
         role: user.role,
         profileImage: imageUrl,
         cacheBuster: user.cacheBuster || 0,
+        name: user.name,
+        phone: user.phone,
+        bio: user.bio,
+        governorate: user.governorate,
+        city: user.city,
+        age: user.age,
+        work_experience: user.work_experience,
+        desired_job_type: user.desired_job_type,
+        shop_name: user.shop_name,
         ...profile
       }
     });
@@ -102,7 +112,12 @@ router.post('/login', async (req, res) => {
         name: user.name,
         phone: user.phone,
         bio: user.bio,
-        // أي fields تانية عايز ترجعها
+        governorate: user.governorate,
+        city: user.city,
+        age: user.age,
+        work_experience: user.work_experience,
+        desired_job_type: user.desired_job_type,
+        shop_name: user.shop_name
       }
     });
   } catch (err) {
