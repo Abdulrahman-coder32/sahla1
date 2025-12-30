@@ -45,7 +45,7 @@ import { SocketService } from '../../services/socket.service';
           <div *ngFor="let chat of chats"
                class="group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden cursor-pointer"
                [routerLink]="['/inbox', chat._id]">
-          
+         
             <!-- Unread Badge -->
             <div *ngIf="chat.unreadCount > 0"
                  class="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-xl z-10 flex items-center justify-center min-w-[32px] animate-pulse">
@@ -57,7 +57,7 @@ import { SocketService } from '../../services/socket.service';
               <!-- Avatar -->
               <div class="flex-shrink-0 relative">
                 <img
-                  [src]="getChatAvatar(chat)"
+                  [src]="chat.profileImage || defaultImage"
                   alt="صورة {{ chat.name }}"
                   class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover ring-4 ring-white shadow-xl transition-transform duration-300 group-hover:scale-105"
                   loading="lazy"
@@ -115,8 +115,7 @@ export class InboxListComponent implements OnInit, OnDestroy {
   isOwner = false;
   currentUserId: string | null = null;
 
-  private readonly DEFAULT_IMAGE = 
-    'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
+  readonly defaultImage = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
 
   constructor(
     private api: ApiService,
@@ -136,6 +135,7 @@ export class InboxListComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    // يفضل نلغي الـ listeners بشكل صحيح
     this.socketService.onChatListUpdate(() => {});
     this.socketService.onUnreadUpdate(() => {});
   }
@@ -152,15 +152,11 @@ export class InboxListComponent implements OnInit, OnDestroy {
         chat.lastMessage = data.lastMessage || '[ملف مرفق]';
         chat.lastUpdated = new Date(data.lastTimestamp);
         chat.unreadCount = data.unreadCount;
+        this.sortChats();
       } else {
+        // دردشة جديدة → إعادة تحميل
         this.loadAcceptedChats();
-        return;
       }
-
-      // إعادة ترتيب الدردشات
-      this.chats = this.chats.filter(c => c._id !== data.application_id);
-      this.chats.unshift(chat);
-      this.sortChats();
     });
 
     this.socketService.onUnreadUpdate((data: { application_id: string; unreadCount: number }) => {
@@ -183,8 +179,8 @@ export class InboxListComponent implements OnInit, OnDestroy {
 
   private loadAcceptedChats() {
     this.loading = true;
-    const apiCall = this.isOwner 
-      ? this.api.getApplicationsForOwner() 
+    const apiCall = this.isOwner
+      ? this.api.getApplicationsForOwner()
       : this.api.getMyApplications();
 
     apiCall.subscribe({
@@ -198,22 +194,21 @@ export class InboxListComponent implements OnInit, OnDestroy {
             unreadCount = app.unreadCounts?.seeker || 0;
           }
 
-          const otherUserImage = this.isOwner
-            ? app.seeker_id?.profileImage
-            : app.job_id?.owner_id?.profileImage;
+          const otherUser = this.isOwner
+            ? app.seeker_id
+            : app.job_id?.owner_id;
 
           return {
             _id: app._id,
             name: this.isOwner
-              ? (app.seeker_id?.name || 'باحث عن عمل')
-              : (app.job_id?.shop_name || 'صاحب العمل'),
+              ? (otherUser?.name || 'باحث عن عمل')
+              : (otherUser?.shop_name || app.job_id?.shop_name || 'صاحب العمل'),
             lastMessage: app.lastMessage || 'ابدأ المحادثة',
             lastUpdated: app.lastTimestamp || app.updatedAt || app.createdAt || new Date(),
-            unreadCount: unreadCount,
-            profileImage: otherUserImage
+            unreadCount,
+            profileImage: otherUser?.profileImage || null
           };
         });
-
         this.sortChats();
         this.loading = false;
       },
@@ -225,39 +220,15 @@ export class InboxListComponent implements OnInit, OnDestroy {
   }
 
   private sortChats() {
-    this.chats.sort((a, b) => 
+    this.chats.sort((a, b) =>
       new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
     );
   }
 
-  getChatAvatar(chat: any): string {
-    const img = chat?.profileImage;
-
-    if (!img || typeof img !== 'string') {
-      return this.DEFAULT_IMAGE;
-    }
-
-    // إذا كان الرابط يحتوي بالفعل على cache buster من ApiService
-    // نحدّث الـ timestamp فقط لضمان التحديث عند تغيير الصورة
-    if (img.includes('?t=')) {
-      const base = img.split('?')[0];
-      return `${base}?t=${Date.now()}`;
-    }
-
-    // لو رابط خارجي بدون query (مثل Cloudinary خام)
-    if (img.startsWith('http')) {
-      return `${img}?t=${Date.now()}`; // اختياري: ممكن تسيبه بدون إضافة
-    }
-
-    // حالة نادرة: مسار نسبي بدون معالجة من ApiService
-    return `${img}?t=${Date.now()}`;
-  }
-
   onImageError(event: Event) {
     const img = event.target as HTMLImageElement;
-    if (img.src !== this.DEFAULT_IMAGE) {
-      img.src = this.DEFAULT_IMAGE;
+    if (img.src !== this.defaultImage) {
+      img.src = this.defaultImage;
     }
-    img.onerror = null; // منع تكرار الخطأ
   }
 }
