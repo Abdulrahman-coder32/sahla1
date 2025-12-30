@@ -49,79 +49,54 @@ export class ApiService {
 
   private addCacheBuster(data: any): any {
     if (!data) return data;
-
     const timestamp = Date.now();
 
-    const cleanDefaultImage = (url: string | null | undefined): string | null => {
+    const processProfileImage = (url: string | null | undefined): string | null => {
       if (!url || typeof url !== 'string') return null;
-      if (url.includes('default.jpg') || url.includes('default-avatar')) {
-        return null;
-      }
-      return url;
+
+      const clean = this.cleanUrl(url);
+      const base = this.prependBaseUrl(clean);
+      return `${base}?t=${timestamp}`;
     };
 
     // معالجة profileImage في الـ object الرئيسي
     if (data.profileImage && typeof data.profileImage === 'string') {
-      const cleanedUrl = cleanDefaultImage(data.profileImage);
-      if (cleanedUrl) {
-        const clean = this.cleanUrl(cleanedUrl);
-        const base = this.prependBaseUrl(clean);
-        data.profileImage = `${base}?t=${timestamp}`;
-      } else {
-        data.profileImage = null;
-      }
+      data.profileImage = processProfileImage(data.profileImage);
+    } else if (data.hasOwnProperty('profileImage')) {
+      data.profileImage = null;
     }
 
-    // معالجة owner_id.profileImage في الوظائف
+    // معالجة owner_id.profileImage
     if (data.owner_id && typeof data.owner_id === 'object') {
       if (data.owner_id.profileImage && typeof data.owner_id.profileImage === 'string') {
-        const cleanedUrl = cleanDefaultImage(data.owner_id.profileImage);
-        if (cleanedUrl) {
-          const clean = this.cleanUrl(cleanedUrl);
-          const base = this.prependBaseUrl(clean);
-          data.owner_id.profileImage = `${base}?t=${timestamp}`;
-        } else {
-          data.owner_id.profileImage = null;
-        }
+        data.owner_id.profileImage = processProfileImage(data.owner_id.profileImage);
       } else {
         data.owner_id.profileImage = null;
       }
     }
 
-    // معالجة seeker_id.profileImage في التقديمات والدردشات
+    // معالجة seeker_id.profileImage
     if (data.seeker_id && typeof data.seeker_id === 'object') {
       if (data.seeker_id.profileImage && typeof data.seeker_id.profileImage === 'string') {
-        const cleanedUrl = cleanDefaultImage(data.seeker_id.profileImage);
-        if (cleanedUrl) {
-          const clean = this.cleanUrl(cleanedUrl);
-          const base = this.prependBaseUrl(clean);
-          data.seeker_id.profileImage = `${base}?t=${timestamp}`;
-        } else {
-          data.seeker_id.profileImage = null;
-        }
+        data.seeker_id.profileImage = processProfileImage(data.seeker_id.profileImage);
       } else {
         data.seeker_id.profileImage = null;
       }
     }
 
-    // لو array (قائمة وظائف أو تطبيقات)
+    // لو array (قائمة وظائف أو تقديمات)
     if (Array.isArray(data)) {
       return data.map(item => this.addCacheBuster(item));
     }
 
-    // معالجة أي key اسمه profileImage في nested objects
+    // معالجة أي key اسمه profileImage في أي nested object
     Object.keys(data).forEach(key => {
       if (data[key] && typeof data[key] === 'object') {
         data[key] = this.addCacheBuster(data[key]);
       } else if (key === 'profileImage' && typeof data[key] === 'string') {
-        const cleanedUrl = cleanDefaultImage(data[key]);
-        if (cleanedUrl) {
-          const clean = this.cleanUrl(cleanedUrl);
-          const base = this.prependBaseUrl(clean);
-          data[key] = `${base}?t=${timestamp}`;
-        } else {
-          data[key] = null;
-        }
+        data[key] = processProfileImage(data[key]);
+      } else if (key === 'profileImage') {
+        data[key] = null;
       }
     });
 
