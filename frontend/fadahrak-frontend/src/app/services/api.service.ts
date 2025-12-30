@@ -49,26 +49,51 @@ export class ApiService {
 
   private addCacheBuster(data: any): any {
     if (!data) return data;
+
     const timestamp = Date.now();
 
+    // دالة مساعدة للكشف عن default image وحذفها
+    const cleanDefaultImage = (url: string | null | undefined): string | null => {
+      if (!url || typeof url !== 'string') return null;
+      if (url.includes('default.jpg') || url.includes('default-avatar')) {
+        console.log('تم اكتشاف default image من الـ backend وحذفها → تحول إلى null');
+        return null;
+      }
+      return url;
+    };
+
+    // معالجة profileImage في الـ object الرئيسي
     if (data.profileImage && typeof data.profileImage === 'string') {
-      const clean = this.cleanUrl(data.profileImage); // ← تنظيف الـ URL القديم
-      const base = this.prependBaseUrl(clean);
-      data.profileImage = `${base}?t=${timestamp}`;
-      console.log('addCacheBuster applied (cleaned):', data.profileImage); // للتصحيح
+      const cleanedUrl = cleanDefaultImage(data.profileImage);
+      if (cleanedUrl) {
+        const clean = this.cleanUrl(cleanedUrl);
+        const base = this.prependBaseUrl(clean);
+        data.profileImage = `${base}?t=${timestamp}`;
+        console.log('addCacheBuster applied (real image):', data.profileImage);
+      } else {
+        data.profileImage = null;
+        console.log('profileImage تم تحويلها إلى null (كانت default)');
+      }
     }
 
+    // لو array → نعمل recurse على كل عنصر
     if (Array.isArray(data)) {
       return data.map(item => this.addCacheBuster(item));
     }
 
+    // معالجة الـ nested objects وأي key اسمه profileImage
     Object.keys(data).forEach(key => {
       if (data[key] && typeof data[key] === 'object') {
         data[key] = this.addCacheBuster(data[key]);
-      } else if (key === 'profileImage' && data[key] && typeof data[key] === 'string') {
-        const clean = this.cleanUrl(data[key]);
-        const base = this.prependBaseUrl(clean);
-        data[key] = `${base}?t=${timestamp}`;
+      } else if (key === 'profileImage' && typeof data[key] === 'string') {
+        const cleanedUrl = cleanDefaultImage(data[key]);
+        if (cleanedUrl) {
+          const clean = this.cleanUrl(cleanedUrl);
+          const base = this.prependBaseUrl(clean);
+          data[key] = `${base}?t=${timestamp}`;
+        } else {
+          data[key] = null;
+        }
       }
     });
 
