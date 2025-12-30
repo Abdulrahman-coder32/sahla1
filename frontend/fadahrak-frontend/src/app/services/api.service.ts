@@ -10,7 +10,6 @@ export class ApiService {
   private apiUrl: string;
   private imageBaseUrl: string;
 
-  // Cloudinary base URL الرسمي مع transformations افتراضية
   private readonly CLOUDINARY_BASE = 'https://res.cloudinary.com/dv48puhaq/image/upload/';
 
   constructor(private http: HttpClient) {
@@ -33,18 +32,15 @@ export class ApiService {
     return headers;
   }
 
-  /**
-   * تحويل أي قيمة profileImage إلى رابط Cloudinary كامل مع transformations
-   */
   private getFullImageUrl(path: string): string {
     if (!path) return '';
 
-    // 1. رابط كامل (غالباً من /users/me أو /profile)
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return path.split('?')[0]; // نزيل أي query قديمة عشان نتحكم في cache buster
+    // 1. رابط كامل (من /users/me مثلاً) → نزيل query قديمة
+    if (path.startsWith('http')) {
+      return path.split('?')[0];
     }
 
-    // 2. مسار قديم يحتوي /sahla-profiles/
+    // 2. مسار قديم /sahla-profiles/... → نحوله Cloudinary
     if (path.includes('/sahla-profiles/')) {
       const publicId = path.split('/sahla-profiles/')[1]?.split('?')[0] || path.split('/').pop()?.split('?')[0] || '';
       if (publicId) {
@@ -52,12 +48,12 @@ export class ApiService {
       }
     }
 
-    // 3. public_id خام فقط (user_6952d7d31024a0a8ef7fd7ab)
+    // 3. public_id خام (user_...) → Cloudinary
     if (!path.includes('/') && !path.startsWith('/')) {
       return `${this.CLOUDINARY_BASE}c_fill,f_auto,g_face,h_400,q_auto,r_max,w_400/v1/sahla-profiles/${path}`;
     }
 
-    // 4. أي مسار نسبي آخر (fallback نادر)
+    // 4. fallback (مسار نسبي نادر)
     let cleaned = path.startsWith('/') ? path.substring(1) : path;
     return this.imageBaseUrl ? `${this.imageBaseUrl}/${cleaned}` : `/${cleaned}`;
   }
@@ -70,22 +66,19 @@ export class ApiService {
     const processImage = (url: string | null | undefined): string | null => {
       if (!url || typeof url !== 'string') return null;
 
-      // نحصل على الرابط النظيف بدون أي query قديمة
+      // نحصل على رابط نظيف بدون query قديمة
       let fullUrl = this.getFullImageUrl(url);
-      fullUrl = fullUrl.split('?')[0]; // نزيل أي ?t= قديمة
+      fullUrl = fullUrl.split('?')[0]; // نزيل أي ?t= قديمة عشان ما يتكررش
 
       return `${fullUrl}?t=${timestamp}`;
     };
 
-    // معالجة الحقول الرئيسية
     if (data.profileImage) data.profileImage = processImage(data.profileImage);
     if (data.owner_id?.profileImage) data.owner_id.profileImage = processImage(data.owner_id.profileImage);
     if (data.seeker_id?.profileImage) data.seeker_id.profileImage = processImage(data.seeker_id.profileImage);
 
-    // معالجة القوائم
     if (Array.isArray(data)) return data.map(item => this.addCacheBuster(item));
 
-    // معالجة الكائنات المتداخلة
     Object.keys(data).forEach(key => {
       if (data[key] && typeof data[key] === 'object' && !Array.isArray(data[key])) {
         data[key] = this.addCacheBuster(data[key]);
@@ -101,9 +94,8 @@ export class ApiService {
   }
 
   // ────────────────────────────────────────────────────────────────────────
-  // باقي الدوال بدون تغيير
+  // باقي الدوال (انسخها من ملفك القديم كاملة)
   // ────────────────────────────────────────────────────────────────────────
-
   login(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/auth/login`, data).pipe(catchError(this.handleError));
   }
