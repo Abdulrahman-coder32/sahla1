@@ -3,6 +3,8 @@ import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http
 import { Observable, throwError } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
+const DEFAULT_AVATAR = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -13,11 +15,7 @@ export class ApiService {
   constructor(private http: HttpClient) {
     const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     this.apiUrl = '/api';
-    if (isDev) {
-      this.imageBaseUrl = '';
-    } else {
-      this.imageBaseUrl = 'https://positive-christiana-sahla-18a86cd2.koyeb.app';
-    }
+    this.imageBaseUrl = isDev ? '' : 'https://positive-christiana-sahla-18a86cd2.koyeb.app';
   }
 
   private getHeaders(includeToken: boolean = true, isMultipart: boolean = false): HttpHeaders {
@@ -41,61 +39,33 @@ export class ApiService {
     return this.imageBaseUrl === '' ? `/${path}` : `${this.imageBaseUrl}/${path}`;
   }
 
-  private cleanUrl(url: string): string {
-    if (!url) return '';
-    // نزيل كل query string (كل ? وما بعدها)
-    return url.split('?')[0];
+  private addCacheBusterToUrl(url: string | null | undefined, version: number = Date.now()): string {
+    if (!url || typeof url !== 'string') {
+      return DEFAULT_AVATAR + '?v=' + version;
+    }
+    const clean = url.split('?')[0];
+    const base = this.prependBaseUrl(clean);
+    return `${base}?v=${version}`;
   }
 
-  private addCacheBuster(data: any): any {
+  private processProfileImages(data: any, cacheVersion: number = Date.now()): any {
     if (!data) return data;
 
-    const timestamp = Date.now();
-
-    // دالة مساعدة للكشف عن default image وحذفها
-    const cleanDefaultImage = (url: string | null | undefined): string | null => {
-      if (!url || typeof url !== 'string') return null;
-      if (url.includes('default.jpg') || url.includes('default-avatar')) {
-        console.log('تم اكتشاف default image من الـ backend وحذفها → تحول إلى null');
-        return null;
-      }
-      return url;
-    };
-
-    // معالجة profileImage في الـ object الرئيسي
-    if (data.profileImage && typeof data.profileImage === 'string') {
-      const cleanedUrl = cleanDefaultImage(data.profileImage);
-      if (cleanedUrl) {
-        const clean = this.cleanUrl(cleanedUrl);
-        const base = this.prependBaseUrl(clean);
-        data.profileImage = `${base}?t=${timestamp}`;
-        console.log('addCacheBuster applied (real image):', data.profileImage);
-      } else {
-        data.profileImage = null;
-        console.log('profileImage تم تحويلها إلى null (كانت default)');
-      }
-    }
-
-    // لو array → نعمل recurse على كل عنصر
     if (Array.isArray(data)) {
-      return data.map(item => this.addCacheBuster(item));
+      return data.map(item => this.processProfileImages(item, cacheVersion));
     }
 
-    // معالجة الـ nested objects وأي key اسمه profileImage
-    Object.keys(data).forEach(key => {
-      if (data[key] && typeof data[key] === 'object') {
-        data[key] = this.addCacheBuster(data[key]);
-      } else if (key === 'profileImage' && typeof data[key] === 'string') {
-        const cleanedUrl = cleanDefaultImage(data[key]);
-        if (cleanedUrl) {
-          const clean = this.cleanUrl(cleanedUrl);
-          const base = this.prependBaseUrl(clean);
-          data[key] = `${base}?t=${timestamp}`;
-        } else {
-          data[key] = null;
-        }
+    if (data && typeof data === 'object') {
+      if (data.profileImage !== undefined) {
+        data.profileImage = this.addCacheBusterToUrl(data.profileImage, data.cacheBuster ?? cacheVersion);
       }
-    });
+
+      Object.keys(data).forEach(key => {
+        if (data[key] && typeof data[key] === 'object') {
+          data[key] = this.processProfileImages(data[key], cacheVersion);
+        }
+      });
+    }
 
     return data;
   }
@@ -107,17 +77,23 @@ export class ApiService {
 
   // Auth
   login(data: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/auth/login`, data).pipe(catchError(this.handleError));
+    return this.http.post(`${this.apiUrl}/auth/login`, data).pipe(
+      map(res => this.processProfileImages(res)),
+      catchError(this.handleError)
+    );
   }
 
   signup(data: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/auth/signup`, data).pipe(catchError(this.handleError));
+    return this.http.post(`${this.apiUrl}/auth/signup`, data).pipe(
+      map(res => this.processProfileImages(res)),
+      catchError(this.handleError)
+    );
   }
 
   // Profile
   getProfile(): Observable<any> {
     return this.http.get(`${this.apiUrl}/users/me`, { headers: this.getHeaders() }).pipe(
-      map(res => this.addCacheBuster(res)),
+      map(res => this.processProfileImages(res)),
       catchError(this.handleError)
     );
   }
@@ -125,30 +101,29 @@ export class ApiService {
   updateProfile(formData: FormData): Observable<any> {
     const headers = this.getHeaders(true, true);
     return this.http.put(`${this.apiUrl}/users/profile`, formData, { headers }).pipe(
-      map(res => this.addCacheBuster(res)),
+      map(res => this.processProfileImages(res)),
       catchError(this.handleError)
     );
   }
 
   // Jobs
   getJobs(filters?: any): Observable<any> {
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http.post(`${this.apiUrl}/jobs`, filters || {}, { headers }).pipe(
-      map(res => this.addCacheBuster(res)),
+    return this.http.post(`${this.apiUrl}/jobs`, filters || {}, { headers: this.getHeaders() }).pipe(
+      map(res => this.processProfileImages(res)),
       catchError(this.handleError)
     );
   }
 
   getJob(id: string): Observable<any> {
     return this.http.get(`${this.apiUrl}/jobs/${id}`, { headers: this.getHeaders(false) }).pipe(
-      map(res => this.addCacheBuster(res)),
+      map(res => this.processProfileImages(res)),
       catchError(this.handleError)
     );
   }
 
   getMyJobs(): Observable<any> {
     return this.http.get(`${this.apiUrl}/jobs/my`, { headers: this.getHeaders() }).pipe(
-      map(res => this.addCacheBuster(res)),
+      map(res => this.processProfileImages(res)),
       catchError(this.handleError)
     );
   }
@@ -165,7 +140,7 @@ export class ApiService {
     );
   }
 
-  // Applications
+  // Applications & Messages & Notifications (نفس الشيء، نضيف الكاش باستر)
   applyToJob(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/applications`, data, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
@@ -174,41 +149,39 @@ export class ApiService {
 
   getMyApplications(): Observable<any> {
     return this.http.get(`${this.apiUrl}/applications/my`, { headers: this.getHeaders() }).pipe(
-      map(res => this.addCacheBuster(res)),
+      map(res => this.processProfileImages(res)),
       catchError(this.handleError)
     );
   }
 
   getApplicationsForOwner(): Observable<any> {
     return this.http.get(`${this.apiUrl}/applications/my-jobs`, { headers: this.getHeaders() }).pipe(
-      map(res => this.addCacheBuster(res)),
+      map(res => this.processProfileImages(res)),
       catchError(this.handleError)
     );
   }
 
   getApplicationsForJob(jobId: string): Observable<any> {
     return this.http.get(`${this.apiUrl}/applications/job/${jobId}`, { headers: this.getHeaders() }).pipe(
-      map(res => this.addCacheBuster(res)),
+      map(res => this.processProfileImages(res)),
       catchError(this.handleError)
     );
   }
 
   updateApplicationStatus(applicationId: string, status: string): Observable<any> {
-    return this.http.patch(
-      `${this.apiUrl}/applications/${applicationId}`,
-      { status },
-      { headers: this.getHeaders() }
-    ).pipe(catchError(this.handleError));
-  }
-
-  // Messages
-  getMessages(appId: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}/messages/${appId}`, { headers: this.getHeaders() }).pipe(
-      map(res => this.addCacheBuster(res)),
+    return this.http.patch(`${this.apiUrl}/applications/${applicationId}`, { status }, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
     );
   }
 
+  getMessages(appId: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/messages/${appId}`, { headers: this.getHeaders() }).pipe(
+      map(res => this.processProfileImages(res)),
+      catchError(this.handleError)
+    );
+  }
+
+  // باقي الدوال زي ما هي...
   sendMessage(data: { application_id: string; message: string }): Observable<any> {
     return this.http.post(`${this.apiUrl}/messages`, data, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
@@ -228,14 +201,11 @@ export class ApiService {
   }
 
   markMessagesAsRead(applicationId: string): Observable<any> {
-    return this.http.patch(
-      `${this.apiUrl}/messages/${applicationId}/mark-read`,
-      {},
-      { headers: this.getHeaders() }
-    ).pipe(catchError(this.handleError));
+    return this.http.patch(`${this.apiUrl}/messages/${applicationId}/mark-read`, {}, { headers: this.getHeaders() }).pipe(
+      catchError(this.handleError)
+    );
   }
 
-  // Notifications
   getNotifications(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/notifications`, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
@@ -255,10 +225,8 @@ export class ApiService {
   }
 
   markChatNotificationsAsRead(applicationId: string): Observable<any> {
-    return this.http.patch(
-      `${this.apiUrl}/notifications/mark-chat-read/${applicationId}`,
-      {},
-      { headers: this.getHeaders() }
-    ).pipe(catchError(this.handleError));
+    return this.http.patch(`${this.apiUrl}/notifications/mark-chat-read/${applicationId}`, {}, { headers: this.getHeaders() }).pipe(
+      catchError(this.handleError)
+    );
   }
 }
