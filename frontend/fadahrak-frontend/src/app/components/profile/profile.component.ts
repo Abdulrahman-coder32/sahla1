@@ -29,7 +29,7 @@ export class ProfileComponent implements OnInit {
   saving = false;
   message: { text: string; type: 'success' | 'error' } | null = null;
 
-  private readonly DEFAULT_IMAGE = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
+  private readonly DEFAULT_IMAGE = 'https://res.cloudinary.com/dv48puhaq/image/upload/c_fill,f_auto,g_face,h_400,q_auto,r_max,w_400/v1/sahla-profiles/user_6952db5df93f29893fdccc59';
 
   constructor(
     private api: ApiService,
@@ -46,7 +46,6 @@ export class ProfileComponent implements OnInit {
     this.api.getProfile().subscribe({
       next: (data: any) => {
         console.log('Response from getProfile:', data);
-        // ما نحتاجش نحافظ على الصورة القديمة، الباك بيرجع الرابط الجديد
         this.user = {
           ...data,
           bio: data.bio || '',
@@ -144,28 +143,55 @@ export class ProfileComponent implements OnInit {
     this.api.updateProfile(updateData).subscribe({
       next: (updatedUser: any) => {
         console.log('Response from updateProfile:', updatedUser);
-        // ما نحتاجش نحافظ على القديمة، الباك بيرجع الجديدة
-        const finalUser = {
-          ...updatedUser,
-          bio: updatedUser.bio || this.user.bio,
-          profileImage: updatedUser.profileImage || null
-        };
 
-        // تحديث AuthService بالبيانات الجديدة
-        this.authService.updateCurrentUser(finalUser);
+        // **الحل النهائي**: بعد التحديث الناجح، اعمل reload كامل للبروفايل من /users/me
+        // عشان نجيب الرابط الكامل الجديد للصورة من Cloudinary
+        this.api.getProfile().subscribe({
+          next: (freshUser: any) => {
+            console.log('Fresh profile from /me after update:', freshUser);
 
-        // تحديث الـ component
-        this.user = { ...finalUser };
-        this.originalUser = { ...this.user };
-        this.previewUrl = finalUser.profileImage || null;
-        this.selectedFile = null;
-        this.isEditing = false;
-        this.saving = false;
+            // استخدم البيانات الجديدة الكاملة (الصورة هتكون الجديدة بالتأكيد)
+            const finalUser = {
+              ...freshUser,
+              bio: freshUser.bio || this.user.bio,
+              profileImage: freshUser.profileImage || null
+            };
 
-        this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
+            // تحديث AuthService بالبيانات الجديدة
+            this.authService.updateCurrentUser(finalUser);
 
-        // Force refresh للصورة في كل الأماكن
-        this.authService.forceRefreshImage();
+            // تحديث الـ component
+            this.user = { ...finalUser };
+            this.originalUser = { ...this.user };
+            this.previewUrl = finalUser.profileImage || null;
+            this.selectedFile = null;
+            this.isEditing = false;
+            this.saving = false;
+
+            this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
+
+            // تجديد كاش الصورة في كل الأماكن
+            this.authService.forceRefreshImage();
+          },
+          error: (err) => {
+            console.error('خطأ في reload /me بعد التحديث:', err);
+            // fallback: استخدم الـ updatedUser على الأقل
+            const finalUser = {
+              ...updatedUser,
+              bio: updatedUser.bio || this.user.bio,
+              profileImage: updatedUser.profileImage || null
+            };
+            this.authService.updateCurrentUser(finalUser);
+            this.user = { ...finalUser };
+            this.originalUser = { ...this.user };
+            this.previewUrl = finalUser.profileImage || null;
+            this.selectedFile = null;
+            this.isEditing = false;
+            this.saving = false;
+            this.showMessage('تم التحديث لكن حصل تأخير في تحميل الصورة الجديدة', 'success');
+            this.authService.forceRefreshImage();
+          }
+        });
       },
       error: (err) => {
         console.error('فشل تحديث البروفايل', err);
