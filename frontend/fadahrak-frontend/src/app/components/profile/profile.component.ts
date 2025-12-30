@@ -67,43 +67,33 @@ export class ProfileComponent implements OnInit {
   onFileSelected(event: any) {
     const file = event.target.files?.[0];
     if (!file) return;
-
-    if (file.size > 10 * 1024 * 1024) { // حد أعلى للصورة الأصلية
+    if (file.size > 10 * 1024 * 1024) {
       this.showMessage('الصورة كبيرة جدًا، اختر أصغر من 10 ميجا', 'error');
       return;
     }
-
     this.selectedFile = file;
-
-    // ضغط الصورة تلقائي قبل التحويل لـ base64
     const reader = new FileReader();
     reader.onload = (e: any) => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 800; // حجم مثالي للبروفايل
+        const MAX_WIDTH = 800;
         let width = img.width;
         let height = img.height;
-
         if (width > MAX_WIDTH) {
           height *= MAX_WIDTH / width;
           width = MAX_WIDTH;
         }
-
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
-
         canvas.toBlob((blob) => {
           if (blob) {
-            // تحويل الـ blob المضغوط إلى File جديد
             this.selectedFile = new File([blob], file.name, { type: 'image/jpeg' });
-
-            // preview فوري من الـ blob المضغوط
             this.previewUrl = URL.createObjectURL(blob);
           }
-        }, 'image/jpeg', 0.75); // جودة 75% = حجم أصغر بكتير
+        }, 'image/jpeg', 0.75);
       };
       img.src = e.target.result;
     };
@@ -119,15 +109,12 @@ export class ProfileComponent implements OnInit {
     if (this.saving) return;
     this.saving = true;
     this.message = null;
-
     const updateData: any = {
       name: this.user.name?.trim() || '',
       phone: this.user.phone?.trim() || '',
       bio: this.user.bio?.trim() || ''
     };
-
     if (this.selectedFile) {
-      // تحويل الصورة المضغوطة إلى base64
       const reader = new FileReader();
       reader.onload = () => {
         updateData.profileImage = reader.result as string;
@@ -147,7 +134,6 @@ export class ProfileComponent implements OnInit {
     this.api.updateProfile(updateData).subscribe({
       next: (updatedUser: any) => {
         console.log('Response from updateProfile:', updatedUser);
-        // حماية من فقدان الصورة
         if (!updatedUser.profileImage && this.originalUser?.profileImage) {
           updatedUser.profileImage = this.originalUser.profileImage;
         }
@@ -183,17 +169,23 @@ export class ProfileComponent implements OnInit {
     setTimeout(() => this.message = null, 4000);
   }
 
-  getInitials(): string {
-    if (!this.user?.name?.trim()) return 'م';
-    const name = this.user.name.trim();
-    const parts = name.split(/\s+/);
+  // دالة جديدة لاستخراج أول حرفين من الاسم (تستخدم في الـ HTML)
+  getInitials(name: string | undefined): string {
+    if (!name || !name.trim()) return '؟؟';
+
+    const trimmed = name.trim();
+    const parts = trimmed.split(/\s+/);
+
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();
     }
-    return name.substring(0, 2).toUpperCase();
+
+    // لو اسم واحد بس، نأخذ أول حرفين منه
+    return trimmed.substring(0, 2).toUpperCase();
   }
 
+  // دالة مساعدة للحصول على URL الصورة (لو عايز تستخدمها في أماكن تانية)
   getProfileImageUrl(): string {
-    return this.previewUrl || '';
+    return this.previewUrl || this.user.profileImage || '';
   }
 }
