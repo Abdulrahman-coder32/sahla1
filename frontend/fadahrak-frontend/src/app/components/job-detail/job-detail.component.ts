@@ -127,8 +127,8 @@ import { ApplyModalComponent } from '../apply-modal/apply-modal.component';
 
               <!-- غير مسجل دخول -->
               <p *ngIf="!(authService.user$ | async)" class="text-xl sm:text-2xl text-gray-600 mt-12">
-                يجب 
-                <a routerLink="/login" class="text-blue-600 font-bold hover:underline text-2xl">تسجيل الدخول</a> أو 
+                يجب
+                <a routerLink="/login" class="text-blue-600 font-bold hover:underline text-2xl">تسجيل الدخول</a> أو
                 <a routerLink="/signup" class="text-blue-600 font-bold hover:underline text-2xl">إنشاء حساب</a>
                 للتقديم على الوظيفة
               </p>
@@ -180,8 +180,6 @@ export class JobDetailComponent implements OnInit {
   applying = false;
   toastMessage: string | null = null;
 
-  private cacheBuster = Date.now();
-
   private readonly DEFAULT_IMAGE = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
 
   constructor(
@@ -208,11 +206,17 @@ export class JobDetailComponent implements OnInit {
     }
   }
 
+  // دالة محسنة لعرض صورة صاحب الوظيفة مع cache busting ديناميكي
   getOwnerImage(): string {
     const ownerImage = this.job?.owner_id?.profileImage;
-    if (ownerImage) {
-      return `${ownerImage}?t=${this.cacheBuster}`;
+
+    if (ownerImage && typeof ownerImage === 'string') {
+      // نزيل أي query params قديمة ونضيف timestamp جديد
+      const baseUrl = ownerImage.split('?')[0];
+      return `${baseUrl}?t=${Date.now()}`;
     }
+
+    // لو مفيش صورة أو null
     return this.DEFAULT_IMAGE;
   }
 
@@ -223,7 +227,7 @@ export class JobDetailComponent implements OnInit {
     this.api.getMyApplications().subscribe({
       next: (apps: any[]) => {
         this.hasApplied = apps.some(app =>
-          app.job_id === this.job._id || (app.job_id && app.job_id._id === this.job._id)
+          app.job_id === this.job._id || (app.job_id?._id === this.job._id)
         );
       },
       error: () => {
@@ -245,7 +249,6 @@ export class JobDetailComponent implements OnInit {
     if (!message.trim()) return;
 
     this.applying = true;
-
     this.api.applyToJob({
       job_id: this.job._id,
       message: message.trim()
