@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';  // ← أضف ChangeDetectorRef هنا
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
@@ -32,8 +32,7 @@ export class ProfileComponent implements OnInit {
   constructor(
     private api: ApiService,
     private authService: AuthService,
-    private router: Router,
-    private cdr: ChangeDetectorRef  // ← أضف ده
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -55,7 +54,6 @@ export class ProfileComponent implements OnInit {
         this.originalUser = { ...this.user };
         this.previewUrl = this.user.profileImage || null;
         this.loading = false;
-        this.cdr.detectChanges(); // تحديث الشاشة
       },
       error: (err) => {
         console.error('فشل تحميل البروفايل', err);
@@ -68,21 +66,16 @@ export class ProfileComponent implements OnInit {
   onFileSelected(event: any) {
     const file = event.target.files?.[0];
     if (!file) return;
-
     if (file.size > 10 * 1024 * 1024) {
       this.showMessage('الصورة كبيرة جدًا، اختر أصغر من 10 ميجا', 'error');
       return;
     }
-
     this.selectedFile = file;
-
-    // عرض preview فوري قبل الضغط
     const reader = new FileReader();
     reader.onload = (e: any) => {
-      this.previewUrl = e.target.result as string;  // ← هنا بنحدث الـ preview فورًا
-      this.cdr.detectChanges();  // ← نجبر Angular يحدث الدايرة فورًا
+      this.previewUrl = e.target.result as string;
 
-      // ضغط الصورة للحفظ (اختياري، بس عشان الحجم)
+      // ضغط الصورة للحفظ
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
@@ -100,7 +93,6 @@ export class ProfileComponent implements OnInit {
         canvas.toBlob((blob) => {
           if (blob) {
             this.selectedFile = new File([blob], file.name, { type: 'image/jpeg' });
-            // لو عايز preview من الـ blob المضغوط، ممكن تحدثه هنا
           }
         }, 'image/jpeg', 0.75);
       };
@@ -112,18 +104,32 @@ export class ProfileComponent implements OnInit {
   toggleEdit() {
     this.isEditing = !this.isEditing;
     this.message = null;
-    this.cdr.detectChanges();
+  }
+
+  // Validation: الاسم إجباري فقط
+  private validateRequiredFields(): boolean {
+    if (!this.user.name?.trim()) {
+      this.showMessage('الاسم مطلوب ولا يمكن أن يكون فارغًا', 'error');
+      return false;
+    }
+    return true;
   }
 
   saveProfile() {
     if (this.saving) return;
+
+    if (!this.validateRequiredFields()) {
+      return;
+    }
+
     this.saving = true;
     this.message = null;
 
     const updateData: any = {
-      name: this.user.name?.trim() || '',
+      name: this.user.name?.trim(),
       phone: this.user.phone?.trim() || '',
       bio: this.user.bio?.trim() || ''
+      // الإيميل مش بنرسله خالص
     };
 
     if (this.selectedFile) {
@@ -159,7 +165,6 @@ export class ProfileComponent implements OnInit {
         this.saving = false;
         this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
         this.authService.forceRefreshImage();
-        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('فشل تحديث البروفايل', err);
@@ -175,11 +180,24 @@ export class ProfileComponent implements OnInit {
     this.selectedFile = null;
     this.isEditing = false;
     this.message = null;
-    this.cdr.detectChanges();
   }
 
   showMessage(text: string, type: 'success' | 'error') {
     this.message = { text, type };
     setTimeout(() => this.message = null, 4000);
+  }
+
+  getInitials(name: string | undefined): string {
+    if (!name || !name.trim()) return '؟؟';
+    const trimmed = name.trim();
+    const parts = trimmed.split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return trimmed.substring(0, 2).toUpperCase();
+  }
+
+  getProfileImageUrl(): string {
+    return this.previewUrl || this.user.profileImage || '';
   }
 }
