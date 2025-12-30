@@ -27,10 +27,11 @@ import {
         <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-5 flex items-center justify-between">
           <div class="flex items-center gap-4">
             <img
-              [src]="getOtherUserImageUrl()"
+              [src]="otherUserImage || defaultImage"
               alt="{{ chatName }}"
               class="w-12 h-12 rounded-full object-cover ring-4 ring-white shadow-lg"
               loading="lazy"
+              (error)="onImageError($event)"
             >
             <div>
               <h1 class="text-xl font-bold truncate max-w-[200px]">{{ chatName }}</h1>
@@ -66,13 +67,14 @@ import {
           <div *ngFor="let msg of messages"
                class="flex items-start gap-4 max-w-full"
                [ngClass]="{'flex-row-reverse': isMyMessage(msg), 'flex-row': !isMyMessage(msg)}">
-            
+           
             <!-- Avatar -->
             <img
-              [src]="isMyMessage(msg) ? getCurrentUserImage() : getOtherUserImageUrl()"
+              [src]="isMyMessage(msg) ? (currentUser?.profileImage || defaultImage) : (otherUserImage || defaultImage)"
               alt="{{ isMyMessage(msg) ? 'أنت' : chatName }}"
               class="w-10 h-10 rounded-full object-cover ring-4 ring-white shadow-lg flex-shrink-0"
               loading="lazy"
+              (error)="onImageError($event)"
             >
 
             <!-- Message Bubble -->
@@ -86,7 +88,6 @@ import {
                 <p *ngIf="msg.type === 'text'" class="text-base leading-relaxed break-words whitespace-pre-wrap">
                   {{ msg.message }}
                 </p>
-
                 <!-- Media Message -->
                 <div *ngIf="msg.type !== 'text'" class="text-center">
                   <p class="text-sm font-medium">
@@ -98,7 +99,6 @@ import {
                   </a>
                 </div>
               </div>
-
               <!-- Timestamp -->
               <span class="text-xs text-gray-500 mt-2 px-2"
                     [ngClass]="{'text-right': isMyMessage(msg), 'text-left': !isMyMessage(msg)}">
@@ -155,20 +155,20 @@ import {
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Toast Message -->
-      <div *ngIf="toastMessage"
-           class="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-fade-in-up">
-        <div class="bg-white rounded-3xl shadow-2xl border border-gray-200 px-8 py-6 flex items-center gap-5 min-w-[320px]">
-          <fa-icon [icon]="['fas', 'exclamation-triangle']" class="text-3xl text-red-500"></fa-icon>
-          <div>
-            <p class="font-bold text-gray-900 text-lg">فشل في الإرسال</p>
-            <p class="text-gray-700 mt-1">{{ toastMessage }}</p>
+        <!-- Toast Message -->
+        <div *ngIf="toastMessage"
+             class="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-fade-in-up">
+          <div class="bg-white rounded-3xl shadow-2xl border border-gray-200 px-8 py-6 flex items-center gap-5 min-w-[320px]">
+            <fa-icon [icon]="['fas', 'exclamation-triangle']" class="text-3xl text-red-500"></fa-icon>
+            <div>
+              <p class="font-bold text-gray-900 text-lg">فشل في الإرسال</p>
+              <p class="text-gray-700 mt-1">{{ toastMessage }}</p>
+            </div>
+            <button (click)="toastMessage = null" class="ml-auto text-gray-400 hover:text-gray-600">
+              <fa-icon [icon]="['fas', 'times']" class="text-2xl"></fa-icon>
+            </button>
           </div>
-          <button (click)="toastMessage = null" class="ml-auto text-gray-400 hover:text-gray-600">
-            <fa-icon [icon]="['fas', 'times']" class="text-2xl"></fa-icon>
-          </button>
         </div>
       </div>
     </div>
@@ -206,6 +206,7 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
   currentUserId = '';
   currentUser: any = null;
   chatName = '';
+  otherUserImage: string | null = null;
   isJobSeeker = false;
   selectedFiles: { file: File; status: 'uploading' | 'success' | 'error' }[] = [];
   isRecording = false;
@@ -216,7 +217,7 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
   private ngZone = inject(NgZone);
   private userSubscription!: Subscription;
 
-  private readonly DEFAULT_IMAGE = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
+  readonly defaultImage = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
 
   // Icons
   faArrowLeft = faArrowLeft;
@@ -280,6 +281,11 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
         }
 
         this.chatName = this.getChatName(this.selectedApp);
+
+        this.otherUserImage = this.isJobSeeker
+          ? this.selectedApp.job_id?.owner_id?.profileImage || null
+          : this.selectedApp.seeker_id?.profileImage || null;
+
         this.socketService.joinChat(this.selectedApp._id);
         this.markAsRead();
         this.loadMessages();
@@ -287,6 +293,7 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
         this.socketService.onNewMessage((msg: any) => {
           if (this.selectedApp && msg.application_id === this.selectedApp._id) {
             const normalized = this.normalizeMessage(msg);
+
             if (normalized.sender_id === this.currentUserId) {
               const tempIndex = this.messages.findIndex(m => m._id.toString().startsWith('temp-'));
               if (tempIndex !== -1 && this.messages[tempIndex].message === normalized.message) {
@@ -297,6 +304,7 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
               }
               return;
             }
+
             if (!this.messages.some(m => m._id === normalized._id)) {
               this.ngZone.run(() => {
                 this.messages.push(normalized);
@@ -335,38 +343,17 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
     this.router.navigate(['/inbox']);
   }
 
-  // صورة المستخدم الحالي (أنت)
-  getCurrentUserImage(): string {
-    const image = this.currentUser?.profileImage;
-    if (image && typeof image === 'string') {
-      const baseUrl = image.split('?')[0];
-      return `${baseUrl}?t=${Date.now()}`;
-    }
-    return this.DEFAULT_IMAGE;
-  }
-
-  // صورة الطرف الآخر
-  getOtherUserImageUrl(): string {
-    if (!this.selectedApp) return this.DEFAULT_IMAGE;
-
-    let otherUserImage: string | null = null;
-    if (this.isJobSeeker) {
-      otherUserImage = this.selectedApp.job_id?.owner_id?.profileImage || null;
-    } else {
-      otherUserImage = this.selectedApp.seeker_id?.profileImage || null;
-    }
-
-    if (otherUserImage && typeof otherUserImage === 'string') {
-      const baseUrl = otherUserImage.split('?')[0];
-      return `${baseUrl}?t=${Date.now()}`;
-    }
-    return this.DEFAULT_IMAGE;
-  }
-
   getChatName(app: any) {
     return this.isJobSeeker
       ? app.job_id?.shop_name || 'صاحب العمل'
       : app.seeker_id?.name || 'باحث عن عمل';
+  }
+
+  onImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    if (img.src !== this.defaultImage) {
+      img.src = this.defaultImage;
+    }
   }
 
   onFilesSelected(event: any) {
@@ -380,6 +367,7 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
         setTimeout(() => this.toastMessage = null, 6000);
         return;
       }
+
       const fileObj = { file, status: 'uploading' as const };
       this.selectedFiles.push(fileObj);
       this.uploadFile(fileObj);
@@ -470,6 +458,7 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private markAsRead() {
     if (!this.selectedApp?._id) return;
+
     this.api.markMessagesAsRead(this.selectedApp._id).subscribe({
       error: (err: any) => console.error('خطأ في mark as read:', err)
     });
