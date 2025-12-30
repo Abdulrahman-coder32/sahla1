@@ -11,7 +11,11 @@ const userSchema = new mongoose.Schema({
   work_experience: String,
   desired_job_type: String,
   shop_name: String,
-  profileImage: { type: String, default: 'default.jpg' }, // ← الحقل الجديد
+  profileImage: {
+    type: String,
+    default: 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg'
+  },
+  cacheBuster: { type: Number, default: 0 }, // جديد: لكسر الكاش في الفرونت
   createdAt: { type: Date, default: Date.now }
 });
 
