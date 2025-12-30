@@ -38,10 +38,7 @@ router.get('/me', auth, async (req, res) => {
     const user = await User.findById(req.user.id).select('-password');
     if (!user) return res.status(404).json({ msg: 'المستخدم غير موجود' });
 
-    const imageUrl = getProfileImageUrl(
-      user.profileImage,
-      user.cacheBuster || 0
-    );
+    const imageUrl = getProfileImageUrl(user.profileImage, user.cacheBuster || 0);
 
     res.json({
       ...user.toObject(),
@@ -56,7 +53,8 @@ router.get('/me', auth, async (req, res) => {
 // PUT /profile
 router.put('/profile', auth, async (req, res) => {
   try {
-    const { name, phone, bio, profileImage } = req.body;
+    const body = req.body || {}; // ✅ تجنب crash لو body undefined
+    const { name, phone, bio, profileImage } = body;
 
     const updates = {};
     const inc = {};
@@ -76,7 +74,7 @@ router.put('/profile', auth, async (req, res) => {
       });
 
       updates.profileImage = result.public_id;
-      inc.cacheBuster = 1; // ✅ الصح
+      inc.cacheBuster = 1;
       cacheBusterIncremented = true;
     } else if (profileImage === null || profileImage === '') {
       updates.profileImage = null;
@@ -98,10 +96,7 @@ router.put('/profile', auth, async (req, res) => {
     }
 
     const finalCacheBuster = updatedUser.cacheBuster || 0;
-    const imageUrl = getProfileImageUrl(
-      updatedUser.profileImage,
-      finalCacheBuster
-    );
+    const imageUrl = getProfileImageUrl(updatedUser.profileImage, finalCacheBuster);
 
     res.json({
       ...updatedUser.toObject(),
