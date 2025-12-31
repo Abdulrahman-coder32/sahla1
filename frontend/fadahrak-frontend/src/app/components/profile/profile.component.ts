@@ -40,9 +40,11 @@ export class ProfileComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     console.log('ProfileComponent initialized');
     this.loadProfile();
+
+    // ← مهم: الاشتراك في user$ بس بعد loadProfile عشان متعملش override
     this.userSub = this.authService.user$.subscribe(currentUser => {
-      console.log('AuthService user$ emitted:', currentUser);
-      if (currentUser) {
+      if (currentUser && !this.saving) { // ← منع التحديث أثناء الحفظ
+        console.log('AuthService user$ emitted:', currentUser);
         this.user = { ...currentUser, bio: currentUser.bio || '' };
         this.previewUrl = this.user.profileImage || null;
         this.originalUser = { ...this.user };
@@ -56,7 +58,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   loadProfile() {
     this.loading = true;
-    console.log('Loading profile from API...');
     this.api.getProfile().subscribe({
       next: (data: any) => {
         console.log('Data received from API:', data);
@@ -64,7 +65,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
         this.originalUser = { ...this.user };
         this.previewUrl = this.user.profileImage || null;
         this.authService.updateCurrentUser(this.user);
-        console.log('Updated AuthService user:', this.user);
         this.loading = false;
       },
       error: (err) => {
@@ -79,8 +79,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    console.log('File selected:', file.name, file.size);
-
     if (file.size > 10 * 1024 * 1024) {
       this.showMessage('الصورة كبيرة جدًا، اختر أصغر من 10 ميجا', 'error');
       return;
@@ -89,7 +87,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
     const reader = new FileReader();
     reader.onload = (e: any) => {
       const originalDataUrl = e.target.result as string;
-      this.previewUrl = originalDataUrl; // preview فوري (الأصلي)
+      this.previewUrl = originalDataUrl;
 
       const img = new Image();
       img.onload = () => {
@@ -108,8 +106,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-
-          // ← الأهم: نحول الـ canvas لـ base64 resized ونحدث previewUrl
           this.previewUrl = canvas.toDataURL('image/jpeg', 0.8);
           console.log('Resized base64 ready for upload');
         }
@@ -117,14 +113,12 @@ export class ProfileComponent implements OnInit, OnDestroy {
       img.src = originalDataUrl;
     };
     reader.readAsDataURL(file);
-
-    this.selectedFile = null; // مش محتاجين الـ File object خلاص
+    this.selectedFile = null;
   }
 
   toggleEdit() {
     this.isEditing = !this.isEditing;
     this.message = null;
-    console.log('Edit mode:', this.isEditing);
   }
 
   private validateRequiredFields(): boolean {
@@ -136,46 +130,46 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   saveProfile() {
-  if (this.saving || !this.validateRequiredFields()) return;
+    if (this.saving || !this.validateRequiredFields()) return;
 
-  this.saving = true;
-  this.message = null;
+    this.saving = true;
+    this.message = null;
 
-  const formData = new FormData();
-  formData.append('name', this.user.name.trim());
-  if (this.user.phone?.trim()) formData.append('phone', this.user.phone.trim());
-  if (this.user.bio?.trim()) formData.append('bio', this.user.bio.trim());
+    const formData = new FormData();
+    formData.append('name', this.user.name.trim());
+    if (this.user.phone?.trim()) formData.append('phone', this.user.phone.trim());
+    if (this.user.bio?.trim()) formData.append('bio', this.user.bio.trim());
 
-  if (this.previewUrl && this.previewUrl.startsWith('data:image')) {
-    formData.append('profileImage', this.previewUrl);
-  } else if (this.previewUrl === null) {
-    formData.append('profileImage', '');
-  }
-
-  this.api.updateProfile(formData).subscribe({
-    next: (updatedUser: any) => {
-      console.log('Profile updated:', updatedUser);
-
-      // ← الأهم: حدث this.user أولاً بالكامل من الـ response
-      this.user = { ...updatedUser, bio: updatedUser.bio || '' };
-      this.originalUser = { ...this.user };
-      this.previewUrl = updatedUser.profileImage || null;
-      this.selectedFile = null;
-      this.isEditing = false;
-      this.saving = false;
-
-      // ← بعد كده حدث الـ AuthService
-      this.authService.updateCurrentUser(this.user);
-
-      this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
-    },
-    error: (err) => {
-      console.error('Failed to save profile:', err);
-      this.showMessage('فشل حفظ التغييرات، حاول مرة أخرى', 'error');
-      this.saving = false;
+    if (this.previewUrl && this.previewUrl.startsWith('data:image')) {
+      formData.append('profileImage', this.previewUrl);
+    } else if (this.previewUrl === null) {
+      formData.append('profileImage', '');
     }
-  });
-}
+
+    this.api.updateProfile(formData).subscribe({
+      next: (updatedUser: any) => {
+        console.log('Profile updated from backend:', updatedUser);
+
+        // ← تحديث محلي كامل من الـ response
+        this.user = { ...updatedUser, bio: updatedUser.bio || this.user.bio || '' };
+        this.originalUser = { ...this.user };
+        this.previewUrl = updatedUser.profileImage || null;
+        this.selectedFile = null;
+        this.isEditing = false;
+        this.saving = false;
+
+        // ← تحديث AuthService بالـ user الجديد كامل
+        this.authService.updateCurrentUser(updatedUser); // نرسل updatedUser مباشرة مش this.user
+
+        this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
+      },
+      error: (err) => {
+        console.error('Failed to save profile:', err);
+        this.showMessage('فشل حفظ التغييرات، حاول مرة أخرى', 'error');
+        this.saving = false;
+      }
+    });
+  }
 
   cancelEdit() {
     this.user = { ...this.originalUser };
@@ -183,12 +177,10 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.selectedFile = null;
     this.isEditing = false;
     this.message = null;
-    console.log('Edit cancelled, reverted to original user');
   }
 
   showMessage(text: string, type: 'success' | 'error') {
     this.message = { text, type };
-    console.log('Message:', text, type);
     setTimeout(() => this.message = null, 4000);
   }
 
