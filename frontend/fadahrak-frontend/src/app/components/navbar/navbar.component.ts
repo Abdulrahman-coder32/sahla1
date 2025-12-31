@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
-import { Observable, Subject } from 'rxjs';
+import { Observable, Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-navbar',
@@ -34,20 +34,26 @@ import { Observable, Subject } from 'rxjs';
                 <button class="nav-link flex items-center gap-2 relative">
                   الإشعارات
                   <ng-container *ngIf="notificationCount$ | async as count">
-                    <span *ngIf="count > 0" class="absolute -top-2 -end-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    <span *ngIf="count > 0"
+                          class="absolute -top-2 -end-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
                       {{ count > 9 ? '9+' : count }}
                     </span>
                   </ng-container>
                 </button>
+
                 <div class="absolute end-0 mt-3 w-80 lg:w-96 bg-white rounded-xl shadow-2xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
                   <div class="p-4 border-b border-gray-200 font-semibold text-lg lg:text-xl">الإشعارات</div>
                   <div class="max-h-96 overflow-y-auto">
                     <ng-container *ngIf="notifications$ | async as notifications; else loading">
-                      <button *ngFor="let notif of notifications.slice(0, 10)" (click)="navigateToNotification(notif)"
-                              class="w-full p-3 lg:p-4 hover:bg-gray-50 border-b border-gray-100 flex items-start gap-3 lg:gap-4 text-right rounded-lg"
-                              [class.font-semibold]="!notif.read" [class.bg-gray-50]="!notif.read">
-                        <div class="w-3 h-3 rounded-full mt-2 lg:mt-3 flex-shrink-0" [class.bg-indigo-500]="!notif.read" [class.bg-gray-300]="notif.read"></div>
-                        <div>
+                      <button *ngFor="let notif of notifications.slice(0, 10)"
+                              (click)="navigateToNotification(notif)"
+                              class="w-full p-3 lg:p-4 hover:bg-gray-50 border-b border-gray-100 flex items-start gap-3 lg:gap-4 text-right rounded-lg transition-all"
+                              [class.font-semibold]="!notif.read"
+                              [class.bg-gray-50]="!notif.read">
+                        <div class="w-3 h-3 rounded-full mt-2 lg:mt-3 flex-shrink-0"
+                             [class.bg-indigo-500]="!notif.read"
+                             [class.bg-gray-300]="notif.read"></div>
+                        <div class="flex-1">
                           <p class="text-sm lg:text-base">{{ notif.message }}</p>
                           <p class="text-xs lg:text-sm text-gray-500 mt-1">{{ notif.createdAt | date:'short' }}</p>
                         </div>
@@ -60,7 +66,8 @@ import { Observable, Subject } from 'rxjs';
                       <div class="p-6 lg:p-8 text-center text-gray-400">جاري التحميل...</div>
                     </ng-template>
                   </div>
-                  <a routerLink="/notifications" class="block p-4 text-center bg-gray-50 hover:bg-gray-100 text-gray-600 font-medium rounded-b-xl">
+                  <a routerLink="/notifications"
+                     class="block p-4 text-center bg-gray-50 hover:bg-gray-100 text-indigo-600 font-medium rounded-b-xl transition-all">
                     عرض جميع الإشعارات
                   </a>
                 </div>
@@ -72,23 +79,28 @@ import { Observable, Subject } from 'rxjs';
 
               <!-- Profile Dropdown -->
               <div class="relative group">
-                <button class="flex items-center gap-3 lg:gap-4 rounded-full focus:outline-none p-2">
-                  <img [src]="getProfileImage(user)" alt="صورة الملف الشخصي"
-                       class="w-10 h-10 lg:w-12 lg:h-12 rounded-full object-cover ring-2 ring-gray-300 shadow-md">
+                <button class="flex items-center gap-3 lg:gap-4 rounded-full focus:outline-none p-2 transition-all hover:ring-4 hover:ring-indigo-100">
+                  <img [src]="getProfileImage(user)"
+                       alt="صورة الملف الشخصي"
+                       class="w-10 h-10 lg:w-12 lg:h-12 rounded-full object-cover ring-2 ring-gray-300 shadow-md"
+                       (error)="handleImageError($event)">
                   <div class="hidden lg:block max-w-[180px]">
-                    <span class="text-gray-700 font-medium text-base lg:text-lg show-start block">
+                    <span class="text-gray-700 font-medium text-base lg:text-lg show-start block truncate">
                       {{ user.name || 'مستخدم' }}
                     </span>
-                    <span class="text-gray-500 text-sm show-start block mt-1">
+                    <span class="text-gray-500 text-sm show-start block mt-1 truncate">
                       {{ user.email || '' }}
                     </span>
                   </div>
                 </button>
+
                 <div class="absolute end-0 mt-3 w-56 lg:w-64 bg-white rounded-xl shadow-2xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
-                  <a routerLink="/profile" class="block px-5 py-3 lg:px-6 lg:py-4 hover:bg-gray-50 text-right font-medium text-gray-700 border-b border-gray-100 rounded-t-xl">
+                  <a routerLink="/profile"
+                     class="block px-5 py-3 lg:px-6 lg:py-4 hover:bg-gray-50 text-right font-medium text-gray-700 border-b border-gray-100 rounded-t-xl transition-all">
                     الملف الشخصي
                   </a>
-                  <button (click)="onLogout()" class="w-full text-right px-5 py-3 lg:px-6 lg:py-4 hover:bg-red-50 text-red-600 font-medium rounded-b-xl">
+                  <button (click)="onLogout()"
+                          class="w-full text-right px-5 py-3 lg:px-6 lg:py-4 hover:bg-red-50 text-red-600 font-medium rounded-b-xl transition-all">
                     تسجيل الخروج
                   </button>
                 </div>
@@ -107,17 +119,22 @@ import { Observable, Subject } from 'rxjs';
               <button (click)="toggleNotifications()" class="relative p-2">
                 <i class="fas fa-bell text-xl text-gray-700"></i>
                 <ng-container *ngIf="notificationCount$ | async as count">
-                  <span *ngIf="count > 0" class="absolute -top-1 -end-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  <span *ngIf="count > 0"
+                        class="absolute -top-1 -end-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
                     {{ count > 9 ? '9+' : count }}
                   </span>
                 </ng-container>
               </button>
             </ng-container>
+
             <button (click)="toggleMenu()" class="p-2">
               <div class="w-7 h-7 flex flex-col justify-center gap-1.5">
-                <span [ngClass]="{'rotate-45 translate-y-2.5': mobileMenuOpen}" class="block h-0.5 w-full bg-gray-800 rounded transition-all duration-300 origin-center"></span>
-                <span [ngClass]="{'opacity-0': mobileMenuOpen}" class="block h-0.5 w-full bg-gray-800 rounded transition-all duration-300"></span>
-                <span [ngClass]="{'-rotate-45 -translate-y-2.5': mobileMenuOpen}" class="block h-0.5 w-full bg-gray-800 rounded transition-all duration-300 origin-center"></span>
+                <span [ngClass]="{'rotate-45 translate-y-2.5': mobileMenuOpen}"
+                      class="block h-0.5 w-full bg-gray-800 rounded transition-all duration-300 origin-center"></span>
+                <span [ngClass]="{'opacity-0': mobileMenuOpen}"
+                      class="block h-0.5 w-full bg-gray-800 rounded transition-all duration-300"></span>
+                <span [ngClass]="{'-rotate-45 -translate-y-2.5': mobileMenuOpen}"
+                      class="block h-0.5 w-full bg-gray-800 rounded transition-all duration-300 origin-center"></span>
               </div>
             </button>
           </div>
@@ -128,18 +145,22 @@ import { Observable, Subject } from 'rxjs';
       <div *ngIf="mobileMenuOpen || mobileNotificationsOpen"
            class="fixed inset-0 bg-black bg-opacity-60 z-40 md:hidden"
            (click)="closeMobileMenu()"></div>
+
       <div [ngClass]="{
         'translate-x-0': mobileMenuOpen || mobileNotificationsOpen,
         'translate-x-full': !(mobileMenuOpen || mobileNotificationsOpen)
       }" class="fixed inset-y-0 right-0 w-80 max-w-full bg-white shadow-2xl z-50 transition-transform duration-500 ease-in-out md:hidden flex flex-col">
+
         <!-- Header -->
         <div class="p-5 border-b border-gray-200 flex items-center gap-4 bg-white sticky top-0 z-10">
           <ng-container *ngIf="currentUser$ | async as user">
-            <img [src]="getProfileImage(user)" alt="صورة الملف الشخصي"
-                 class="w-14 h-14 rounded-full object-cover ring-2 ring-gray-200 shadow-md flex-shrink-0">
+            <img [src]="getProfileImage(user)"
+                 alt="صورة الملف الشخصي"
+                 class="w-14 h-14 rounded-full object-cover ring-2 ring-gray-200 shadow-md flex-shrink-0"
+                 (error)="handleImageError($event)">
             <div class="flex-1 min-w-0">
-              <h2 class="text-xl font-bold text-gray-800 show-start">{{ user.name || 'مستخدم' }}</h2>
-              <p class="text-sm text-gray-500 show-start mt-1">{{ user.email || '' }}</p>
+              <h2 class="text-xl font-bold text-gray-800 show-start truncate">{{ user.name || 'مستخدم' }}</h2>
+              <p class="text-sm text-gray-500 show-start mt-1 truncate">{{ user.email || '' }}</p>
             </div>
           </ng-container>
           <button (click)="closeMobileMenu()" class="p-2">
@@ -152,10 +173,14 @@ import { Observable, Subject } from 'rxjs';
           <!-- Notifications Mobile -->
           <div *ngIf="mobileNotificationsOpen" class="p-5">
             <ng-container *ngIf="notifications$ | async as notifications; else loadingMobile">
-              <button *ngFor="let notif of notifications.slice(0, 20)" (click)="navigateToNotification(notif)"
-                      class="w-full p-4 hover:bg-gray-50 border-b border-gray-100 flex items-start gap-4 text-right mb-2 rounded-xl"
-                      [class.font-semibold]="!notif.read" [class.bg-gray-50]="!notif.read">
-                <div class="w-3 h-3 rounded-full mt-2 flex-shrink-0" [class.bg-indigo-500]="!notif.read" [class.bg-gray-300]="notif.read"></div>
+              <button *ngFor="let notif of notifications.slice(0, 20)"
+                      (click)="navigateToNotification(notif)"
+                      class="w-full p-4 hover:bg-gray-50 border-b border-gray-100 flex items-start gap-4 text-right mb-2 rounded-xl transition-all"
+                      [class.font-semibold]="!notif.read"
+                      [class.bg-gray-50]="!notif.read">
+                <div class="w-3 h-3 rounded-full mt-2 flex-shrink-0"
+                     [class.bg-indigo-500]="!notif.read"
+                     [class.bg-gray-300]="notif.read"></div>
                 <div class="flex-1">
                   <p class="text-sm">{{ notif.message }}</p>
                   <p class="text-sm text-gray-500 mt-1">{{ notif.createdAt | date:'medium' }}</p>
@@ -174,17 +199,21 @@ import { Observable, Subject } from 'rxjs';
           <div *ngIf="mobileMenuOpen && !mobileNotificationsOpen" class="p-5">
             <ng-container *ngIf="currentUser$ | async as user; else guestMobile">
               <a routerLink="/inbox" (click)="closeMobileMenu()" class="mobile-link">الرسائل</a>
-              <a [routerLink]="user.role === 'shop_owner' ? '/owner-dashboard' : '/seeker-dashboard'" (click)="closeMobileMenu()" class="mobile-link">لوحة التحكم</a>
+              <a [routerLink]="user.role === 'shop_owner' ? '/owner-dashboard' : '/seeker-dashboard'"
+                 (click)="closeMobileMenu()" class="mobile-link">لوحة التحكم</a>
               <a routerLink="/profile" (click)="closeMobileMenu()" class="mobile-link">الملف الشخصي</a>
               <hr class="my-6 border-gray-300">
-              <button (click)="onLogout(); closeMobileMenu()" class="w-full text-right px-8 py-6 text-xl font-medium text-red-600 hover:bg-red-50 transition-all rounded-xl">
+              <button (click)="onLogout(); closeMobileMenu()"
+                      class="w-full text-right px-8 py-6 text-xl font-medium text-red-600 hover:bg-red-50 transition-all rounded-xl">
                 تسجيل الخروج
               </button>
             </ng-container>
+
             <ng-template #guestMobile>
               <a routerLink="/login" (click)="closeMobileMenu()" class="mobile-link">دخول</a>
               <a routerLink="/signup" (click)="closeMobileMenu()" class="mobile-link bg-indigo-600 text-white hover:bg-indigo-700">إنشاء حساب</a>
             </ng-template>
+
             <hr class="my-6 border-gray-300">
             <div class="space-y-2">
               <a routerLink="/" (click)="closeMobileMenu()" class="mobile-link">الرئيسية</a>
@@ -197,7 +226,8 @@ import { Observable, Subject } from 'rxjs';
 
         <!-- عرض جميع الإشعارات في الأسفل -->
         <div *ngIf="mobileNotificationsOpen" class="sticky bottom-0 bg-white border-t border-gray-200 p-4">
-          <a routerLink="/notifications" (click)="closeMobileMenu()" class="block text-center bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-6 rounded-xl transition-all">
+          <a routerLink="/notifications" (click)="closeMobileMenu()"
+             class="block text-center bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-6 rounded-xl transition-all">
             عرض جميع الإشعارات
           </a>
         </div>
@@ -247,20 +277,30 @@ export class NavbarComponent implements OnInit, OnDestroy {
     private notificationService: NotificationService
   ) {
     this.notificationCount$ = this.notificationService.unreadCount$;
-   this.notifications$ = this.notificationService.notifications$;
+    this.notifications$ = this.notificationService.notifications$;
   }
 
-  ngOnInit(): void {}
-
-getProfileImage(user: any): string {
-  // نستخدم الرابط اللي راجع من الباك إند أو AuthService كما هو
-  // الباك إند أصلاً بيضيف cache buster صحيح (?v=الرقم من الداتابيز)
-  if (user?.profileImage) {
-    return user.profileImage;
+  ngOnInit(): void {
+    // اشتراك تلقائي في تحديثات المستخدم لضمان تحديث الصورة فورًا
+    this.authService.user$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        // لا نحتاج فعل شيء هنا، مجرد الاشتراك يكفي لإعادة تقييم الـ async pipes
+        // لكن يضمن تحديث الصورة والاسم فور أي تغيير من AuthService
+      });
   }
-  // لو مفيش صورة، نرجع الديفولت (بدون cache buster عشوائي)
-  return 'assets/default-profile.png';
-}
+
+  getProfileImage(user: any): string {
+    if (user?.profileImage) {
+      return user.profileImage; // الباك أو AuthService بيضيف cache buster أو timestamp
+    }
+    return 'assets/default-profile.png';
+  }
+
+  // في حال فشل تحميل الصورة (نادر)، نرجع للديفولت
+  handleImageError(event: any): void {
+    event.target.src = 'assets/default-profile.png';
+  }
 
   toggleMenu(): void {
     this.mobileMenuOpen = !this.mobileMenuOpen;
@@ -286,6 +326,7 @@ getProfileImage(user: any): string {
 
   navigateToNotification(notification: any): void {
     this.closeMobileMenu();
+
     let route: string[] = ['/notifications'];
     const appId = notification.application_id || null;
 
