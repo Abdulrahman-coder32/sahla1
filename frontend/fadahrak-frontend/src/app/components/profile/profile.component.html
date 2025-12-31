@@ -22,12 +22,12 @@
           <div class="relative inline-block">
             <div class="avatar-container w-48 h-48 mx-auto">
               <!-- الصورة: preview أو الصورة الحالية أو الديفولت -->
-              <img
-                [src]="previewUrl || user.profileImage || 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg'"
-                alt="صورة الملف الشخصي لـ {{ user.name || 'المستخدم' }}"
-                class="profile-avatar w-full h-full object-cover rounded-full"
-                loading="lazy"
-              >
+           <img
+  [src]="previewUrl || (user.profileImage ? (user.profileImage + (user.profileImage.includes('?') ? '' : '?v=' + currentTimestamp)) : 'assets/default-profile.png')"
+  alt="صورة الملف الشخصي لـ {{ user.name || 'المستخدم' }}"
+  class="profile-avatar w-full h-full object-cover rounded-full"
+  loading="lazy"
+>
               <!-- زر الكاميرا (يظهر فقط في وضع التعديل) -->
               <label *ngIf="isEditing" class="profile-camera-btn">
                 <i class="fas fa-camera"></i>
