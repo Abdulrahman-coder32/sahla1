@@ -89,7 +89,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
     const reader = new FileReader();
     reader.onload = (e: any) => {
       const originalDataUrl = e.target.result as string;
-      this.previewUrl = originalDataUrl; // preview فوري
+      this.previewUrl = originalDataUrl; // preview فوري (الأصلي)
 
       const img = new Image();
       img.onload = () => {
@@ -109,7 +109,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
 
-          // ← الأهم: نحول الـ canvas لـ base64 resized ونخزنه في previewUrl
+          // ← الأهم: نحول الـ canvas لـ base64 resized ونحدث previewUrl
           this.previewUrl = canvas.toDataURL('image/jpeg', 0.8);
           console.log('Resized base64 ready for upload');
         }
@@ -147,7 +147,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
     if (this.user.phone?.trim()) formData.append('phone', this.user.phone.trim());
     if (this.user.bio?.trim()) formData.append('bio', this.user.bio.trim());
 
-    // ← جديد: بعث base64 resized مباشرة
+    // ← جديد: بعث base64 resized من previewUrl
     if (this.previewUrl && this.previewUrl.startsWith('data:image')) {
       formData.append('profileImage', this.previewUrl);
     } else if (this.previewUrl === null) {
