@@ -1,57 +1,99 @@
-<div *ngIf="loading" class="text-center py-12">
-  <i class="fas fa-spinner fa-spin text-6xl text-primary mb-4"></i>
-  <p class="text-xl text-gray-700">جاري تحميل المتقدمين...</p>
-</div>
+<div class="applications-container">
+  <!-- Unread Notifications Badge -->
+  <div *ngIf="unreadNotifications > 0"
+       class="notification-badge">
+    <i class="fas fa-bell"></i>
+    <span>{{ unreadNotifications }} إشعار جديد</span>
+    <button (click)="clearNotifications()" class="close-btn">×</button>
+  </div>
 
-<div *ngIf="!loading && applications.length === 0" class="text-center py-16 bg-gray-50 rounded-xl border border-gray-200">
-  <i class="fas fa-users-slash text-8xl text-gray-400 mb-6"></i>
-  <p class="text-2xl font-medium text-gray-600 mb-2">مفيش متقدمين حاليًا</p>
-  <p class="text-gray-500">لما يتقدم حد، هيظهر هنا فورًا!</p>
-</div>
-
-<div *ngIf="!loading && applications.length > 0" class="space-y-6">
-  <div *ngFor="let app of applications" class="card p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-6 border border-gray-200">
-    <div class="flex-grow">
-      <div class="flex items-center gap-4 mb-4">
-        <div class="w-16 h-16 rounded-full bg-primary-light text-primary flex items-center justify-center text-2xl font-bold">
-          {{ getInitials(app.seeker_id?.name) }}
-        </div>
-        <div>
-          <h3 class="text-2xl font-bold text-gray-900">{{ app.seeker_id?.name || 'باحث عن عمل' }}</h3>
-          <p class="text-gray-600">
-            <i class="fas fa-map-marker-alt ml-1 text-primary"></i>
-            {{ app.seeker_id?.city }}, {{ app.seeker_id?.governorate }}
-          </p>
-        </div>
-      </div>
-
-      <p class="text-gray-700 mb-4 leading-relaxed">{{ app.message }}</p>
-
-      <div class="flex flex-wrap gap-4">
-        <span class="px-4 py-2 rounded-full {{getStatusClass(app.status)}} flex items-center gap-2 font-medium">
-          <i class="{{getStatusIcon(app.status)}}"></i>
-          {{ app.status === 'pending' ? 'معلق' : app.status === 'accepted' ? 'مقبول' : 'مرفوض' }}
-        </span>
-        <span class="px-4 py-2 rounded-full bg-gray-100 text-gray-800 flex items-center gap-2">
-          <i class="fas fa-clock"></i>
-          {{ app.createdAt | date:'mediumDate' }}
-        </span>
-      </div>
+  <div class="max-w-7xl mx-auto">
+    <!-- Loading -->
+    <div *ngIf="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>جاري تحميل المتقدمين...</p>
     </div>
 
-    <div class="flex flex-col sm:flex-row gap-3">
-      <button *ngIf="app.status === 'pending'" (click)="acceptApplication(app._id)"
-              class="btn-primary py-3 px-6 rounded-xl flex items-center justify-center gap-2 font-medium">
-        <i class="fas fa-check"></i> قبول
-      </button>
-      <button *ngIf="app.status === 'pending'" (click)="rejectApplication(app._id)"
-              class="btn-danger py-3 px-6 rounded-xl flex items-center justify-center gap-2 font-medium">
-        <i class="fas fa-times"></i> رفض
-      </button>
-      <a *ngIf="app.status === 'accepted'" routerLink="/inbox/{{app._id}}"
-         class="btn-primary py-3 px-6 rounded-xl flex items-center justify-center gap-2 font-medium">
-        <i class="fas fa-comments"></i> فتح الدردشة
-      </a>
+    <!-- Empty State -->
+    <div *ngIf="!loading && applications.length === 0" class="empty-state">
+      <i class="fas fa-users-slash"></i>
+      <h3>لا يوجد متقدمين حاليًا</h3>
+      <p>عندما يتقدم أحد الباحثين عن عمل، سيظهر هنا فورًا.</p>
+    </div>
+
+    <!-- Applications List -->
+    <div *ngIf="!loading && applications.length > 0" class="applications-list">
+      <div *ngFor="let app of applications" class="application-card">
+        <div class="applicant-info">
+          <img [src]="getSeekerImage(app)"
+               [alt]="app.seeker_id?.name || 'متقدم'"
+               class="applicant-image">
+
+          <div class="applicant-details">
+            <h3 class="applicant-name">
+              {{ app.seeker_id?.name || 'غير معروف' }}
+              <span class="applicant-age">(العمر: {{ app.seeker_id?.age || 'غير محدد' }})</span>
+            </h3>
+
+            <div class="info-grid">
+              <div class="info-item">
+                <i class="fas fa-envelope"></i>
+                <div>
+                  <span class="info-label">البريد الإلكتروني</span>
+                  <span class="info-value">{{ maskEmail(app.seeker_id?.email) }}</span>
+                </div>
+              </div>
+
+              <div class="info-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <div>
+                  <span class="info-label">الموقع</span>
+                  <span class="info-value">{{ app.seeker_id?.governorate }} - {{ app.seeker_id?.city }}</span>
+                </div>
+              </div>
+
+              <div class="info-item">
+                <i class="fas fa-briefcase"></i>
+                <div>
+                  <span class="info-label">الخبرة</span>
+                  <span class="info-value">{{ app.seeker_id?.work_experience || 'غير محددة' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="application-message">
+              <p class="message-title">
+                <i class="fas fa-comment-dots"></i>
+                رسالة التقديم:
+              </p>
+              <p class="message-text">{{ app.message }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="application-actions">
+          <span [class]="getStatusClass(app.status)" class="status-badge">
+            <i [class]="getStatusIcon(app.status)"></i>
+            {{ getStatusText(app.status) }}
+          </span>
+
+          <div class="action-buttons" *ngIf="app.status === 'pending'">
+            <button (click)="acceptApplication(app._id)" class="btn-accept">
+              <i class="fas fa-check"></i> قبول
+            </button>
+            <button (click)="rejectApplication(app._id)" class="btn-reject">
+              <i class="fas fa-times"></i> رفض
+            </button>
+          </div>
+
+          <a *ngIf="app.status === 'accepted'"
+             [routerLink]="['/inbox', app._id]"
+             class="btn-chat">
+            <i class="fas fa-comments"></i>
+            فتح الدردشة
+          </a>
+        </div>
+      </div>
     </div>
   </div>
 </div>
