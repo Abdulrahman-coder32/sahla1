@@ -41,7 +41,7 @@ import { CommonModule } from '@angular/common';
         <div class="footer-section">
           <h3 class="section-title">تواصل معنا</h3>
           <ul class="contact-list">
-            <li>info@sahlaa.com</li>
+            <li>info&#64;sahlaa.com</li>
             <li>+20 1060757463</li>
           </ul>
           <div class="social-links">
