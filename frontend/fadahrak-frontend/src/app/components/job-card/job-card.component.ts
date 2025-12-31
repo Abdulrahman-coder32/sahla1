@@ -4,11 +4,12 @@ import { RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { ApplyModalComponent } from '../apply-modal/apply-modal.component';
 import { AuthService } from '../../services/auth.service';
+import { ModalService } from '../../services/modal.service';  // أضف هذا الاستيراد
 
 @Component({
   selector: 'app-job-card',
   standalone: true,
-  imports: [CommonModule, RouterLink, ApplyModalComponent],
+  imports: [CommonModule, RouterLink],  // أزل ApplyModalComponent من الـ imports لأنه لن يكون هنا
   template: `
     <div class="job-card">
       <!-- Header: صورة صاحب الوظيفة + اسم المتجر -->
@@ -66,14 +67,7 @@ import { AuthService } from '../../services/auth.service';
         </div>
       </div>
 
-      <!-- Modal التقديم -->
-      <app-apply-modal
-        *ngIf="isJobSeeker"
-        [isOpen]="modalOpen"
-        [jobTitle]="job.shop_name"
-        (onClose)="closeModal()"
-        (onSubmit)="apply($event)">
-      </app-apply-modal>
+      <!-- أزل Modal التقديم من هنا تمامًا -->
 
       <!-- Toast Message -->
       <div *ngIf="toastMessage" class="toast">
@@ -301,13 +295,14 @@ export class JobCardComponent {
   @Input() hasApplied = false;
   @Output() applySuccess = new EventEmitter<void>();
 
-  modalOpen = false;
+  modalOpen = false;  // أزل هذا المتغير لأنه لن يُستخدم
   toastMessage: string | null = null;
   readonly defaultImage = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
 
   constructor(
     private api: ApiService,
-    private authService: AuthService
+    private authService: AuthService,
+    private modalService: ModalService  // أضف هذا
   ) {}
 
   get isJobSeeker(): boolean {
@@ -324,11 +319,12 @@ export class JobCardComponent {
   }
 
   openModal() {
-    this.modalOpen = true;
+    // غير هذا ليستخدم الـ service بدلاً من modalOpen
+    this.modalService.openModal(this.job.shop_name);
   }
 
   closeModal() {
-    this.modalOpen = false;
+    // أزل هذا الدالة لأنها لن تُستخدم هنا
   }
 
   apply(message: string) {
@@ -337,7 +333,8 @@ export class JobCardComponent {
       message
     }).subscribe({
       next: () => {
-        this.modalOpen = false;
+        // أزل modalOpen = false لأنه لن يكون هنا
+        this.modalService.closeModal();  // أضف هذا لإغلاق المودال عبر الـ service
         this.hasApplied = true;
         this.applySuccess.emit();
         window.scrollTo({ top: 0, behavior: 'smooth' });
