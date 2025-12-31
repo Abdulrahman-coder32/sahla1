@@ -40,7 +40,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     console.log('ProfileComponent initialized');
     this.loadProfile();
-
     this.userSub = this.authService.user$.subscribe(currentUser => {
       console.log('AuthService user$ emitted:', currentUser);
       if (currentUser) {
@@ -79,40 +78,47 @@ export class ProfileComponent implements OnInit, OnDestroy {
   onFileSelected(event: any) {
     const file = event.target.files?.[0];
     if (!file) return;
+
     console.log('File selected:', file.name, file.size);
+
     if (file.size > 10 * 1024 * 1024) {
       this.showMessage('الصورة كبيرة جدًا، اختر أصغر من 10 ميجا', 'error');
       return;
     }
+
     const reader = new FileReader();
     reader.onload = (e: any) => {
-      this.previewUrl = e.target.result as string;
+      const originalDataUrl = e.target.result as string;
+      this.previewUrl = originalDataUrl; // preview فوري
+
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
         const MAX_WIDTH = 800;
         let width = img.width;
         let height = img.height;
+
         if (width > MAX_WIDTH) {
           height *= MAX_WIDTH / width;
           width = MAX_WIDTH;
         }
+
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-          canvas.toBlob((blob) => {
-            if (blob) {
-              this.selectedFile = new File([blob], file.name, { type: 'image/jpeg' });
-              console.log('Resized file ready:', this.selectedFile.name);
-            }
-          }, 'image/jpeg', 0.8);
+
+          // ← الأهم: نحول الـ canvas لـ base64 resized ونخزنه في previewUrl
+          this.previewUrl = canvas.toDataURL('image/jpeg', 0.8);
+          console.log('Resized base64 ready for upload');
         }
       };
-      img.src = e.target.result;
+      img.src = originalDataUrl;
     };
     reader.readAsDataURL(file);
+
+    this.selectedFile = null; // مش محتاجين الـ File object خلاص
   }
 
   toggleEdit() {
@@ -131,6 +137,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   saveProfile() {
     if (this.saving || !this.validateRequiredFields()) return;
+
     this.saving = true;
     this.message = null;
     console.log('Saving profile...', this.user);
@@ -139,8 +146,10 @@ export class ProfileComponent implements OnInit, OnDestroy {
     formData.append('name', this.user.name.trim());
     if (this.user.phone?.trim()) formData.append('phone', this.user.phone.trim());
     if (this.user.bio?.trim()) formData.append('bio', this.user.bio.trim());
-    if (this.selectedFile) {
-      formData.append('profileImage', this.selectedFile, this.selectedFile.name);
+
+    // ← جديد: بعث base64 resized مباشرة
+    if (this.previewUrl && this.previewUrl.startsWith('data:image')) {
+      formData.append('profileImage', this.previewUrl);
     } else if (this.previewUrl === null) {
       formData.append('profileImage', '');
     }
@@ -149,13 +158,9 @@ export class ProfileComponent implements OnInit, OnDestroy {
       next: (updatedUser: any) => {
         console.log('Profile updated:', updatedUser);
         this.authService.updateCurrentUser(updatedUser);
-
         this.user = { ...updatedUser, bio: updatedUser.bio || '' };
         this.originalUser = { ...this.user };
-
-        // ✅ نستخدم الرابط اللي راجع من الباك إند كما هو (فيه cache buster صحيح بالفعل)
         this.previewUrl = updatedUser.profileImage || null;
-
         this.selectedFile = null;
         this.isEditing = false;
         this.saving = false;
@@ -192,7 +197,4 @@ export class ProfileComponent implements OnInit, OnDestroy {
     }
     return name.substring(0, 2).toUpperCase();
   }
-
-  // تم حذف getProfileImageUrl بالكامل لأنها كانت بتضيف cache buster يدوي كل render
-  // الرابط دلوقتي جاهز من الـ API أو AuthService، والـ <img> هيعرضه صح
 }
