@@ -2,6 +2,8 @@ const express = require('express');
 const auth = require('../middleware/auth');
 const User = require('../models/User');
 const cloudinary = require('cloudinary').v2;
+const { getProfileImageUrl } = require('../utils/imageUtils'); // ← الإضافة الجديدة
+
 const router = express.Router();
 
 // تكوين Cloudinary
@@ -10,27 +12,6 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-
-// الصورة الديفولت
-const DEFAULT_AVATAR =
-  'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
-
-const getProfileImageUrl = (publicId, cacheBuster = 0) => {
-  const url = publicId
-    ? cloudinary.url(publicId, {
-        secure: true,
-        quality: 'auto',
-        fetch_format: 'auto',
-        width: 400,
-        height: 400,
-        crop: 'fill',
-        gravity: 'face',
-        radius: 'max',
-      })
-    : DEFAULT_AVATAR;
-
-  return `${url}?v=${cacheBuster}`;
-};
 
 // GET /me
 router.get('/me', auth, async (req, res) => {
@@ -53,9 +34,8 @@ router.get('/me', auth, async (req, res) => {
 // PUT /profile
 router.put('/profile', auth, async (req, res) => {
   try {
-    const body = req.body || {}; // ✅ تجنب crash لو body undefined
+    const body = req.body || {};
     const { name, phone, bio, profileImage } = body;
-
     const updates = {};
     const inc = {};
 
@@ -72,7 +52,6 @@ router.put('/profile', auth, async (req, res) => {
         overwrite: true,
         resource_type: 'image',
       });
-
       updates.profileImage = result.public_id;
       inc.cacheBuster = 1;
       cacheBusterIncremented = true;
@@ -103,7 +82,7 @@ router.put('/profile', auth, async (req, res) => {
       profileImage: imageUrl,
     });
 
-    // إرسال تحديث real-time عبر Socket.IO إذا تغيرت الصورة
+    // إرسال تحديث real-time عبر Socket.IO
     if (cacheBusterIncremented) {
       const io = req.app.get('io');
       if (io) {
