@@ -1,9 +1,8 @@
 const jwt = require('jsonwebtoken');
 
 module.exports = (req, res, next) => {
-  console.log('Auth Middleware: Headers received:', req.headers.authorization);
-
-  const authHeader = req.header('Authorization') || req.header('authorization');
+  const authHeader = req.headers['authorization'];
+  console.log('Auth Middleware: Headers received:', authHeader);
 
   if (!authHeader) {
     console.log('No token provided');
@@ -16,8 +15,6 @@ module.exports = (req, res, next) => {
   }
 
   const token = authHeader.split(' ')[1];
-  console.log('Token extracted:', token ? 'Yes' : 'No');
-
   if (!token) {
     console.log('Token is empty');
     return res.status(401).json({ msg: 'توكن فارغ' });
