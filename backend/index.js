@@ -29,8 +29,6 @@ app.set('io', io);
 // ─────────────────────────────
 // MIDDLEWARES (مهم)
 // ─────────────────────────────
-
-// ✅ لازم يكونوا فوق routes
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
@@ -119,20 +117,25 @@ io.on('connection', (socket) => {
 
       if (!appData) return;
 
-      const recipientId =
-        socket.user.id === appData.job_id.owner_id.toString()
-          ? appData.seeker_id._id.toString()
-          : appData.job_id.owner_id.toString();
+      // تحديد الحقل المناسب للـ unreadCounts
+      const recipientIsSeeker = socket.user.id === appData.job_id.owner_id.toString();
+      const recipientId = recipientIsSeeker
+        ? appData.seeker_id._id.toString()
+        : appData.job_id.owner_id.toString();
+
+      const recipientField = recipientIsSeeker ? 'unreadCounts.seeker' : 'unreadCounts.owner';
 
       await Application.findByIdAndUpdate(application_id, {
         lastMessage: message.trim(),
         lastTimestamp: new Date(),
-        $inc: { unreadCount: 1 }
+        $inc: { [recipientField]: 1 }
       });
 
+      // تحديث الـ unreadCount real-time
+      const currentUnread = appData.unreadCounts?.[recipientIsSeeker ? 'seeker' : 'owner'] || 0;
       io.to(recipientId).emit('unreadUpdate', {
         application_id,
-        unreadCount: (appData.unreadCount || 0) + 1
+        unreadCount: currentUnread + 1
       });
 
       const notificationData = {
@@ -167,7 +170,6 @@ app.use(express.static(
   path.join(__dirname, 'fadahrak-frontend/dist/fadahrak-frontend')
 ));
 
-// بدل app.get('*', ...) استخدم middleware
 app.use((req, res, next) => {
   if (req.method === 'GET' && !req.path.startsWith('/api')) {
     res.sendFile(
@@ -177,7 +179,6 @@ app.use((req, res, next) => {
     next();
   }
 });
-
 
 // ─────────────────────────────
 // Test route
