@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
+const DEFAULT_AVATAR = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -18,16 +20,13 @@ export class AuthService {
     if (storedUser && storedToken) {
       let user = JSON.parse(storedUser);
 
-      // تنظيف أي default قديم
+      // تنظيف الصور الديفولت القديمة فقط (لو كانت روابط قديمة بدون cache buster صحيح)
       if (user.profileImage && (
         user.profileImage.includes('default.jpg') ||
         user.profileImage.includes('default-avatar') ||
-        user.profileImage.includes('res.cloudinary.com') && user.profileImage.includes('default')
+        (user.profileImage.includes('res.cloudinary.com') && user.profileImage.includes('default') && !user.profileImage.includes('?v='))
       )) {
-        user.profileImage = this.addCacheBuster(
-          'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg',
-          Date.now()
-        );
+        user.profileImage = DEFAULT_AVATAR; // الباك إند هيعمل cache busting لما يجيب البروفايل
       }
 
       this.userSubject.next(user);
@@ -38,12 +37,9 @@ export class AuthService {
   setUser(user: any, token: string) {
     let cleanedUser = { ...user };
 
-    // تنظيف الصورة لو كانت default قديم
+    // تنظيف default قديم فقط عند اللوجين/ساين أب
     if (cleanedUser.profileImage && cleanedUser.profileImage.includes('default.jpg')) {
-      cleanedUser.profileImage = this.addCacheBuster(
-        'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg',
-        Date.now()
-      );
+      cleanedUser.profileImage = DEFAULT_AVATAR;
     }
 
     localStorage.setItem('token', token);
@@ -58,29 +54,26 @@ export class AuthService {
 
     const mergedUser = { ...current, ...updatedUser };
 
-    // لو الـ backend مرجعش profileImage، نحتفظ بالحالي
+    // لو الـ backend مرجعش profileImage جديد، نحتفظ بالحالي (اللي فيه cache buster صحيح)
     if (!updatedUser.profileImage && current.profileImage) {
       mergedUser.profileImage = current.profileImage;
     }
-
-    // إضافة cache buster تلقائي لو الصورة موجودة
-    if (mergedUser.profileImage && typeof mergedUser.profileImage === 'string') {
-      mergedUser.profileImage = this.addCacheBuster(mergedUser.profileImage, mergedUser.cacheBuster || Date.now());
-    }
+    // لو مرجع profileImage جديد، نستخدمه كما هو (الباك إند مرجعه جاهز مع ?v=)
+    // مفيش داعي نعدل عليه أو نضيف cache buster يدوي
 
     localStorage.setItem('user', JSON.stringify(mergedUser));
     this.userSubject.next(mergedUser);
     console.log('تم تحديث بيانات المستخدم محليًا');
   }
 
-  // جديد: معالجة تحديث الصورة من السوكت
+  // معالجة تحديث الصورة من السوكت (real-time)
   handleProfileUpdate(data: { userId: string; profileImage: string; cacheBuster: number }) {
     const currentUser = this.getUser();
-    if (!currentUser || currentUser.id !== data.userId) return;
+    if (!currentUser || currentUser._id !== data.userId && currentUser.id !== data.userId) return;
 
     const updated = {
       ...currentUser,
-      profileImage: this.addCacheBuster(data.profileImage, data.cacheBuster || Date.now())
+      profileImage: data.profileImage // الباك إند بعت الرابط جاهز مع cache buster صحيح
     };
 
     localStorage.setItem('user', JSON.stringify(updated));
@@ -88,17 +81,17 @@ export class AuthService {
     console.log('تم تحديث صورة البروفايل real-time عبر Socket');
   }
 
-  // دالة مساعدة لإضافة ?v= أو تحديثه
-  private addCacheBuster(url: string, version: number): string {
-    if (!url) return url;
-    const separator = url.includes('?') ? '&' : '?';
-    return `${url}${separator}v=${version}`;
-  }
+  // تم حذف addCacheBuster بالكامل لأنها كانت بتخرب الرابط
 
+  // دالة لتجديد الصورة قسريًا لو احتجنا (اختياري، ممكن تحتفظ بيها للطوارئ)
   forceRefreshImage() {
     const current = this.userSubject.value;
     if (current && current.profileImage) {
-      const newUrl = this.addCacheBuster(current.profileImage, Date.now());
+      // نضيف timestamp جديد فقط على الرابط الحالي
+      const url = new URL(current.profileImage);
+      url.searchParams.set('v', Date.now().toString());
+      const newUrl = url.toString();
+
       const updated = { ...current, profileImage: newUrl };
       localStorage.setItem('user', JSON.stringify(updated));
       this.userSubject.next(updated);
