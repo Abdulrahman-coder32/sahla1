@@ -10,207 +10,186 @@ import { Observable, Subject, takeUntil } from 'rxjs';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <nav class="bg-white shadow-lg sticky top-0 z-50 border-b border-gray-200">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-14 sm:h-16 lg:h-18">
+    <nav class="navbar">
+      <div class="navbar-container">
+        <div class="navbar-content">
           <!-- Logo -->
-          <div class="flex items-center">
+          <div class="logo-wrapper">
             <a routerLink="/" (click)="closeMobileMenu()">
-              <img src="assets/logo.png" alt="سَهلة"
-                   class="h-10 sm:h-12 lg:h-14 w-auto max-w-28 sm:max-w-32 lg:max-w-36 object-contain transition-transform duration-300 hover:scale-105">
+              <img src="assets/logo.png" alt="سَهلة" class="logo">
             </a>
           </div>
+
           <!-- Desktop Navigation -->
-          <div class="hidden md:flex items-center gap-4 lg:gap-6">
+          <div class="desktop-nav">
             <a routerLink="/" class="nav-link" routerLinkActive="active-link">الرئيسية</a>
             <a routerLink="/jobs" class="nav-link" routerLinkActive="active-link">الوظائف</a>
             <a routerLink="/about" class="nav-link" routerLinkActive="active-link">عننا</a>
             <a routerLink="/contact" class="nav-link" routerLinkActive="active-link">اتصل بنا</a>
+
             <ng-container *ngIf="currentUser$ | async as user; else guestDesktop">
-              <!-- Notifications Dropdown -->
-              <div class="relative group">
-                <button class="nav-link flex items-center gap-2 relative">
+              <!-- Notifications -->
+              <div class="dropdown-wrapper">
+                <button class="nav-link notifications-btn">
                   الإشعارات
                   <ng-container *ngIf="notificationCount$ | async as count">
-                    <span *ngIf="count > 0"
-                          class="absolute -top-2 -end-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
+                    <span *ngIf="count > 0" class="notification-badge">
                       {{ count > 9 ? '9+' : count }}
                     </span>
                   </ng-container>
                 </button>
-                <div class="absolute end-0 mt-3 w-80 lg:w-96 bg-white rounded-xl shadow-2xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
-                  <div class="p-4 border-b border-gray-200 font-semibold text-lg lg:text-xl">الإشعارات</div>
-                  <div class="max-h-96 overflow-y-auto">
-                    <ng-container *ngIf="notifications$ | async as notifications; else loading">
+                <div class="dropdown-menu notifications-dropdown">
+                  <div class="dropdown-header">الإشعارات</div>
+                  <div class="dropdown-body">
+                    <ng-container *ngIf="notifications$ | async as notifications; else loadingNotifications">
                       <button *ngFor="let notif of notifications.slice(0, 10)"
                               (click)="navigateToNotification(notif)"
-                              class="w-full p-3 lg:p-4 hover:bg-gray-50 border-b border-gray-100 flex items-start gap-3 lg:gap-4 text-right rounded-lg transition-all"
-                              [class.font-semibold]="!notif.read"
-                              [class.bg-gray-50]="!notif.read">
-                        <div class="w-3 h-3 rounded-full mt-2 lg:mt-3 flex-shrink-0"
-                             [class.bg-indigo-500]="!notif.read"
-                             [class.bg-gray-300]="notif.read"></div>
-                        <div class="flex-1">
-                          <p class="text-sm lg:text-base">{{ notif.message }}</p>
-                          <p class="text-xs lg:text-sm text-gray-500 mt-1">{{ notif.createdAt | date:'short' }}</p>
+                              class="notification-item"
+                              [class.unread]="!notif.read">
+                        <div class="unread-dot" [class.visible]="!notif.read"></div>
+                        <div class="notification-content">
+                          <p class="notification-message">{{ notif.message }}</p>
+                          <p class="notification-time">{{ notif.createdAt | date:'short' }}</p>
                         </div>
                       </button>
-                      <div *ngIf="notifications.length === 0" class="p-6 lg:p-8 text-center text-gray-500">
+                      <div *ngIf="notifications.length === 0" class="no-notifications">
                         لا توجد إشعارات جديدة
                       </div>
                     </ng-container>
-                    <ng-template #loading>
-                      <div class="p-6 lg:p-8 text-center text-gray-400">جاري التحميل...</div>
+                    <ng-template #loadingNotifications>
+                      <div class="loading-notifications">جاري التحميل...</div>
                     </ng-template>
                   </div>
-                  <a routerLink="/notifications"
-                     class="block p-4 text-center bg-gray-50 hover:bg-gray-100 text-indigo-600 font-medium rounded-b-xl transition-all">
+                  <a routerLink="/notifications" class="dropdown-footer">
                     عرض جميع الإشعارات
                   </a>
                 </div>
               </div>
+
               <a routerLink="/inbox" class="nav-link" routerLinkActive="active-link">الرسائل</a>
               <a [routerLink]="user.role === 'shop_owner' ? '/owner-dashboard' : '/seeker-dashboard'"
                  class="nav-link" routerLinkActive="active-link">لوحة التحكم</a>
+
               <!-- Profile Dropdown -->
-              <div class="relative group">
-                <button class="flex items-center gap-3 lg:gap-4 rounded-full focus:outline-none p-2 transition-all hover:ring-4 hover:ring-indigo-100">
+              <div class="dropdown-wrapper">
+                <button class="profile-btn">
                   <img [src]="getProfileImage(user)"
                        alt="صورة الملف الشخصي"
-                       class="w-10 h-10 lg:w-12 lg:h-12 rounded-full object-cover ring-2 ring-gray-300 shadow-md"
+                       class="profile-avatar"
                        (error)="handleImageError($event)">
-                  <div class="hidden lg:block max-w-[180px]">
-                    <span class="text-gray-700 font-medium text-base lg:text-lg show-start block truncate">
-                      {{ user.name || 'مستخدم' }}
-                    </span>
-                    <span class="text-gray-500 text-sm show-start block mt-1 truncate">
-                      {{ user.email || '' }}
-                    </span>
+                  <div class="profile-info">
+                    <span class="profile-name">{{ user.name || 'مستخدم' }}</span>
+                    <span class="profile-email">{{ user.email || '' }}</span>
                   </div>
                 </button>
-                <div class="absolute end-0 mt-3 w-56 lg:w-64 bg-white rounded-xl shadow-2xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
-                  <a routerLink="/profile"
-                     class="block px-5 py-3 lg:px-6 lg:py-4 hover:bg-gray-50 text-right font-medium text-gray-700 border-b border-gray-100 rounded-t-xl transition-all">
-                    الملف الشخصي
-                  </a>
-                  <button (click)="onLogout()"
-                          class="w-full text-right px-5 py-3 lg:px-6 lg:py-4 hover:bg-red-50 text-red-600 font-medium rounded-b-xl transition-all">
+                <div class="dropdown-menu profile-dropdown">
+                  <a routerLink="/profile" class="dropdown-item">الملف الشخصي</a>
+                  <button (click)="onLogout()" class="dropdown-item logout-btn">
                     تسجيل الخروج
                   </button>
                 </div>
               </div>
             </ng-container>
+
             <ng-template #guestDesktop>
               <a routerLink="/login" class="nav-link" routerLinkActive="active-link">دخول</a>
-              <a routerLink="/signup" class="btn-primary px-5 py-2 lg:px-7 lg:py-3 rounded-xl text-base lg:text-lg">إنشاء حساب</a>
+              <a routerLink="/signup" class="btn-signup">إنشاء حساب</a>
             </ng-template>
           </div>
+
           <!-- Mobile Buttons -->
-          <div class="md:hidden flex items-center gap-4">
+          <div class="mobile-buttons">
             <ng-container *ngIf="currentUser$ | async">
-              <button (click)="toggleNotifications()" class="relative p-2">
-                <i class="fas fa-bell text-xl text-gray-700"></i>
+              <button (click)="toggleNotifications()" class="mobile-btn">
+                <i class="fas fa-bell"></i>
                 <ng-container *ngIf="notificationCount$ | async as count">
-                  <span *ngIf="count > 0"
-                        class="absolute -top-1 -end-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
+                  <span *ngIf="count > 0" class="mobile-notification-badge">
                     {{ count > 9 ? '9+' : count }}
                   </span>
                 </ng-container>
               </button>
             </ng-container>
-            <button (click)="toggleMenu()" class="p-2">
-              <div class="w-7 h-7 flex flex-col justify-center gap-1.5">
-                <span [ngClass]="{'rotate-45 translate-y-2.5': mobileMenuOpen}"
-                      class="block h-0.5 w-full bg-gray-800 rounded transition-all duration-300 origin-center"></span>
-                <span [ngClass]="{'opacity-0': mobileMenuOpen}"
-                      class="block h-0.5 w-full bg-gray-800 rounded transition-all duration-300"></span>
-                <span [ngClass]="{'-rotate-45 -translate-y-2.5': mobileMenuOpen}"
-                      class="block h-0.5 w-full bg-gray-800 rounded transition-all duration-300 origin-center"></span>
+            <button (click)="toggleMenu()" class="mobile-btn hamburger">
+              <div class="hamburger-lines" [class.open]="mobileMenuOpen">
+                <span></span>
+                <span></span>
+                <span></span>
               </div>
             </button>
           </div>
         </div>
       </div>
-      <!-- Overlay + Mobile Sidebar -->
-      <div *ngIf="mobileMenuOpen || mobileNotificationsOpen"
-           class="fixed inset-0 bg-black bg-opacity-60 z-40 md:hidden"
-           (click)="closeMobileMenu()"></div>
-      <div [ngClass]="{
-        'translate-x-0': mobileMenuOpen || mobileNotificationsOpen,
-        'translate-x-full': !(mobileMenuOpen || mobileNotificationsOpen)
-      }" class="fixed inset-y-0 right-0 w-80 max-w-full bg-white shadow-2xl z-50 transition-transform duration-500 ease-in-out md:hidden flex flex-col">
-        <!-- Header -->
-        <div class="p-5 border-b border-gray-200 flex items-center gap-4 bg-white sticky top-0 z-10">
+
+      <!-- Mobile Sidebar -->
+      <div *ngIf="mobileMenuOpen || mobileNotificationsOpen" class="mobile-overlay" (click)="closeMobileMenu()"></div>
+      <div class="mobile-sidebar" [class.open]="mobileMenuOpen || mobileNotificationsOpen">
+        <div class="mobile-header">
           <ng-container *ngIf="currentUser$ | async as user">
             <img [src]="getProfileImage(user)"
                  alt="صورة الملف الشخصي"
-                 class="w-14 h-14 rounded-full object-cover ring-2 ring-gray-200 shadow-md flex-shrink-0"
+                 class="mobile-avatar"
                  (error)="handleImageError($event)">
-            <div class="flex-1 min-w-0">
-              <h2 class="text-xl font-bold text-gray-800 show-start truncate">{{ user.name || 'مستخدم' }}</h2>
-              <p class="text-sm text-gray-500 show-start mt-1 truncate">{{ user.email || '' }}</p>
+            <div class="mobile-user-info">
+              <h2 class="mobile-user-name">{{ user.name || 'مستخدم' }}</h2>
+              <p class="mobile-user-email">{{ user.email || '' }}</p>
             </div>
           </ng-container>
-          <button (click)="closeMobileMenu()" class="p-2">
-            <i class="fas fa-times text-2xl text-gray-600"></i>
+          <button (click)="closeMobileMenu()" class="close-sidebar-btn">
+            <i class="fas fa-times"></i>
           </button>
         </div>
-        <!-- Content -->
-        <div class="flex-1 overflow-y-auto pb-20">
-          <!-- Notifications Mobile -->
-          <div *ngIf="mobileNotificationsOpen" class="p-5">
-            <ng-container *ngIf="notifications$ | async as notifications; else loadingMobile">
+
+        <div class="mobile-content">
+          <div *ngIf="mobileNotificationsOpen" class="mobile-notifications">
+            <ng-container *ngIf="notifications$ | async as notifications; else loadingMobileNotifications">
               <button *ngFor="let notif of notifications.slice(0, 20)"
                       (click)="navigateToNotification(notif)"
-                      class="w-full p-4 hover:bg-gray-50 border-b border-gray-100 flex items-start gap-4 text-right mb-2 rounded-xl transition-all"
-                      [class.font-semibold]="!notif.read"
-                      [class.bg-gray-50]="!notif.read">
-                <div class="w-3 h-3 rounded-full mt-2 flex-shrink-0"
-                     [class.bg-indigo-500]="!notif.read"
-                     [class.bg-gray-300]="notif.read"></div>
-                <div class="flex-1">
-                  <p class="text-sm">{{ notif.message }}</p>
-                  <p class="text-sm text-gray-500 mt-1">{{ notif.createdAt | date:'medium' }}</p>
+                      class="mobile-notification-item"
+                      [class.unread]="!notif.read">
+                <div class="mobile-unread-dot" [class.visible]="!notif.read"></div>
+                <div class="mobile-notification-content">
+                  <p class="mobile-notification-message">{{ notif.message }}</p>
+                  <p class="mobile-notification-time">{{ notif.createdAt | date:'medium' }}</p>
                 </div>
               </button>
-              <div *ngIf="notifications.length === 0" class="p-8 text-center text-gray-500">
+              <div *ngIf="notifications.length === 0" class="mobile-no-notifications">
                 لا توجد إشعارات جديدة
               </div>
             </ng-container>
-            <ng-template #loadingMobile>
-              <div class="p-8 text-center text-gray-400">جاري التحميل...</div>
+            <ng-template #loadingMobileNotifications>
+              <div class="mobile-loading-notifications">جاري التحميل...</div>
             </ng-template>
           </div>
-          <!-- Menu Mobile -->
-          <div *ngIf="mobileMenuOpen && !mobileNotificationsOpen" class="p-5">
-            <ng-container *ngIf="currentUser$ | async as user; else guestMobile">
-              <a routerLink="/inbox" (click)="closeMobileMenu()" class="mobile-link">الرسائل</a>
+
+          <div *ngIf="mobileMenuOpen && !mobileNotificationsOpen" class="mobile-menu">
+            <ng-container *ngIf="currentUser$ | async as user; else guestMobileMenu">
+              <a routerLink="/inbox" (click)="closeMobileMenu()" class="mobile-menu-link">الرسائل</a>
               <a [routerLink]="user.role === 'shop_owner' ? '/owner-dashboard' : '/seeker-dashboard'"
-                 (click)="closeMobileMenu()" class="mobile-link">لوحة التحكم</a>
-              <a routerLink="/profile" (click)="closeMobileMenu()" class="mobile-link">الملف الشخصي</a>
-              <hr class="my-6 border-gray-300">
-              <button (click)="onLogout(); closeMobileMenu()"
-                      class="w-full text-right px-8 py-6 text-xl font-medium text-red-600 hover:bg-red-50 transition-all rounded-xl">
+                 (click)="closeMobileMenu()" class="mobile-menu-link">لوحة التحكم</a>
+              <a routerLink="/profile" (click)="closeMobileMenu()" class="mobile-menu-link">الملف الشخصي</a>
+              <hr class="menu-divider">
+              <button (click)="onLogout(); closeMobileMenu()" class="mobile-logout-btn">
                 تسجيل الخروج
               </button>
             </ng-container>
-            <ng-template #guestMobile>
-              <a routerLink="/login" (click)="closeMobileMenu()" class="mobile-link">دخول</a>
-              <a routerLink="/signup" (click)="closeMobileMenu()" class="mobile-link bg-indigo-600 text-white hover:bg-indigo-700">إنشاء حساب</a>
+
+            <ng-template #guestMobileMenu>
+              <a routerLink="/login" (click)="closeMobileMenu()" class="mobile-menu-link">دخول</a>
+              <a routerLink="/signup" (click)="closeMobileMenu()" class="mobile-menu-link signup">إنشاء حساب</a>
             </ng-template>
-            <hr class="my-6 border-gray-300">
-            <div class="space-y-2">
-              <a routerLink="/" (click)="closeMobileMenu()" class="mobile-link">الرئيسية</a>
-              <a routerLink="/jobs" (click)="closeMobileMenu()" class="mobile-link">الوظائف</a>
-              <a routerLink="/about" (click)="closeMobileMenu()" class="mobile-link">عننا</a>
-              <a routerLink="/contact" (click)="closeMobileMenu()" class="mobile-link">اتصل بنا</a>
+
+            <hr class="menu-divider">
+            <div class="mobile-common-links">
+              <a routerLink="/" (click)="closeMobileMenu()" class="mobile-menu-link">الرئيسية</a>
+              <a routerLink="/jobs" (click)="closeMobileMenu()" class="mobile-menu-link">الوظائف</a>
+              <a routerLink="/about" (click)="closeMobileMenu()" class="mobile-menu-link">عننا</a>
+              <a routerLink="/contact" (click)="closeMobileMenu()" class="mobile-menu-link">اتصل بنا</a>
             </div>
           </div>
         </div>
-        <!-- عرض جميع الإشعارات في الأسفل -->
-        <div *ngIf="mobileNotificationsOpen" class="sticky bottom-0 bg-white border-t border-gray-200 p-4">
-          <a routerLink="/notifications" (click)="closeMobileMenu()"
-             class="block text-center bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-6 rounded-xl transition-all">
+
+        <div *ngIf="mobileNotificationsOpen" class="mobile-footer">
+          <a routerLink="/notifications" (click)="closeMobileMenu()" class="mobile-footer-link">
             عرض جميع الإشعارات
           </a>
         </div>
@@ -218,28 +197,588 @@ import { Observable, Subject, takeUntil } from 'rxjs';
     </nav>
   `,
   styles: [`
-    .nav-link {
-      @apply text-gray-700 hover:text-indigo-600 font-medium transition-colors duration-200 relative text-base lg:text-lg whitespace-nowrap;
+    .navbar {
+      background: white;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      border-bottom: 1px solid #E5E7EB;
     }
+
+    .navbar-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+
+    .navbar-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 4.5rem;
+    }
+
+    .logo-wrapper {
+      display: flex;
+      align-items: center;
+    }
+
+    .logo {
+      height: 2.75rem;
+      width: auto;
+      transition: transform 0.3s ease;
+    }
+
+    .logo:hover {
+      transform: scale(1.05);
+    }
+
+    .desktop-nav {
+      display: none;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    @media (min-width: 768px) {
+      .desktop-nav {
+        display: flex;
+      }
+    }
+
+    .nav-link {
+      color: #374151;
+      font-weight: 600;
+      font-size: 1.0625rem;
+      position: relative;
+      transition: color 0.3s ease;
+      padding: 0.5rem 0;
+    }
+
+    .nav-link:hover {
+      color: #0EA5E9;
+    }
+
+    .active-link {
+      color: #0EA5E9;
+      font-weight: 700;
+    }
+
     .active-link::after {
       content: '';
-      @apply absolute bottom-[-12px] left-0 right-0 h-1 bg-indigo-600 rounded-full;
+      position: absolute;
+      bottom: -12px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #0EA5E9;
+      border-radius: 2px;
     }
-    .btn-primary {
-      @apply bg-indigo-600 text-white hover:bg-indigo-700 font-medium transition-all duration-200 shadow-md rounded-xl whitespace-nowrap;
+
+    .dropdown-wrapper {
+      position: relative;
     }
-    .mobile-link {
-      @apply block px-8 py-6 text-xl font-medium text-gray-800 hover:bg-indigo-50 transition-all text-right border-b border-gray-100 whitespace-nowrap;
+
+    .notifications-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
-    .show-start {
+
+    .notification-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #FEE2E2;
+      color: #DC2626;
+      font-size: 0.75rem;
+      font-weight: 700;
+      min-width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      margin-top: 0.75rem;
+      width: 320px;
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      border: 1px solid #E5E7EB;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      z-index: 50;
+    }
+
+    .dropdown-wrapper:hover .dropdown-menu {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .dropdown-header {
+      padding: 1rem;
+      border-bottom: 1px solid #E5E7EB;
+      font-weight: 700;
+      font-size: 1.125rem;
+      color: #1F2937;
+    }
+
+    .dropdown-body {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .notification-item {
+      width: 100%;
+      padding: 1rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      text-align: right;
+      transition: background 0.3s ease;
+      border-bottom: 1px solid #F3F4F6;
+    }
+
+    .notification-item:hover {
+      background: #F8FAFC;
+    }
+
+    .notification-item.unread {
+      background: #F0F9FF;
+      font-weight: 600;
+    }
+
+    .unread-dot {
+      width: 0.5rem;
+      height: 0.5rem;
+      background: #0EA5E9;
+      border-radius: 50%;
+      margin-top: 0.5rem;
+      flex-shrink: 0;
+      opacity: 0;
+    }
+
+    .unread-dot.visible {
+      opacity: 1;
+    }
+
+    .notification-content {
+      flex: 1;
+    }
+
+    .notification-message {
+      color: #374151;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .notification-time {
+      font-size: 0.875rem;
+      color: #9CA3AF;
+      margin-top: 0.25rem;
+    }
+
+    .no-notifications, .loading-notifications {
+      padding: 2rem;
+      text-align: center;
+      color: #9CA3AF;
+    }
+
+    .dropdown-footer {
       display: block;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      direction: ltr !important;
-      text-align: left !important;
-      unicode-bidi: plaintext;
-      max-width: 100%;
+      padding: 1rem;
+      text-align: center;
+      background: #F8FAFC;
+      color: #0EA5E9;
+      font-weight: 600;
+      border-radius: 0 0 1rem 1rem;
+      transition: background 0.3s ease;
+    }
+
+    .dropdown-footer:hover {
+      background: #E0F2FE;
+    }
+
+    .profile-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 9999px;
+      transition: all 0.3s ease;
+    }
+
+    .profile-btn:hover {
+      background: #F0F9FF;
+    }
+
+    .profile-avatar {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #E0F2FE;
+    }
+
+    .profile-info {
+      display: none;
+      text-align: right;
+    }
+
+    @media (min-width: 1024px) {
+      .profile-info {
+        display: block;
+      }
+
+      .profile-name {
+        font-weight: 600;
+        color: #374151;
+        font-size: 1rem;
+      }
+
+      .profile-email {
+        font-size: 0.875rem;
+        color: #6B7280;
+        margin-top: 0.25rem;
+      }
+    }
+
+    .profile-dropdown {
+      width: 220px;
+    }
+
+    .dropdown-item {
+      width: 100%;
+      padding: 1rem;
+      text-align: right;
+      color: #374151;
+      font-weight: 500;
+      transition: background 0.3s ease;
+      border-bottom: 1px solid #F3F4F6;
+    }
+
+    .dropdown-item:hover {
+      background: #F8FAFC;
+    }
+
+    .logout-btn {
+      color: #DC2626;
+    }
+
+    .logout-btn:hover {
+      background: #FEE2E2;
+    }
+
+    .btn-signup {
+      background: #E0F2FE;
+      color: #0EA5E9;
+      font-weight: 600;
+      padding: 0.75rem 1.5rem;
+      border-radius: 9999px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-signup:hover {
+      background: #B2DDFA;
+    }
+
+    .mobile-buttons {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    @media (min-width: 768px) {
+      .mobile-buttons {
+        display: none;
+      }
+    }
+
+    .mobile-btn {
+      background: transparent;
+      border: none;
+      color: #374151;
+      font-size: 1.5rem;
+      cursor: pointer;
+      position: relative;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      transition: background 0.3s ease;
+    }
+
+    .mobile-btn:hover {
+      background: #F3F4F6;
+    }
+
+    .mobile-notification-badge {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: #FEE2E2;
+      color: #DC2626;
+      font-size: 0.75rem;
+      font-weight: 700;
+      min-width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hamburger {
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+    }
+
+    .hamburger-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+      transition: all 0.3s ease;
+    }
+
+    .hamburger-lines span {
+      width: 1.75rem;
+      height: 0.1875rem;
+      background: #374151;
+      border-radius: 9999px;
+      transition: all 0.3s ease;
+    }
+
+    .hamburger-lines.open span:nth-child(1) {
+      transform: rotate(45deg) translate(0.375rem, 0.375rem);
+    }
+
+    .hamburger-lines.open span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .hamburger-lines.open span:nth-child(3) {
+      transform: rotate(-45deg) translate(0.375rem, -0.375rem);
+    }
+
+    .mobile-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 40;
+    }
+
+    .mobile-sidebar {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 80%;
+      max-width: 320px;
+      height: 100%;
+      background: white;
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+      z-index: 50;
+      transform: translateX(100%);
+      transition: transform 0.4s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .mobile-sidebar.open {
+      transform: translateX(0);
+    }
+
+    .mobile-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid #E5E7EB;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: white;
+    }
+
+    .mobile-avatar {
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #E0F2FE;
+    }
+
+    .mobile-user-info {
+      flex: 1;
+    }
+
+    .mobile-user-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1F2937;
+      margin: 0;
+    }
+
+    .mobile-user-email {
+      font-size: 0.9375rem;
+      color: #6B7280;
+      margin: 0.25rem 0 0;
+    }
+
+    .close-sidebar-btn {
+      background: transparent;
+      border: none;
+      color: #6B7280;
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      transition: background 0.3s ease;
+    }
+
+    .close-sidebar-btn:hover {
+      background: #F3F4F6;
+    }
+
+    .mobile-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem 0;
+    }
+
+    .mobile-notifications {
+      padding: 0 1rem;
+    }
+
+    .mobile-notification-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 1rem;
+      border-bottom: 1px solid #F3F4F6;
+      transition: background 0.3s ease;
+    }
+
+    .mobile-notification-item:hover {
+      background: #F8FAFC;
+    }
+
+    .mobile-notification-item.unread {
+      background: #F0F9FF;
+      font-weight: 600;
+    }
+
+    .mobile-unread-dot {
+      width: 0.5rem;
+      height: 0.5rem;
+      background: #0EA5E9;
+      border-radius: 50%;
+      margin-top: 0.5rem;
+      flex-shrink: 0;
+      opacity: 0;
+    }
+
+    .mobile-unread-dot.visible {
+      opacity: 1;
+    }
+
+    .mobile-notification-content {
+      flex: 1;
+    }
+
+    .mobile-notification-message {
+      color: #374151;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .mobile-notification-time {
+      font-size: 0.875rem;
+      color: #9CA3AF;
+      margin-top: 0.25rem;
+    }
+
+    .mobile-no-notifications, .mobile-loading-notifications {
+      padding: 2rem;
+      text-align: center;
+      color: #9CA3AF;
+    }
+
+    .mobile-menu {
+      padding: 0 1rem;
+    }
+
+    .mobile-menu-link {
+      display: block;
+      padding: 1rem;
+      color: #374151;
+      font-weight: 500;
+      font-size: 1.125rem;
+      border-bottom: 1px solid #F3F4F6;
+      transition: background 0.3s ease;
+    }
+
+    .mobile-menu-link:hover {
+      background: #F8FAFC;
+    }
+
+    .mobile-menu-link.signup {
+      background: #E0F2FE;
+      color: #0EA5E9;
+      font-weight: 600;
+    }
+
+    .mobile-menu-link.signup:hover {
+      background: #B2DDFA;
+    }
+
+    .menu-divider {
+      margin: 1rem 0;
+      border-color: #E5E7EB;
+    }
+
+    .mobile-logout-btn {
+      display: block;
+      width: 100%;
+      padding: 1rem;
+      color: #DC2626;
+      font-weight: 600;
+      font-size: 1.125rem;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .mobile-logout-btn:hover {
+      background: #FEE2E2;
+    }
+
+    .mobile-footer {
+      padding: 1rem;
+      border-top: 1px solid #E5E7EB;
+      background: white;
+    }
+
+    .mobile-footer-link {
+      display: block;
+      text-align: center;
+      background: #E0F2FE;
+      color: #0EA5E9;
+      font-weight: 600;
+      padding: 1rem;
+      border-radius: 1rem;
+      transition: background 0.3s ease;
+    }
+
+    .mobile-footer-link:hover {
+      background: #B2DDFA;
     }
   `]
 })
@@ -260,10 +799,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.notifications$ = this.notificationService.notifications$;
   }
 
-  ngOnInit(): void {
-    // حذفنا الـ subscribe اليدوي تماماً - مش محتاجينه
-    // كل حاجة بتتعامل بالـ async pipe
-  }
+  ngOnInit(): void {}
 
   getProfileImage(user: any): string {
     if (user?.profileImage) {
