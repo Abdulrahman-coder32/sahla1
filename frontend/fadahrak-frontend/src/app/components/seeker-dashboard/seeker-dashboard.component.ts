@@ -13,7 +13,8 @@ import { JobListComponent } from '../job-list/job-list.component';
       <div class="max-w-7xl mx-auto">
         <!-- Header Section -->
         <div class="dashboard-header">
-            <i class="fas fa-user-graduate"></i>
+          <div class="header-icon">
+            
           </div>
           <h1>لوحة تحكم الباحث عن عمل</h1>
           <p>استكشف الوظائف المناسبة لك وتابع تقديماتك بسهولة.</p>
@@ -53,7 +54,7 @@ import { JobListComponent } from '../job-list/job-list.component';
           </p>
         </div>
       </div>
-    
+    </div>
   `,
   styles: [`
     .seeker-dashboard-container {
