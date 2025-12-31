@@ -19,16 +19,14 @@ export class AuthService {
     const storedToken = localStorage.getItem('token');
     if (storedUser && storedToken) {
       let user = JSON.parse(storedUser);
-
-      // تنظيف الصور الديفولت القديمة فقط (لو كانت روابط قديمة بدون cache buster صحيح)
+      // تنظيف الصور الديفولت القديمة فقط
       if (user.profileImage && (
         user.profileImage.includes('default.jpg') ||
         user.profileImage.includes('default-avatar') ||
         (user.profileImage.includes('res.cloudinary.com') && user.profileImage.includes('default') && !user.profileImage.includes('?v='))
       )) {
-        user.profileImage = DEFAULT_AVATAR; // الباك إند هيعمل cache busting لما يجيب البروفايل
+        user.profileImage = DEFAULT_AVATAR;
       }
-
       this.userSubject.next(user);
       console.log('تم تحميل المستخدم من localStorage');
     }
@@ -36,12 +34,9 @@ export class AuthService {
 
   setUser(user: any, token: string) {
     let cleanedUser = { ...user };
-
-    // تنظيف default قديم فقط عند اللوجين/ساين أب
     if (cleanedUser.profileImage && cleanedUser.profileImage.includes('default.jpg')) {
       cleanedUser.profileImage = DEFAULT_AVATAR;
     }
-
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(cleanedUser));
     this.userSubject.next(cleanedUser);
@@ -49,20 +44,10 @@ export class AuthService {
   }
 
   updateCurrentUser(updatedUser: any) {
-    const current = this.userSubject.value;
-    if (!current) return;
-
-    const mergedUser = { ...current, ...updatedUser };
-
-    // لو الـ backend مرجعش profileImage جديد، نحتفظ بالحالي (اللي فيه cache buster صحيح)
-    if (!updatedUser.profileImage && current.profileImage) {
-      mergedUser.profileImage = current.profileImage;
-    }
-    // لو مرجع profileImage جديد، نستخدمه كما هو (الباك إند مرجعه جاهز مع ?v=)
-    // مفيش داعي نعدل عليه أو نضيف cache buster يدوي
-
-    localStorage.setItem('user', JSON.stringify(mergedUser));
-    this.userSubject.next(mergedUser);
+    // ← التعديل الرئيسي: نستبدل بالكامل بدل الـ merge
+    // الـ backend بيرجع كل الحقول اللي محتاجينها + الرابط الجديد
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    this.userSubject.next(updatedUser);
     console.log('تم تحديث بيانات المستخدم محليًا');
   }
 
@@ -73,25 +58,20 @@ export class AuthService {
 
     const updated = {
       ...currentUser,
-      profileImage: data.profileImage // الباك إند بعت الرابط جاهز مع cache buster صحيح
+      profileImage: data.profileImage
     };
-
     localStorage.setItem('user', JSON.stringify(updated));
     this.userSubject.next(updated);
     console.log('تم تحديث صورة البروفايل real-time عبر Socket');
   }
 
-  // تم حذف addCacheBuster بالكامل لأنها كانت بتخرب الرابط
-
-  // دالة لتجديد الصورة قسريًا لو احتجنا (اختياري، ممكن تحتفظ بيها للطوارئ)
+  // دالة لتجديد الصورة قسريًا (اختياري)
   forceRefreshImage() {
     const current = this.userSubject.value;
     if (current && current.profileImage) {
-      // نضيف timestamp جديد فقط على الرابط الحالي
       const url = new URL(current.profileImage);
       url.searchParams.set('v', Date.now().toString());
       const newUrl = url.toString();
-
       const updated = { ...current, profileImage: newUrl };
       localStorage.setItem('user', JSON.stringify(updated));
       this.userSubject.next(updated);
