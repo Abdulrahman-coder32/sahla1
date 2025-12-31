@@ -134,9 +134,7 @@ import { Observable, Subject, takeUntil } from 'rxjs';
               <p class="mobile-user-email">{{ user.email || '' }}</p>
             </div>
           </ng-container>
-          <button (click)="closeMobileMenu()" class="close-sidebar-btn">
-            <i class="fas fa-times"></i>
-          </button>
+         
         </div>
 
         <div class="mobile-content">
