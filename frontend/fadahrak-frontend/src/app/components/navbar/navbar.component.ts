@@ -252,10 +252,15 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {}
 
-  getProfileImage(user: any): string {
-    const timestamp = new Date().getTime();
-    return user.profileImage ? `${user.profileImage}?v=${timestamp}` : 'assets/default-profile.png';
+getProfileImage(user: any): string {
+  // نستخدم الرابط اللي راجع من الباك إند أو AuthService كما هو
+  // الباك إند أصلاً بيضيف cache buster صحيح (?v=الرقم من الداتابيز)
+  if (user?.profileImage) {
+    return user.profileImage;
   }
+  // لو مفيش صورة، نرجع الديفولت (بدون cache buster عشوائي)
+  return 'assets/default-profile.png';
+}
 
   toggleMenu(): void {
     this.mobileMenuOpen = !this.mobileMenuOpen;
