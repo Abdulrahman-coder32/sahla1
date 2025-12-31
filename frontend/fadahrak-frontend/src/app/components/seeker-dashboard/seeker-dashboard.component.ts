@@ -53,7 +53,7 @@ import { JobListComponent } from '../job-list/job-list.component';
           </p>
         </div>
       </div>
-    </div>
+    
   `,
   styles: [`
     .seeker-dashboard-container {
