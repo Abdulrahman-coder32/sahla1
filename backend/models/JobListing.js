@@ -14,6 +14,7 @@ const jobSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+// Index لتحسين أداء البحث حسب المحافظة، المدينة والفئة
 jobSchema.index({ governorate: 1, city: 1, category: 1 });
 
 module.exports = mongoose.model('JobListing', jobSchema);
