@@ -17,18 +17,16 @@
         <div *ngIf="message" class="profile-toast" [class.profile-toast-success]="message.type === 'success'" [class.profile-toast-error]="message.type === 'error'">
           {{ message.text }}
         </div>
-        <!-- Avatar مع صورة ديفولت عادية -->
+        <!-- Avatar -->
         <div class="profile-avatar-wrapper text-center">
           <div class="relative inline-block">
             <div class="avatar-container w-48 h-48 mx-auto">
-              <!-- الصورة: preview أو الصورة الحالية أو الديفولت -->
-   <img
-  [src]="previewUrl || user?.profileImage || 'assets/default-profile.png'"
-  alt="صورة الملف الشخصي لـ {{ user.name || 'المستخدم' }}"
-  class="profile-avatar w-full h-full object-cover rounded-full"
-  loading="lazy"
->
-              <!-- زر الكاميرا (يظهر فقط في وضع التعديل) -->
+              <img
+                [src]="previewUrl || user?.profileImage || 'assets/default-profile.png'"
+                alt="صورة الملف الشخصي لـ {{ user.name || 'المستخدم' }}"
+                class="profile-avatar w-full h-full object-cover rounded-full"
+                loading="lazy"
+              >
               <label *ngIf="isEditing" class="profile-camera-btn">
                 <i class="fas fa-camera"></i>
                 <input type="file" accept="image/*" (change)="onFileSelected($event)" class="hidden">
@@ -40,7 +38,6 @@
             <i class="fas fa-user-tag"></i>
             {{ user.role === 'job_seeker' ? 'باحث عن عمل' : 'صاحب عمل' }}
           </p>
-          <!-- الإيميل يظهر بس (مش قابل للتعديل) -->
           <p class="profile-email mt-2 text-lg text-gray-600 flex items-center justify-center gap-3">
             <i class="fas fa-envelope"></i> {{ user.email }}
           </p>
@@ -52,20 +49,42 @@
             معلومات الحساب
           </h3>
           <div class="profile-form-grid mt-6">
-            <!-- الاسم الكامل (إجباري) -->
+            <!-- الاسم الكامل -->
             <div>
-              <label class="profile-label block text-lg font-medium text-gray-700 mb-2">الاسم الكامل</label>
-              <input [(ngModel)]="user.name" [disabled]="!isEditing" class="profile-input w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200">
+              <label for="name" class="profile-label block text-lg font-medium text-gray-700 mb-2">الاسم الكامل</label>
+              <input 
+                id="name"
+                name="name"
+                [(ngModel)]="user.name" 
+                [disabled]="!isEditing" 
+                class="profile-input w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200"
+                required
+              >
             </div>
-            <!-- رقم الهاتف (اختياري) -->
+            <!-- رقم الهاتف -->
             <div>
-              <label class="profile-label block text-lg font-medium text-gray-700 mb-2">رقم الهاتف</label>
-              <input [(ngModel)]="user.phone" [disabled]="!isEditing" placeholder="01xxxxxxxxx" class="profile-input w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200">
+              <label for="phone" class="profile-label block text-lg font-medium text-gray-700 mb-2">رقم الهاتف</label>
+              <input 
+                id="phone"
+                name="phone"
+                [(ngModel)]="user.phone" 
+                [disabled]="!isEditing" 
+                placeholder="01xxxxxxxxx" 
+                class="profile-input w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200"
+              >
             </div>
-            <!-- النبذة (اختياري) -->
+            <!-- النبذة -->
             <div class="col-span-2">
-              <label class="profile-label block text-lg font-medium text-gray-700 mb-2">نبذة تعريفية (اختياري)</label>
-              <textarea [(ngModel)]="user.bio" [disabled]="!isEditing" rows="6" class="profile-input profile-textarea w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200" placeholder="اكتب نبذة قصيرة عن نفسك..."></textarea>
+              <label for="bio" class="profile-label block text-lg font-medium text-gray-700 mb-2">نبذة تعريفية (اختياري)</label>
+              <textarea 
+                id="bio"
+                name="bio"
+                [(ngModel)]="user.bio" 
+                [disabled]="!isEditing" 
+                rows="6" 
+                class="profile-input profile-textarea w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200" 
+                placeholder="اكتب نبذة قصيرة عن نفسك..."
+              ></textarea>
             </div>
           </div>
         </div>
