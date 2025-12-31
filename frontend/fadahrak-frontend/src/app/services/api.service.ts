@@ -39,34 +39,30 @@ export class ApiService {
     return this.imageBaseUrl === '' ? `/${path}` : `${this.imageBaseUrl}/${path}`;
   }
 
-  private addCacheBusterToUrl(url: string | null | undefined, version: number = Date.now()): string {
-    if (!url || typeof url !== 'string') {
-      return DEFAULT_AVATAR + '?v=' + version;
-    }
-    const clean = url.split('?')[0];
-    const base = this.prependBaseUrl(clean);
-    return `${base}?v=${version}`;
-  }
+  // تم حذف addCacheBusterToUrl لأن الباك إند هو اللي بيعمل cache busting صح
+  // وإضافة ?v= يدوي هنا بيخرب الرابط اللي الباك مرجعه
 
   private processProfileImages(data: any, cacheVersion: number = Date.now()): any {
     if (!data) return data;
-
     if (Array.isArray(data)) {
       return data.map(item => this.processProfileImages(item, cacheVersion));
     }
-
     if (data && typeof data === 'object') {
-      if (data.profileImage !== undefined) {
-        data.profileImage = this.addCacheBusterToUrl(data.profileImage, data.cacheBuster ?? cacheVersion);
+      // تم إزالة التعديل التلقائي على profileImage
+      // الباك إند بيرجع الرابط جاهز مع cache buster صحيح
+      if (data.profileImage !== undefined && data.profileImage) {
+        // فقط نضمن إن أي رابط داخلي (لو موجود) يتعدل لو كان بدون http
+        const cleanUrl = data.profileImage.startsWith('http') ? data.profileImage : this.prependBaseUrl(data.profileImage);
+        data.profileImage = cleanUrl;
+      } else if (data.profileImage === null || data.profileImage === '') {
+        data.profileImage = DEFAULT_AVATAR;
       }
-
       Object.keys(data).forEach(key => {
         if (data[key] && typeof data[key] === 'object') {
           data[key] = this.processProfileImages(data[key], cacheVersion);
         }
       });
     }
-
     return data;
   }
 
@@ -102,10 +98,8 @@ export class ApiService {
     const headers = this.getHeaders(true, true);
     return this.http.put(`${this.apiUrl}/users/profile`, formData, { headers }).pipe(
       map((res: any) => {
-        // ✅ تحديث فورّي للصورة بعد رفعها مع cache-buster جديد
-        if (res?.profileImage) {
-          res.profileImage = this.addCacheBusterToUrl(res.profileImage, Date.now());
-        }
+        // تم إزالة التعديل اليدوي على profileImage هنا تمامًا
+        // الباك إند بيرجع الرابط الجديد جاهز مع cache buster صحيح
         return this.processProfileImages(res);
       }),
       catchError(this.handleError)
