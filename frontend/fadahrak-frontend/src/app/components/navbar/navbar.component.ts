@@ -280,15 +280,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.notifications$ = this.notificationService.notifications$;
   }
 
-  ngOnInit(): void {
-    // اشتراك تلقائي في تحديثات المستخدم لضمان تحديث الصورة فورًا
-    this.authService.user$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        // لا نحتاج فعل شيء هنا، مجرد الاشتراك يكفي لإعادة تقييم الـ async pipes
-        // لكن يضمن تحديث الصورة والاسم فور أي تغيير من AuthService
-      });
-  }
+ ngOnInit(): void {
+  this.authService.user$.subscribe(user => {
+    if (user) {
+      this.currentUser = user;
+    }
+  });
+}
 
   getProfileImage(user: any): string {
     if (user?.profileImage) {
