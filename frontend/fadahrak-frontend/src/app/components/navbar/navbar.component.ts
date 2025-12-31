@@ -247,7 +247,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     private notificationService: NotificationService
   ) {
     this.notificationCount$ = this.notificationService.unreadCount$;
-    this.notifications$ = this.notificationService.getNotifications();
+   this.notifications$ = this.notificationService.notifications$;
   }
 
   ngOnInit(): void {}
