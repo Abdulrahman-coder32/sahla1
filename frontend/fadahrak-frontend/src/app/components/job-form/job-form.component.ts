@@ -146,7 +146,7 @@ import { ApiService } from '../../services/api.service';
 
     .form-input {
       width: 100%;
-      padding: 1rem 1rem 1rem 3rem;
+      padding: 1rem 3rem 1rem 3rem;
       border-radius: 1rem;
       border: 1px solid #D1D5DB;
       background: #FFFFFF;
