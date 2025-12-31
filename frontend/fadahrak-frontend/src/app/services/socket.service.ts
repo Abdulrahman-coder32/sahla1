@@ -50,22 +50,17 @@ export class SocketService {
       console.error('❌ خطأ في الاتصال بالسوكت:', err.message);
     });
 
-    // ──────────────────────────────────────────────────────────────
-    // جديد: استقبال تحديث صورة البروفايل real-time
-    // ──────────────────────────────────────────────────────────────
+    // ──────────────────────────────
+    // استقبال تحديث صورة البروفايل real-time
+    // ──────────────────────────────
     this.socket.on('profileUpdated', (data: { userId: string; profileImage: string; cacheBuster: number }) => {
       console.log('تحديث صورة بروفايل وصل عبر السوكت:', data);
       this.authService.handleProfileUpdate(data);
     });
-
-    // باقي الـ listeners زي ما هي
-    // (مش هنعدل فيهم، هما تمام)
   }
 
   joinChat(applicationId: string) {
-    if (this.socket) {
-      this.socket.emit('joinChat', applicationId);
-    }
+    if (this.socket) this.socket.emit('joinChat', applicationId);
   }
 
   sendMessage(applicationId: string, message: string) {
@@ -116,12 +111,7 @@ export class SocketService {
     }
   }
 
-  onChatListUpdate(callback: (data: {
-    application_id: string;
-    lastMessage: string;
-    lastTimestamp: Date;
-    unreadCount: number;
-  }) => void) {
+  onChatListUpdate(callback: (data: { application_id: string; lastMessage: string; lastTimestamp: Date; unreadCount: number }) => void) {
     if (this.socket) {
       this.socket.off('chatListUpdate');
       this.socket.on('chatListUpdate', callback);
