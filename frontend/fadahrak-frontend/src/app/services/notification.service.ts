@@ -16,10 +16,7 @@ export class NotificationService implements OnDestroy {
   private initialized = false;
   private subscriptions: Subscription[] = [];
 
-  constructor(
-    private api: ApiService,
-    private socketService: SocketService
-  ) {}
+  constructor(private api: ApiService, private socketService: SocketService) {}
 
   init() {
     if (this.initialized) return;
@@ -44,7 +41,7 @@ export class NotificationService implements OnDestroy {
         application_id: data.application_id,
         from: data.from,
         read: false,
-        createdAt: new Date()
+        createdAt: data.createdAt ? new Date(data.createdAt) : new Date()
       };
       this.addNotification(notification);
     });
@@ -54,15 +51,15 @@ export class NotificationService implements OnDestroy {
     const current = this.notificationsSubject.value || [];
     const exists = current.some(n =>
       (n._id && notification._id && n._id === notification._id) ||
-      (n.application_id === notification.application_id && n.type === notification.type && n.message === notification.message)
+      (n.application_id === notification.application_id &&
+        n.type === notification.type &&
+        n.message === notification.message)
     );
 
     if (!exists) {
       const updated = [notification, ...current];
       this.notificationsSubject.next(updated);
-      if (!notification.read) {
-        this.incrementUnreadCount();
-      }
+      if (!notification.read) this.incrementUnreadCount();
       console.log('✨ إشعار جديد وصل:', notification.message || notification);
     }
   }
@@ -85,13 +82,14 @@ export class NotificationService implements OnDestroy {
     const sub = this.api.getNotifications().subscribe({
       next: (res: any) => {
         let notifications: any[] = [];
-        if (res?.data && Array.isArray(res.data)) notifications = res.data;
-        else if (Array.isArray(res)) notifications = res;
-        else if (res?.notifications && Array.isArray(res.notifications)) notifications = res.notifications;
-        else notifications = []; // fallback لو الـ response مش متوقع
+        if (Array.isArray(res)) notifications = res;
+        else if (res?.data && Array.isArray(res.data)) notifications = res.data;
+        else if (res?.notifications && Array.isArray(res.notifications))
+          notifications = res.notifications;
+        else notifications = [];
 
-        const sorted = notifications.sort((a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        const sorted = notifications.sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
         this.notificationsSubject.next(sorted);
       },
@@ -101,14 +99,6 @@ export class NotificationService implements OnDestroy {
       }
     });
     this.subscriptions.push(sub);
-  }
-
-  getNotifications() {
-    return this.notifications$;
-  }
-
-  getUnreadCount() {
-    return this.unreadCount$;
   }
 
   markAllAsRead() {
@@ -149,7 +139,6 @@ export class NotificationService implements OnDestroy {
     const newCount = Math.max(0, this.unreadCountSubject.value - unreadDecreased);
     this.unreadCountSubject.next(newCount);
 
-    // تحديث في الـ backend
     const sub = this.api.markChatNotificationsAsRead(applicationId).subscribe({
       next: () => {
         console.log('تم تحديث إشعارات الشات في الداتابيز بنجاح:', applicationId);
