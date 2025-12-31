@@ -29,7 +29,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
   loading = true;
   saving = false;
   message: { text: string; type: 'success' | 'error' } | null = null;
-
   private userSub?: Subscription;
 
   constructor(
@@ -65,7 +64,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
         this.user = { ...data, bio: data.bio || '' };
         this.originalUser = { ...this.user };
         this.previewUrl = this.user.profileImage || null;
-
         this.authService.updateCurrentUser(this.user);
         console.log('Updated AuthService user:', this.user);
         this.loading = false;
@@ -81,30 +79,24 @@ export class ProfileComponent implements OnInit, OnDestroy {
   onFileSelected(event: any) {
     const file = event.target.files?.[0];
     if (!file) return;
-
     console.log('File selected:', file.name, file.size);
-
     if (file.size > 10 * 1024 * 1024) {
       this.showMessage('الصورة كبيرة جدًا، اختر أصغر من 10 ميجا', 'error');
       return;
     }
-
     const reader = new FileReader();
     reader.onload = (e: any) => {
       this.previewUrl = e.target.result as string;
-
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
         const MAX_WIDTH = 800;
         let width = img.width;
         let height = img.height;
-
         if (width > MAX_WIDTH) {
           height *= MAX_WIDTH / width;
           width = MAX_WIDTH;
         }
-
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
@@ -139,17 +131,14 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   saveProfile() {
     if (this.saving || !this.validateRequiredFields()) return;
-
     this.saving = true;
     this.message = null;
-
     console.log('Saving profile...', this.user);
 
     const formData = new FormData();
     formData.append('name', this.user.name.trim());
     if (this.user.phone?.trim()) formData.append('phone', this.user.phone.trim());
     if (this.user.bio?.trim()) formData.append('bio', this.user.bio.trim());
-
     if (this.selectedFile) {
       formData.append('profileImage', this.selectedFile, this.selectedFile.name);
     } else if (this.previewUrl === null) {
@@ -159,19 +148,17 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.api.updateProfile(formData).subscribe({
       next: (updatedUser: any) => {
         console.log('Profile updated:', updatedUser);
-
         this.authService.updateCurrentUser(updatedUser);
+
         this.user = { ...updatedUser, bio: updatedUser.bio || '' };
         this.originalUser = { ...this.user };
 
-        // تحديث previewUrl مع cache buster لتجنب مشاكل الكاش
-        const ts = Date.now();
-        this.previewUrl = updatedUser.profileImage ? updatedUser.profileImage.split('?')[0] + '?v=' + ts : null;
+        // ✅ نستخدم الرابط اللي راجع من الباك إند كما هو (فيه cache buster صحيح بالفعل)
+        this.previewUrl = updatedUser.profileImage || null;
 
         this.selectedFile = null;
         this.isEditing = false;
         this.saving = false;
-
         this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
       },
       error: (err) => {
@@ -206,11 +193,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
     return name.substring(0, 2).toUpperCase();
   }
 
-  getProfileImageUrl(): string {
-    // كل مرة يرجع رابط جديد لتفادي الكاش
-    if (!this.previewUrl && !this.user.profileImage) return '';
-    const baseUrl = this.previewUrl || this.user.profileImage;
-    const ts = Date.now();
-    return baseUrl.split('?')[0] + '?v=' + ts;
-  }
+  // تم حذف getProfileImageUrl بالكامل لأنها كانت بتضيف cache buster يدوي كل render
+  // الرابط دلوقتي جاهز من الـ API أو AuthService، والـ <img> هيعرضه صح
 }
