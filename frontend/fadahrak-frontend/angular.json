@@ -37,7 +37,7 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kb",   // غيّرنا من 2kb إلى 4kb
+                  "maximumWarning": "4kb", // غيّرنا من 2kb إلى 4kb عشان نتجنب التحذير في profile.component.css
                   "maximumError": "6kb"
                 }
               ],
