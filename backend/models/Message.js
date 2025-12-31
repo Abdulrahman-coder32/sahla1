@@ -7,6 +7,7 @@ const messageSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now }
 });
 
+// Index لتحسين أداء جلب الرسائل حسب الـ application
 messageSchema.index({ application_id: 1 });
 
 module.exports = mongoose.model('Message', messageSchema);
