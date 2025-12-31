@@ -10,102 +10,290 @@ import { SocketService } from '../../services/socket.service';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <div class="min-h-screen bg-gray-50 py-12 px-4 sm:py-16 lg:py-24">
+    <div class="inbox-container">
       <div class="max-w-5xl mx-auto">
         <!-- Header -->
-        <div class="text-center mb-16">
-          <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full mb-8 shadow-inner">
-            <i class="fas fa-comments text-4xl text-blue-600"></i>
+        <div class="inbox-header">
+          <div class="header-icon">
+            <i class="fas fa-comments"></i>
           </div>
-          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6">الدردشات</h1>
-          <p class="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            تواصل مع {{ isOwner ? 'المتقدمين لوظائفك' : 'أصحاب العمل' }} بسهلة وأمان
+          <h1>الدردشات</h1>
+          <p>
+            تواصل مع {{ isOwner ? 'المتقدمين لوظائفك' : 'أصحاب العمل' }} بسهولة وأمان
           </p>
         </div>
 
         <!-- Loading -->
-        <div *ngIf="loading" class="flex flex-col items-center justify-center py-32">
-          <div class="animate-spin rounded-full h-20 w-20 border-4 border-gray-200 border-t-blue-600"></div>
-          <p class="mt-8 text-2xl text-gray-700 font-medium">جاري تحميل الدردشات...</p>
+        <div *ngIf="loading" class="loading-state">
+          <div class="spinner"></div>
+          <p>جاري تحميل الدردشات...</p>
         </div>
 
         <!-- Empty State -->
-        <div *ngIf="!loading && chats.length === 0" class="bg-white rounded-3xl shadow-xl border border-gray-100 p-12 sm:p-20 text-center">
-          <div class="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-10 shadow-inner">
-            <i class="fas fa-comments text-6xl text-gray-400"></i>
+        <div *ngIf="!loading && chats.length === 0" class="empty-state">
+          <div class="empty-icon">
+            <i class="fas fa-comments"></i>
           </div>
-          <h2 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-6">لا توجد دردشات حاليًا</h2>
-          <p class="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto">
-            {{ isOwner ? 'عندما يتقدم أحد على وظائفك وتقبله، ستظهر الدردشة هنا.' : 'عندما يقبل صاحب العمل تقديمك، ستتمكن من بدء المحادثة.' }}
+          <h2>لا توجد دردشات حاليًا</h2>
+          <p>
+            {{ isOwner 
+              ? 'عندما يتقدم أحد على وظائفك وتقبله، ستظهر الدردشة هنا.' 
+              : 'عندما يقبل صاحب العمل تقديمك، ستتمكن من بدء المحادثة.'
+            }}
           </p>
         </div>
 
         <!-- Chats List -->
-        <div *ngIf="!loading && chats.length > 0" class="space-y-6">
-          <div *ngFor="let chat of chats"
-               class="group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden cursor-pointer"
-               [routerLink]="['/inbox', chat._id]">
-         
+        <div *ngIf="!loading && chats.length > 0" class="chats-list">
+          <div *ngFor="let chat of chats; let i = index"
+               class="chat-card"
+               [routerLink]="['/inbox', chat._id]"
+               [@fadeIn]="i">
             <!-- Unread Badge -->
-            <div *ngIf="chat.unreadCount > 0"
-                 class="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-xl z-10 flex items-center justify-center min-w-[32px] animate-pulse">
+            <div *ngIf="chat.unreadCount > 0" class="unread-badge">
               {{ chat.unreadCount > 99 ? '99+' : chat.unreadCount }}
             </div>
 
-            <!-- Chat Card -->
-            <div class="p-6 sm:p-8 flex items-center gap-6">
+            <div class="chat-content">
               <!-- Avatar -->
-              <div class="flex-shrink-0 relative">
+              <div class="chat-avatar">
                 <img
                   [src]="chat.profileImage || defaultImage"
-                  alt="صورة {{ chat.name }}"
-                  class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover ring-4 ring-white shadow-xl transition-transform duration-300 group-hover:scale-105"
+                  [alt]="chat.name"
+                  class="avatar-image"
                   loading="lazy"
                   (error)="onImageError($event)"
                 >
               </div>
 
               <!-- Details -->
-              <div class="flex-1 min-w-0">
-                <h3 class="text-xl sm:text-2xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors truncate">
-                  {{ chat.name }}
-                </h3>
-                <p class="text-base sm:text-lg text-gray-600 mt-3 line-clamp-2 leading-relaxed">
+              <div class="chat-details">
+                <h3 class="chat-name">{{ chat.name }}</h3>
+                <p class="chat-last-message">
                   {{ chat.lastMessage || 'ابدأ المحادثة الآن' }}
                 </p>
               </div>
 
               <!-- Timestamp -->
-              <div class="text-right">
-                <p class="text-sm font-medium text-gray-700">
-                  {{ chat.lastUpdated | date:'shortTime' }}
-                </p>
-                <p class="text-xs text-gray-500 mt-1">
-                  {{ chat.lastUpdated | date:'mediumDate' }}
-                </p>
+              <div class="chat-time">
+                <span class="time">{{ chat.lastUpdated | date:'shortTime' }}</span>
+                <span class="date">{{ chat.lastUpdated | date:'mediumDate' }}</span>
               </div>
             </div>
-
-            <!-- Hover Line -->
-            <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
           </div>
         </div>
       </div>
     </div>
   `,
   styles: [`
-    .line-clamp-2 {
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    [@fadeIn] {
+      animation: fadeIn 0.4s ease-out forwards;
+    }
+
+    .inbox-container {
+      min-height: 100vh;
+      padding: 3rem 1rem;
+      direction: rtl;
+      background: linear-gradient(to bottom, #F9FAFB, #E0F2FE);
+      font-family: 'Tajawal', system-ui, sans-serif;
+    }
+
+    .inbox-header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .header-icon {
+      width: 5rem;
+      height: 5rem;
+      background: #E0F2FE;
+      color: #0EA5E9;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      font-size: 2.5rem;
+      box-shadow: 0 8px 20px rgba(14, 165, 233, 0.15);
+    }
+
+    .inbox-header h1 {
+      font-size: 2.75rem;
+      font-weight: 800;
+      color: #1F2937;
+      margin: 0 0 1rem;
+    }
+
+    .inbox-header p {
+      font-size: 1.125rem;
+      color: #6B7280;
+      max-width: 42rem;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    .loading-state, .empty-state {
+      text-align: center;
+      padding: 5rem 2rem;
+    }
+
+    .spinner {
+      width: 4.5rem;
+      height: 4.5rem;
+      border: 4px solid #E0F2FE;
+      border-top: 4px solid #0EA5E9;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 2rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .empty-icon {
+      width: 6rem;
+      height: 6rem;
+      background: #F3F4F6;
+      color: #9CA3AF;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 2rem;
+      font-size: 3rem;
+    }
+
+    .empty-state h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #374151;
+      margin-bottom: 1rem;
+    }
+
+    .empty-state p {
+      font-size: 1.125rem;
+      color: #6B7280;
+      line-height: 1.7;
+      max-width: 36rem;
+      margin: 0 auto;
+    }
+
+    .chats-list {
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    .chat-card {
+      background: white;
+      border-radius: 1.5rem;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+      border: 1px solid #E5E7EB;
       overflow: hidden;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .chat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 35px rgba(0, 0, 0, 0.12);
+    }
+
+    .unread-badge {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: #FEE2E2;
+      color: #DC2626;
+      min-width: 2rem;
+      height: 2rem;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.875rem;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+      z-index: 10;
+    }
+
+    .chat-content {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      padding: 1.5rem;
+    }
+
+    .chat-avatar {
+      flex-shrink: 0;
+    }
+
+    .avatar-image {
+      width: 4.5rem;
+      height: 4.5rem;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid #E0F2FE;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .chat-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .chat-name {
+      font-size: 1.375rem;
+      font-weight: 700;
+      color: #1F2937;
+      margin: 0 0 0.5rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chat-last-message {
+      font-size: 1rem;
+      color: #6B7280;
+      margin: 0;
+      line-height: 1.5;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
+      overflow: hidden;
     }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
+
+    .chat-time {
+      text-align: left;
+      font-size: 0.875rem;
+      color: #9CA3AF;
     }
-    .animate-pulse {
-      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+    .chat-time .time {
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .chat-time .date {
+      display: block;
+      margin-top: 0.25rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .inbox-container { padding: 2rem 1rem; }
+      .inbox-header h1 { font-size: 2.25rem; }
+      .inbox-header p { font-size: 1rem; }
+      .chat-content { gap: 1rem; padding: 1rem; }
+      .avatar-image { width: 4rem; height: 4rem; }
+      .chat-name { font-size: 1.25rem; }
+      .chat-last-message { font-size: 0.9375rem; }
+      .unread-badge { top: 0.75rem; right: 0.75rem; font-size: 0.75rem; min-width: 1.75rem; height: 1.75rem; }
     }
   `]
 })
@@ -114,7 +302,6 @@ export class InboxListComponent implements OnInit, OnDestroy {
   loading = true;
   isOwner = false;
   currentUserId: string | null = null;
-
   readonly defaultImage = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
 
   constructor(
@@ -135,7 +322,6 @@ export class InboxListComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    // يفضل نلغي الـ listeners بشكل صحيح
     this.socketService.onChatListUpdate(() => {});
     this.socketService.onUnreadUpdate(() => {});
   }
@@ -154,7 +340,6 @@ export class InboxListComponent implements OnInit, OnDestroy {
         chat.unreadCount = data.unreadCount;
         this.sortChats();
       } else {
-        // دردشة جديدة → إعادة تحميل
         this.loadAcceptedChats();
       }
     });
@@ -194,9 +379,7 @@ export class InboxListComponent implements OnInit, OnDestroy {
             unreadCount = app.unreadCounts?.seeker || 0;
           }
 
-          const otherUser = this.isOwner
-            ? app.seeker_id
-            : app.job_id?.owner_id;
+          const otherUser = this.isOwner ? app.seeker_id : app.job_id?.owner_id;
 
           return {
             _id: app._id,
