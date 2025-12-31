@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { Observable } from 'rxjs';                // ← مهم جدًا: إضافة هذا السطر
+import { Observable } from 'rxjs';
 import { NotificationService } from '../../services/notification.service';
 import { AuthService } from '../../services/auth.service';
 
@@ -25,25 +25,21 @@ export class NotificationsPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.currentUser = this.authService.getUser();
-
     this.notifications$ = this.notificationService.notifications$;
     this.unreadCount$ = this.notificationService.unreadCount$;
 
-    // لما نفتح صفحة الإشعارات نصفر العداد تلقائيًا
+    // صفر العداد لما نفتح الصفحة
     this.notificationService.markAllAsRead();
   }
 
-  // ← غيرنا الاسم عشان يطابق اللي في الـ HTML
   goToChat(applicationId: string) {
     this.router.navigate(['/inbox', applicationId]);
   }
 
-  // دالة مساعدة لحساب الوقت
   getTimeAgo(date: Date | string): string {
     const now = new Date();
     const notifDate = new Date(date);
     const diffMs = now.getTime() - notifDate.getTime();
-
     const minutes = Math.floor(diffMs / (1000 * 60));
     const hours = Math.floor(diffMs / (1000 * 60 * 60));
     const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
