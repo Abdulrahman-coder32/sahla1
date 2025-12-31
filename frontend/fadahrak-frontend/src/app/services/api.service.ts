@@ -25,9 +25,7 @@ export class ApiService {
     }
     if (includeToken) {
       const token = localStorage.getItem('token');
-      if (token) {
-        headers = headers.set('Authorization', `Bearer ${token}`);
-      }
+      if (token) headers = headers.set('Authorization', `Bearer ${token}`);
     }
     return headers;
   }
@@ -39,27 +37,19 @@ export class ApiService {
     return this.imageBaseUrl === '' ? `/${path}` : `${this.imageBaseUrl}/${path}`;
   }
 
-  // تم حذف addCacheBusterToUrl لأن الباك إند هو اللي بيعمل cache busting صح
-  // وإضافة ?v= يدوي هنا بيخرب الرابط اللي الباك مرجعه
-
-  private processProfileImages(data: any, cacheVersion: number = Date.now()): any {
+  private processProfileImages(data: any): any {
     if (!data) return data;
-    if (Array.isArray(data)) {
-      return data.map(item => this.processProfileImages(item, cacheVersion));
-    }
-    if (data && typeof data === 'object') {
-      // تم إزالة التعديل التلقائي على profileImage
-      // الباك إند بيرجع الرابط جاهز مع cache buster صحيح
-      if (data.profileImage !== undefined && data.profileImage) {
-        // فقط نضمن إن أي رابط داخلي (لو موجود) يتعدل لو كان بدون http
-        const cleanUrl = data.profileImage.startsWith('http') ? data.profileImage : this.prependBaseUrl(data.profileImage);
-        data.profileImage = cleanUrl;
-      } else if (data.profileImage === null || data.profileImage === '') {
+    if (Array.isArray(data)) return data.map(item => this.processProfileImages(item));
+
+    if (typeof data === 'object') {
+      if (data.profileImage) {
+        data.profileImage = data.profileImage.startsWith('http') ? data.profileImage : this.prependBaseUrl(data.profileImage);
+      } else {
         data.profileImage = DEFAULT_AVATAR;
       }
       Object.keys(data).forEach(key => {
         if (data[key] && typeof data[key] === 'object') {
-          data[key] = this.processProfileImages(data[key], cacheVersion);
+          data[key] = this.processProfileImages(data[key]);
         }
       });
     }
@@ -68,7 +58,7 @@ export class ApiService {
 
   private handleError(error: HttpErrorResponse) {
     console.error('API Error:', error);
-    return throwError(() => new Error(error.message || 'خطأ في الاتصال بالسيرفر'));
+    return throwError(() => new Error(error.error?.msg || error.message || 'خطأ في الاتصال بالسيرفر'));
   }
 
   // Auth
@@ -95,13 +85,8 @@ export class ApiService {
   }
 
   updateProfile(formData: FormData): Observable<any> {
-    const headers = this.getHeaders(true, true);
-    return this.http.put(`${this.apiUrl}/users/profile`, formData, { headers }).pipe(
-      map((res: any) => {
-        // تم إزالة التعديل اليدوي على profileImage هنا تمامًا
-        // الباك إند بيرجع الرابط الجديد جاهز مع cache buster صحيح
-        return this.processProfileImages(res);
-      }),
+    return this.http.put(`${this.apiUrl}/users/profile`, formData, { headers: this.getHeaders(true, true) }).pipe(
+      map(res => this.processProfileImages(res)),
       catchError(this.handleError)
     );
   }
@@ -140,7 +125,7 @@ export class ApiService {
     );
   }
 
-  // Applications & Messages & Notifications
+  // Applications
   applyToJob(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/applications`, data, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
@@ -174,6 +159,7 @@ export class ApiService {
     );
   }
 
+  // Messages
   getMessages(appId: string): Observable<any> {
     return this.http.get(`${this.apiUrl}/messages/${appId}`, { headers: this.getHeaders() }).pipe(
       map(res => this.processProfileImages(res)),
@@ -193,8 +179,7 @@ export class ApiService {
     formData.append('file', file);
     formData.append('type', type);
     if (filename) formData.append('filename', filename);
-    const headers = this.getHeaders(true, true);
-    return this.http.post(`${this.apiUrl}/messages/media`, formData, { headers }).pipe(
+    return this.http.post(`${this.apiUrl}/messages/media`, formData, { headers: this.getHeaders(true, true) }).pipe(
       catchError(this.handleError)
     );
   }
@@ -205,6 +190,7 @@ export class ApiService {
     );
   }
 
+  // Notifications
   getNotifications(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/notifications`, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
