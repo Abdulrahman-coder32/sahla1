@@ -2,7 +2,7 @@ const express = require('express');
 const auth = require('../middleware/auth');
 const User = require('../models/User');
 const cloudinary = require('cloudinary').v2;
-const { getProfileImageUrl } = require('../utils/imageUtils'); // ← الإضافة الجديدة
+const { getProfileImageUrl } = require('../utils/imageUtils');
 
 const router = express.Router();
 
@@ -38,23 +38,28 @@ router.put('/profile', auth, async (req, res) => {
     const { name, phone, bio, profileImage } = body;
     const updates = {};
     const inc = {};
+    let cacheBusterIncremented = false;
 
     if (name !== undefined) updates.name = name;
     if (phone !== undefined) updates.phone = phone;
     if (bio !== undefined) updates.bio = bio;
 
-    let cacheBusterIncremented = false;
-
+    // رفع صورة جديدة
     if (profileImage && profileImage.startsWith('data:image')) {
-      const result = await cloudinary.uploader.upload(profileImage, {
-        folder: 'sahla-profiles',
-        public_id: `user_${req.user.id}`,
-        overwrite: true,
-        resource_type: 'image',
-      });
-      updates.profileImage = result.public_id;
-      inc.cacheBuster = 1;
-      cacheBusterIncremented = true;
+      try {
+        const result = await cloudinary.uploader.upload(profileImage, {
+          folder: 'sahla-profiles',
+          public_id: `user_${req.user.id}`,
+          overwrite: true,
+          resource_type: 'image',
+        });
+        updates.profileImage = result.public_id;
+        inc.cacheBuster = 1;
+        cacheBusterIncremented = true;
+      } catch (cloudErr) {
+        console.error('خطأ رفع الصورة على Cloudinary:', cloudErr);
+        return res.status(500).json({ msg: 'فشل رفع الصورة. حاول مرة أخرى.' });
+      }
     } else if (profileImage === null || profileImage === '') {
       updates.profileImage = null;
       updates.cacheBuster = 0;
@@ -86,16 +91,22 @@ router.put('/profile', auth, async (req, res) => {
     if (cacheBusterIncremented) {
       const io = req.app.get('io');
       if (io) {
-        io.to(req.user.id.toString()).emit('profileUpdated', {
-          userId: req.user.id,
-          profileImage: imageUrl,
-          cacheBuster: finalCacheBuster,
-        });
+        // التحقق أن المستخدم مشترك في الـ room
+        const socketRoom = io.sockets.adapter.rooms.get(req.user.id.toString());
+        if (socketRoom) {
+          io.to(req.user.id.toString()).emit('profileUpdated', {
+            userId: req.user.id,
+            profileImage: imageUrl,
+            cacheBuster: finalCacheBuster,
+          });
+        } else {
+          console.warn('Socket.IO: المستخدم غير مشترك في room profileUpdated');
+        }
       }
     }
   } catch (err) {
     console.error('خطأ تحديث البروفايل:', err);
-    res.status(500).json({ msg: 'فشل رفع الصورة أو حفظ البيانات' });
+    res.status(500).json({ msg: 'فشل حفظ البيانات' });
   }
 });
 
