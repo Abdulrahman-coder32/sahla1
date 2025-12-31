@@ -160,23 +160,20 @@ export class ProfileComponent implements OnInit, OnDestroy {
     // إذا كان previewUrl موجود ومش null ومش ملف جديد → لا نرسل شيء (يبقى كما هو)
 
     this.api.updateProfile(formData).subscribe({
-      next: (updatedUser: any) => {
-        this.user = { ...updatedUser, bio: updatedUser.bio || '' };
-        this.originalUser = { ...this.user };
-        this.previewUrl = updatedUser.profileImage || null;
-        this.selectedFile = null; // إعادة تعيين بعد الرفع
+     next: (updatedUser: any) => {
+  // تحديث الـ form محليًا
+  this.user = { ...updatedUser, bio: updatedUser.bio || '' };
+  this.originalUser = { ...this.user };
+  this.previewUrl = updatedUser.profileImage || null;
 
-        this.isEditing = false;
-        this.saving = false;
+  this.isEditing = false;
+  this.saving = false;
 
-        // تحديث البيانات عالميًا في التطبيق
-        this.authService.updateCurrentUser(updatedUser);
+  // الحل الرئيسي: تحديث the AuthService
+  this.authService.updateCurrentUser(updatedUser);
 
-        // تجديد كاش الصورة فورًا بعد التحديث
-        this.authService.forceRefreshImage();
-
-        this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
-      },
+  this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
+},
       error: (err) => {
         console.error('خطأ في حفظ البروفايل:', err);
         this.showMessage('فشل حفظ التغييرات، حاول مرة أخرى', 'error');
