@@ -68,7 +68,7 @@ import { CommonModule } from '@angular/common';
   `,
   styles: [`
     .footer {
-      background: linear-gradient(to right, #F3F4F6, #E5E7EB);
+     background: linear-gradient(to right, #2a364f, #000000);
       color: #374151;
       padding: 3rem 1rem 1.5rem;
       margin-top: auto;
@@ -111,7 +111,7 @@ import { CommonModule } from '@angular/common';
     }
 
     .footer-description {
-      color: #6B7280;
+      color: #c7cbd3;
       font-size: 1rem;
       line-height: 1.6;
     }
@@ -119,7 +119,7 @@ import { CommonModule } from '@angular/common';
     .section-title {
       font-size: 1.375rem;
       font-weight: 700;
-      color: #1F2937;
+    color: #8d9299;
       margin-bottom: 1.5rem;
     }
 
@@ -133,7 +133,7 @@ import { CommonModule } from '@angular/common';
     }
 
     .footer-link {
-      color: #6B7280;
+      color: #ccd1dc;
       font-size: 1rem;
       transition: all 0.3s ease;
       display: inline-block;
