@@ -37,22 +37,46 @@ export class ApiService {
     return this.imageBaseUrl === '' ? `/${path}` : `${this.imageBaseUrl}/${path}`;
   }
 
+  // === التعديل الرئيسي: إضافة cache buster لكل الصور ===
   private processProfileImages(data: any): any {
     if (!data) return data;
-    if (Array.isArray(data)) return data.map(item => this.processProfileImages(item));
+
+    if (Array.isArray(data)) {
+      return data.map(item => this.processProfileImages(item));
+    }
 
     if (typeof data === 'object') {
-      if (data.profileImage) {
-        data.profileImage = data.profileImage.startsWith('http') ? data.profileImage : this.prependBaseUrl(data.profileImage);
+      // معالجة profileImage لليوزر نفسه أو أي يوزر تاني
+      if (data.profileImage !== undefined) {
+        let imageUrl = data.profileImage;
+
+        // لو public_id (مش URL كامل)
+        if (imageUrl && !imageUrl.startsWith('http')) {
+          imageUrl = this.prependBaseUrl(imageUrl);
+        }
+
+        // إضافة cache buster
+        if (imageUrl && imageUrl.startsWith('http')) {
+          const separator = imageUrl.includes('?') ? '&' : '?';
+          const cacheBuster = data.cacheBuster ?? Date.now(); // استخدم cacheBuster من الـ DB، لو مش موجود استخدم timestamp
+          imageUrl = `${imageUrl}${separator}v=${cacheBuster}`;
+        } else {
+          imageUrl = DEFAULT_AVATAR;
+        }
+
+        data.profileImage = imageUrl;
       } else {
         data.profileImage = DEFAULT_AVATAR;
       }
+
+      // تكرار العملية على كل object داخلي (مثل owner في job، applicant في application...)
       Object.keys(data).forEach(key => {
         if (data[key] && typeof data[key] === 'object') {
           data[key] = this.processProfileImages(data[key]);
         }
       });
     }
+
     return data;
   }
 
@@ -61,7 +85,7 @@ export class ApiService {
     return throwError(() => new Error(error.error?.msg || error.message || 'خطأ في الاتصال بالسيرفر'));
   }
 
-  // Auth
+  // باقي الدوال زي ما هي (مع map للـ processProfileImages)
   login(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/auth/login`, data).pipe(
       map(res => this.processProfileImages(res)),
@@ -76,7 +100,6 @@ export class ApiService {
     );
   }
 
-  // Profile
   getProfile(): Observable<any> {
     return this.http.get(`${this.apiUrl}/users/me`, { headers: this.getHeaders() }).pipe(
       map(res => this.processProfileImages(res)),
@@ -91,7 +114,6 @@ export class ApiService {
     );
   }
 
-  // Jobs
   getJobs(filters?: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/jobs`, filters || {}, { headers: this.getHeaders() }).pipe(
       map(res => this.processProfileImages(res)),
@@ -125,7 +147,6 @@ export class ApiService {
     );
   }
 
-  // Applications
   applyToJob(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/applications`, data, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
@@ -159,7 +180,6 @@ export class ApiService {
     );
   }
 
-  // Messages
   getMessages(appId: string): Observable<any> {
     return this.http.get(`${this.apiUrl}/messages/${appId}`, { headers: this.getHeaders() }).pipe(
       map(res => this.processProfileImages(res)),
@@ -190,7 +210,6 @@ export class ApiService {
     );
   }
 
-  // Notifications
   getNotifications(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/notifications`, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
