@@ -12,33 +12,89 @@ import { ApiService } from '../../services/api.service';
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="relative">
           <i class="fas fa-store absolute right-4 top-4 text-gray-500"></i>
-          <input [(ngModel)]="form.shop_name" name="shop_name" placeholder="اسم المحل" class="input-field pr-12" required>
+          <label for="shop_name" class="sr-only">اسم المحل</label>
+          <input 
+            id="shop_name" 
+            name="shop_name" 
+            [(ngModel)]="form.shop_name" 
+            placeholder="اسم المحل" 
+            class="input-field pr-12" 
+            required
+          >
         </div>
         <div class="relative">
           <i class="fas fa-tag absolute right-4 top-4 text-gray-500"></i>
-          <input [(ngModel)]="form.category" name="category" placeholder="الفئة" class="input-field pr-12" required>
+          <label for="category" class="sr-only">الفئة</label>
+          <input 
+            id="category" 
+            name="category" 
+            [(ngModel)]="form.category" 
+            placeholder="الفئة" 
+            class="input-field pr-12" 
+            required
+          >
         </div>
         <div class="relative">
           <i class="fas fa-map-marker-alt absolute right-4 top-4 text-gray-500"></i>
-          <input [(ngModel)]="form.governorate" name="governorate" placeholder="المحافظة" class="input-field pr-12" required>
+          <label for="governorate" class="sr-only">المحافظة</label>
+          <input 
+            id="governorate" 
+            name="governorate" 
+            [(ngModel)]="form.governorate" 
+            placeholder="المحافظة" 
+            class="input-field pr-12" 
+            required
+          >
         </div>
         <div class="relative">
           <i class="fas fa-city absolute right-4 top-4 text-gray-500"></i>
-          <input [(ngModel)]="form.city" name="city" placeholder="المدينة" class="input-field pr-12" required>
+          <label for="city" class="sr-only">المدينة</label>
+          <input 
+            id="city" 
+            name="city" 
+            [(ngModel)]="form.city" 
+            placeholder="المدينة" 
+            class="input-field pr-12" 
+            required
+          >
         </div>
       </div>
       <div class="relative">
         <i class="fas fa-list absolute right-4 top-4 text-gray-500"></i>
-        <textarea [(ngModel)]="form.requirements" name="requirements" placeholder="المتطلبات" rows="4" class="input-field pr-12" required></textarea>
+        <label for="requirements" class="sr-only">المتطلبات</label>
+        <textarea 
+          id="requirements" 
+          name="requirements" 
+          [(ngModel)]="form.requirements" 
+          placeholder="المتطلبات" 
+          rows="4" 
+          class="input-field pr-12" 
+          required
+        ></textarea>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="relative">
           <i class="fas fa-clock absolute right-4 top-4 text-gray-500"></i>
-          <input [(ngModel)]="form.working_hours" name="working_hours" placeholder="ساعات العمل" class="input-field pr-12" required>
+          <label for="working_hours" class="sr-only">ساعات العمل</label>
+          <input 
+            id="working_hours" 
+            name="working_hours" 
+            [(ngModel)]="form.working_hours" 
+            placeholder="ساعات العمل" 
+            class="input-field pr-12" 
+            required
+          >
         </div>
         <div class="relative">
           <i class="fas fa-money-bill absolute right-4 top-4 text-gray-500"></i>
-          <input [(ngModel)]="form.salary" name="salary" placeholder="الراتب (اختياري)" class="input-field pr-12">
+          <label for="salary" class="sr-only">الراتب (اختياري)</label>
+          <input 
+            id="salary" 
+            name="salary" 
+            [(ngModel)]="form.salary" 
+            placeholder="الراتب (اختياري)" 
+            class="input-field pr-12"
+          >
         </div>
       </div>
       <div class="text-center">
@@ -74,35 +130,27 @@ export class JobFormComponent {
     this.success = false;
 
     this.api.createJob(this.form).subscribe({
-      next: (response: any) => {  // ← أضفنا type عشان نحل implicit any
+      next: (response: any) => {
         this.loading = false;
         this.success = true;
 
-        // التعامل مع الـ response (لو array ناخد الأول)
         let newJob = response;
         if (Array.isArray(response) && response.length > 0) {
           newJob = response[0];
-        } else if (Array.isArray(response)) {
-          console.error('الـ response array فاضي!', response);
-          this.submitSuccess.emit(null); // fallback
-          return;
         }
 
         console.log('الوظيفة الجديدة المستقبلة:', newJob);
 
-        // reset الـ form
         this.form = {
           shop_name: '', category: '', governorate: '', city: '',
           requirements: '', working_hours: '', salary: ''
         };
 
-        // emit الوظيفة الجديدة
         this.submitSuccess.emit(newJob);
 
-        // إخفاء الرسالة بعد 5 ثواني
         setTimeout(() => this.success = false, 5000);
       },
-      error: (err: any) => {  // ← أضفنا type
+      error: (err: any) => {
         this.loading = false;
         this.error = err.error?.msg || 'خطأ في النشر';
         console.error('خطأ في إنشاء الوظيفة:', err);
