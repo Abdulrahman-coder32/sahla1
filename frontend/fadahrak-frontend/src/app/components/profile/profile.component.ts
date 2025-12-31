@@ -40,7 +40,8 @@ export class ProfileComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadProfile();
 
-    // ✅ اشتراك آمن: مفيش overwrite وقت التعديل أو الحفظ
+    // اشتراك آمن في تغييرات المستخدم من AuthService
+    // يمنع الكتابة فوق البيانات أثناء التعديل أو الحفظ
     this.userSub = this.authService.user$.subscribe(currentUser => {
       if (!currentUser) return;
       if (this.isEditing || this.saving) return;
@@ -63,8 +64,11 @@ export class ProfileComponent implements OnInit, OnDestroy {
         this.originalUser = { ...this.user };
         this.previewUrl = this.user.profileImage || null;
 
-        // تحديث AuthService مرة واحدة بعد التحميل
+        // تحديث AuthService لضمان تزامن البيانات عبر التطبيق
         this.authService.updateCurrentUser(this.user);
+
+        // تجديد كاش الصورة لتجنب عرض نسخة قديمة من CDN
+        this.authService.forceRefreshImage();
 
         this.loading = false;
       },
@@ -79,10 +83,13 @@ export class ProfileComponent implements OnInit, OnDestroy {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // التحقق من حجم الصورة (حد أقصى 10 ميجا)
     if (file.size > 10 * 1024 * 1024) {
       this.showMessage('الصورة كبيرة جدًا، اختر أصغر من 10 ميجا', 'error');
       return;
     }
+
+    this.selectedFile = file; // حفظ الملف الأصلي (أفضل للرفع)
 
     const reader = new FileReader();
     reader.onload = (e: any) => {
@@ -135,30 +142,43 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
     const formData = new FormData();
     formData.append('name', this.user.name.trim());
-    if (this.user.phone?.trim()) formData.append('phone', this.user.phone.trim());
-    if (this.user.bio?.trim()) formData.append('bio', this.user.bio.trim());
 
-    if (this.previewUrl && this.previewUrl.startsWith('data:image')) {
-      formData.append('profileImage', this.previewUrl);
+    if (this.user.phone?.trim()) {
+      formData.append('phone', this.user.phone.trim());
+    }
+
+    // دائمًا نرسل bio حتى لو فارغ (عشان الباك يقدر يمسحه)
+    formData.append('bio', this.user.bio?.trim() || '');
+
+    // إرسال الصورة فقط إذا تم اختيار ملف جديد
+    if (this.selectedFile) {
+      formData.append('profileImage', this.selectedFile, this.selectedFile.name);
     } else if (this.previewUrl === null) {
+      // المستخدم حذف الصورة
       formData.append('profileImage', '');
     }
+    // إذا كان previewUrl موجود ومش null ومش ملف جديد → لا نرسل شيء (يبقى كما هو)
 
     this.api.updateProfile(formData).subscribe({
       next: (updatedUser: any) => {
         this.user = { ...updatedUser, bio: updatedUser.bio || '' };
         this.originalUser = { ...this.user };
         this.previewUrl = updatedUser.profileImage || null;
+        this.selectedFile = null; // إعادة تعيين بعد الرفع
 
         this.isEditing = false;
         this.saving = false;
 
-        // ✅ تحديث المستخدم مرة واحدة وبشكل نهائي
+        // تحديث البيانات عالميًا في التطبيق
         this.authService.updateCurrentUser(updatedUser);
+
+        // تجديد كاش الصورة فورًا بعد التحديث
+        this.authService.forceRefreshImage();
 
         this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
       },
-      error: () => {
+      error: (err) => {
+        console.error('خطأ في حفظ البروفايل:', err);
         this.showMessage('فشل حفظ التغييرات، حاول مرة أخرى', 'error');
         this.saving = false;
       }
@@ -168,6 +188,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   cancelEdit() {
     this.user = { ...this.originalUser };
     this.previewUrl = this.originalUser.profileImage || null;
+    this.selectedFile = null;
     this.isEditing = false;
     this.message = null;
   }
