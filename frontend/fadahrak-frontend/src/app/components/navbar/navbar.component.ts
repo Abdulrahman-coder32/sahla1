@@ -20,14 +20,12 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                    class="h-10 sm:h-12 lg:h-14 w-auto max-w-28 sm:max-w-32 lg:max-w-36 object-contain transition-transform duration-300 hover:scale-105">
             </a>
           </div>
-
           <!-- Desktop Navigation -->
           <div class="hidden md:flex items-center gap-4 lg:gap-6">
             <a routerLink="/" class="nav-link" routerLinkActive="active-link">الرئيسية</a>
             <a routerLink="/jobs" class="nav-link" routerLinkActive="active-link">الوظائف</a>
             <a routerLink="/about" class="nav-link" routerLinkActive="active-link">عننا</a>
             <a routerLink="/contact" class="nav-link" routerLinkActive="active-link">اتصل بنا</a>
-
             <ng-container *ngIf="currentUser$ | async as user; else guestDesktop">
               <!-- Notifications Dropdown -->
               <div class="relative group">
@@ -40,7 +38,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                     </span>
                   </ng-container>
                 </button>
-
                 <div class="absolute end-0 mt-3 w-80 lg:w-96 bg-white rounded-xl shadow-2xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
                   <div class="p-4 border-b border-gray-200 font-semibold text-lg lg:text-xl">الإشعارات</div>
                   <div class="max-h-96 overflow-y-auto">
@@ -72,11 +69,9 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                   </a>
                 </div>
               </div>
-
               <a routerLink="/inbox" class="nav-link" routerLinkActive="active-link">الرسائل</a>
               <a [routerLink]="user.role === 'shop_owner' ? '/owner-dashboard' : '/seeker-dashboard'"
                  class="nav-link" routerLinkActive="active-link">لوحة التحكم</a>
-
               <!-- Profile Dropdown -->
               <div class="relative group">
                 <button class="flex items-center gap-3 lg:gap-4 rounded-full focus:outline-none p-2 transition-all hover:ring-4 hover:ring-indigo-100">
@@ -93,7 +88,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                     </span>
                   </div>
                 </button>
-
                 <div class="absolute end-0 mt-3 w-56 lg:w-64 bg-white rounded-xl shadow-2xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
                   <a routerLink="/profile"
                      class="block px-5 py-3 lg:px-6 lg:py-4 hover:bg-gray-50 text-right font-medium text-gray-700 border-b border-gray-100 rounded-t-xl transition-all">
@@ -106,13 +100,11 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                 </div>
               </div>
             </ng-container>
-
             <ng-template #guestDesktop>
               <a routerLink="/login" class="nav-link" routerLinkActive="active-link">دخول</a>
               <a routerLink="/signup" class="btn-primary px-5 py-2 lg:px-7 lg:py-3 rounded-xl text-base lg:text-lg">إنشاء حساب</a>
             </ng-template>
           </div>
-
           <!-- Mobile Buttons -->
           <div class="md:hidden flex items-center gap-4">
             <ng-container *ngIf="currentUser$ | async">
@@ -126,7 +118,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                 </ng-container>
               </button>
             </ng-container>
-
             <button (click)="toggleMenu()" class="p-2">
               <div class="w-7 h-7 flex flex-col justify-center gap-1.5">
                 <span [ngClass]="{'rotate-45 translate-y-2.5': mobileMenuOpen}"
@@ -140,17 +131,14 @@ import { Observable, Subject, takeUntil } from 'rxjs';
           </div>
         </div>
       </div>
-
       <!-- Overlay + Mobile Sidebar -->
       <div *ngIf="mobileMenuOpen || mobileNotificationsOpen"
            class="fixed inset-0 bg-black bg-opacity-60 z-40 md:hidden"
            (click)="closeMobileMenu()"></div>
-
       <div [ngClass]="{
         'translate-x-0': mobileMenuOpen || mobileNotificationsOpen,
         'translate-x-full': !(mobileMenuOpen || mobileNotificationsOpen)
       }" class="fixed inset-y-0 right-0 w-80 max-w-full bg-white shadow-2xl z-50 transition-transform duration-500 ease-in-out md:hidden flex flex-col">
-
         <!-- Header -->
         <div class="p-5 border-b border-gray-200 flex items-center gap-4 bg-white sticky top-0 z-10">
           <ng-container *ngIf="currentUser$ | async as user">
@@ -167,7 +155,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
             <i class="fas fa-times text-2xl text-gray-600"></i>
           </button>
         </div>
-
         <!-- Content -->
         <div class="flex-1 overflow-y-auto pb-20">
           <!-- Notifications Mobile -->
@@ -194,7 +181,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
               <div class="p-8 text-center text-gray-400">جاري التحميل...</div>
             </ng-template>
           </div>
-
           <!-- Menu Mobile -->
           <div *ngIf="mobileMenuOpen && !mobileNotificationsOpen" class="p-5">
             <ng-container *ngIf="currentUser$ | async as user; else guestMobile">
@@ -208,12 +194,10 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                 تسجيل الخروج
               </button>
             </ng-container>
-
             <ng-template #guestMobile>
               <a routerLink="/login" (click)="closeMobileMenu()" class="mobile-link">دخول</a>
               <a routerLink="/signup" (click)="closeMobileMenu()" class="mobile-link bg-indigo-600 text-white hover:bg-indigo-700">إنشاء حساب</a>
             </ng-template>
-
             <hr class="my-6 border-gray-300">
             <div class="space-y-2">
               <a routerLink="/" (click)="closeMobileMenu()" class="mobile-link">الرئيسية</a>
@@ -223,7 +207,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
             </div>
           </div>
         </div>
-
         <!-- عرض جميع الإشعارات في الأسفل -->
         <div *ngIf="mobileNotificationsOpen" class="sticky bottom-0 bg-white border-t border-gray-200 p-4">
           <a routerLink="/notifications" (click)="closeMobileMenu()"
@@ -263,13 +246,10 @@ import { Observable, Subject, takeUntil } from 'rxjs';
 export class NavbarComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   currentUser$ = this.authService.user$;
-
   notificationCount$!: Observable<number>;
   notifications$!: Observable<any[]>;
-
   mobileMenuOpen = false;
   mobileNotificationsOpen = false;
-
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -280,22 +260,18 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.notifications$ = this.notificationService.notifications$;
   }
 
- ngOnInit(): void {
-  this.authService.user$.subscribe(user => {
-    if (user) {
-      this.currentUser = user;
-    }
-  });
-}
+  ngOnInit(): void {
+    // حذفنا الـ subscribe اليدوي تماماً - مش محتاجينه
+    // كل حاجة بتتعامل بالـ async pipe
+  }
 
   getProfileImage(user: any): string {
     if (user?.profileImage) {
-      return user.profileImage; // الباك أو AuthService بيضيف cache buster أو timestamp
+      return user.profileImage;
     }
     return 'assets/default-profile.png';
   }
 
-  // في حال فشل تحميل الصورة (نادر)، نرجع للديفولت
   handleImageError(event: any): void {
     event.target.src = 'assets/default-profile.png';
   }
@@ -324,10 +300,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   navigateToNotification(notification: any): void {
     this.closeMobileMenu();
-
     let route: string[] = ['/notifications'];
     const appId = notification.application_id || null;
-
     switch (notification.type) {
       case 'new_message':
         if (appId) route = ['/inbox', appId];
@@ -338,9 +312,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
         if (appId) route = ['/applications', appId];
         break;
     }
-
     this.router.navigate(route);
-
     if (!notification.read) {
       this.notificationService.markAsReadAndUpdate(notification._id);
     }
