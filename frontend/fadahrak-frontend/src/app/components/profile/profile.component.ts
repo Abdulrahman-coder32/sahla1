@@ -136,43 +136,46 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   saveProfile() {
-    if (this.saving || !this.validateRequiredFields()) return;
+  if (this.saving || !this.validateRequiredFields()) return;
 
-    this.saving = true;
-    this.message = null;
-    console.log('Saving profile...', this.user);
+  this.saving = true;
+  this.message = null;
 
-    const formData = new FormData();
-    formData.append('name', this.user.name.trim());
-    if (this.user.phone?.trim()) formData.append('phone', this.user.phone.trim());
-    if (this.user.bio?.trim()) formData.append('bio', this.user.bio.trim());
+  const formData = new FormData();
+  formData.append('name', this.user.name.trim());
+  if (this.user.phone?.trim()) formData.append('phone', this.user.phone.trim());
+  if (this.user.bio?.trim()) formData.append('bio', this.user.bio.trim());
 
-    // ← جديد: بعث base64 resized من previewUrl
-    if (this.previewUrl && this.previewUrl.startsWith('data:image')) {
-      formData.append('profileImage', this.previewUrl);
-    } else if (this.previewUrl === null) {
-      formData.append('profileImage', '');
-    }
-
-    this.api.updateProfile(formData).subscribe({
-      next: (updatedUser: any) => {
-        console.log('Profile updated:', updatedUser);
-        this.authService.updateCurrentUser(updatedUser);
-        this.user = { ...updatedUser, bio: updatedUser.bio || '' };
-        this.originalUser = { ...this.user };
-        this.previewUrl = updatedUser.profileImage || null;
-        this.selectedFile = null;
-        this.isEditing = false;
-        this.saving = false;
-        this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
-      },
-      error: (err) => {
-        console.error('Failed to save profile:', err);
-        this.showMessage('فشل حفظ التغييرات، حاول مرة أخرى', 'error');
-        this.saving = false;
-      }
-    });
+  if (this.previewUrl && this.previewUrl.startsWith('data:image')) {
+    formData.append('profileImage', this.previewUrl);
+  } else if (this.previewUrl === null) {
+    formData.append('profileImage', '');
   }
+
+  this.api.updateProfile(formData).subscribe({
+    next: (updatedUser: any) => {
+      console.log('Profile updated:', updatedUser);
+
+      // ← الأهم: حدث this.user أولاً بالكامل من الـ response
+      this.user = { ...updatedUser, bio: updatedUser.bio || '' };
+      this.originalUser = { ...this.user };
+      this.previewUrl = updatedUser.profileImage || null;
+      this.selectedFile = null;
+      this.isEditing = false;
+      this.saving = false;
+
+      // ← بعد كده حدث الـ AuthService
+      this.authService.updateCurrentUser(this.user);
+
+      this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
+    },
+    error: (err) => {
+      console.error('Failed to save profile:', err);
+      this.showMessage('فشل حفظ التغييرات، حاول مرة أخرى', 'error');
+      this.saving = false;
+    }
+  });
+}
 
   cancelEdit() {
     this.user = { ...this.originalUser };
