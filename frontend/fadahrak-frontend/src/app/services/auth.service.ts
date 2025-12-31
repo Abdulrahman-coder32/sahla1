@@ -18,15 +18,12 @@ export class AuthService {
   private loadStoredUser() {
     const storedUser = localStorage.getItem('user');
     const storedToken = localStorage.getItem('token');
-
     if (storedUser && storedToken) {
       let user = JSON.parse(storedUser);
-
-      // التأكد من أن صورة البروفايل صالحة
+      // ضمان وجود صورة افتراضية
       if (!user.profileImage) {
         user.profileImage = DEFAULT_AVATAR;
       }
-
       this.userSubject.next(user);
       console.log('تم تحميل المستخدم من localStorage');
     }
@@ -37,28 +34,28 @@ export class AuthService {
     if (!cleanedUser.profileImage) {
       cleanedUser.profileImage = DEFAULT_AVATAR;
     }
-
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(cleanedUser));
     this.userSubject.next(cleanedUser);
-
     console.log('تم حفظ التوكن والمستخدم');
   }
 
+  // الحل الرئيسي للمشكلة: تحديث البيانات بعد تعديل البروفايل
   updateCurrentUser(updatedUser: any) {
     if (!updatedUser) return;
 
+    // ضمان صورة افتراضية
     if (!updatedUser.profileImage) {
       updatedUser.profileImage = DEFAULT_AVATAR;
     }
 
     localStorage.setItem('user', JSON.stringify(updatedUser));
     this.userSubject.next(updatedUser);
-
     console.log('تم تحديث بيانات المستخدم محليًا');
   }
 
-  handleProfileUpdate(data: { userId: string; profileImage: string; cacheBuster: number }) {
+  // للتحديثات الفورية عبر Socket.io (مثل تغيير الصورة من مكان آخر)
+  handleProfileUpdate(data: { userId: string; profileImage: string; cacheBuster?: number }) {
     const currentUser = this.getUser();
     if (!currentUser) return;
     if (currentUser._id !== data.userId && currentUser.id !== data.userId) return;
@@ -70,10 +67,10 @@ export class AuthService {
 
     localStorage.setItem('user', JSON.stringify(updatedUser));
     this.userSubject.next(updatedUser);
-
     console.log('تم تحديث صورة البروفايل real-time عبر Socket');
   }
 
+  // حل مشكلة كاش الصورة في المتصفح
   forceRefreshImage() {
     const current = this.userSubject.value;
     if (!current || !current.profileImage) return;
@@ -81,18 +78,16 @@ export class AuthService {
     try {
       const url = new URL(current.profileImage);
       url.searchParams.set('v', Date.now().toString());
-
       const updated = {
         ...current,
         profileImage: url.toString()
       };
-
       localStorage.setItem('user', JSON.stringify(updated));
       this.userSubject.next(updated);
-
       console.log('تم تجديد كاش الصورة قسريًا');
-    } catch {
-      // الرابط غير صالح، نتجاهل
+    } catch (e) {
+      // إذا كان الرابط من Cloudinary أو مش URL صالح، نتجاهل الخطأ
+      console.warn('رابط الصورة غير صالح لإضافة cache buster');
     }
   }
 
@@ -100,7 +95,6 @@ export class AuthService {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     this.userSubject.next(null);
-
     console.log('تم تسجيل الخروج');
   }
 
