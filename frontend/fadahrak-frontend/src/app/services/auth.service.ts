@@ -22,14 +22,8 @@ export class AuthService {
     if (storedUser && storedToken) {
       let user = JSON.parse(storedUser);
 
-      // تنظيف أي صورة ديفولت قديمة فقط
-      if (
-        user.profileImage &&
-        (
-          user.profileImage.includes('default.jpg') ||
-          user.profileImage.includes('default-avatar')
-        )
-      ) {
+      // التأكد من أن صورة البروفايل صالحة
+      if (!user.profileImage) {
         user.profileImage = DEFAULT_AVATAR;
       }
 
@@ -40,11 +34,7 @@ export class AuthService {
 
   setUser(user: any, token: string) {
     const cleanedUser = { ...user };
-
-    if (
-      cleanedUser.profileImage &&
-      cleanedUser.profileImage.includes('default.jpg')
-    ) {
+    if (!cleanedUser.profileImage) {
       cleanedUser.profileImage = DEFAULT_AVATAR;
     }
 
@@ -55,14 +45,12 @@ export class AuthService {
     console.log('تم حفظ التوكن والمستخدم');
   }
 
-  /**
-   * ✅ تحديث المستخدم الحالي بالكامل
-   * يُستدعى بعد:
-   * - getProfile
-   * - updateProfile
-   */
   updateCurrentUser(updatedUser: any) {
     if (!updatedUser) return;
+
+    if (!updatedUser.profileImage) {
+      updatedUser.profileImage = DEFAULT_AVATAR;
+    }
 
     localStorage.setItem('user', JSON.stringify(updatedUser));
     this.userSubject.next(updatedUser);
@@ -70,27 +58,14 @@ export class AuthService {
     console.log('تم تحديث بيانات المستخدم محليًا');
   }
 
-  /**
-   * تحديث صورة البروفايل من الـ Socket (real-time)
-   */
-  handleProfileUpdate(data: {
-    userId: string;
-    profileImage: string;
-    cacheBuster: number;
-  }) {
+  handleProfileUpdate(data: { userId: string; profileImage: string; cacheBuster: number }) {
     const currentUser = this.getUser();
     if (!currentUser) return;
-
-    if (
-      currentUser._id !== data.userId &&
-      currentUser.id !== data.userId
-    ) {
-      return;
-    }
+    if (currentUser._id !== data.userId && currentUser.id !== data.userId) return;
 
     const updatedUser = {
       ...currentUser,
-      profileImage: data.profileImage
+      profileImage: data.profileImage || DEFAULT_AVATAR
     };
 
     localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -99,9 +74,6 @@ export class AuthService {
     console.log('تم تحديث صورة البروفايل real-time عبر Socket');
   }
 
-  /**
-   * (اختياري) تجديد كاش الصورة يدويًا
-   */
   forceRefreshImage() {
     const current = this.userSubject.value;
     if (!current || !current.profileImage) return;
@@ -120,7 +92,7 @@ export class AuthService {
 
       console.log('تم تجديد كاش الصورة قسريًا');
     } catch {
-      // في حالة إن الرابط مش URL صالح
+      // الرابط غير صالح، نتجاهل
     }
   }
 
