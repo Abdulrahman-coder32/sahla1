@@ -13,7 +13,6 @@ import { JobListComponent } from '../job-list/job-list.component';
       <div class="max-w-7xl mx-auto">
         <!-- Header Section -->
         <div class="dashboard-header">
-          <div class="header-icon">
             <i class="fas fa-user-graduate"></i>
           </div>
           <h1>لوحة تحكم الباحث عن عمل</h1>
