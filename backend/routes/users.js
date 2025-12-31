@@ -2,6 +2,7 @@ const express = require('express');
 const auth = require('../middleware/auth');
 const User = require('../models/User');
 const cloudinary = require('cloudinary').v2;
+const multer = require('multer'); // تأكد إن multer مثبت: npm i multer
 const { getProfileImageUrl } = require('../utils/imageUtils');
 
 const router = express.Router();
@@ -13,6 +14,19 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// تكوين Multer لتخزين الملف مؤقتاً في الذاكرة
+const upload = multer({
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
+  fileFilter: (req, file, cb) => {
+    if (/image\/(jpeg|jpg|png|gif|webp)/.test(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('نوع الملف غير مدعوم'));
+    }
+  },
+  storage: multer.memoryStorage(),
+});
+
 // GET /me
 router.get('/me', auth, async (req, res) => {
   try {
@@ -20,7 +34,6 @@ router.get('/me', auth, async (req, res) => {
     if (!user) return res.status(404).json({ msg: 'المستخدم غير موجود' });
 
     const imageUrl = getProfileImageUrl(user.profileImage, user.cacheBuster || 0);
-
     res.json({
       ...user.toObject(),
       profileImage: imageUrl,
@@ -32,35 +45,40 @@ router.get('/me', auth, async (req, res) => {
 });
 
 // PUT /profile
-router.put('/profile', auth, async (req, res) => {
+router.put('/profile', auth, upload.single('profileImage'), async (req, res) => {
   try {
-    const body = req.body || {};
-    const { name, phone, bio, profileImage } = body;
+    const { name, phone, bio } = req.body;
     const updates = {};
-    const inc = {};
     let cacheBusterIncremented = false;
 
-    if (name !== undefined) updates.name = name;
-    if (phone !== undefined) updates.phone = phone;
-    if (bio !== undefined) updates.bio = bio;
+    if (name !== undefined) updates.name = name.trim();
+    if (phone !== undefined) updates.phone = phone?.trim();
+    if (bio !== undefined) updates.bio = bio?.trim() || '';
 
-    // رفع صورة جديدة
-    if (profileImage && profileImage.startsWith('data:image')) {
-      try {
-        const result = await cloudinary.uploader.upload(profileImage, {
-          folder: 'sahla-profiles',
-          public_id: `user_${req.user.id}`,
-          overwrite: true,
-          resource_type: 'image',
-        });
-        updates.profileImage = result.public_id;
-        inc.cacheBuster = 1;
-        cacheBusterIncremented = true;
-      } catch (cloudErr) {
-        console.error('خطأ رفع الصورة على Cloudinary:', cloudErr);
-        return res.status(500).json({ msg: 'فشل رفع الصورة. حاول مرة أخرى.' });
-      }
-    } else if (profileImage === null || profileImage === '') {
+    // التعامل مع الصورة
+    if (req.file) {
+      // رفع الملف من الذاكرة إلى Cloudinary
+      const result = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: 'sahla-profiles',
+            public_id: `user_${req.user.id}`,
+            overwrite: true,
+            resource_type: 'image',
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        uploadStream.end(req.file.buffer);
+      });
+
+      updates.profileImage = result.public_id;
+      updates.cacheBuster = { $inc: 1 };
+      cacheBusterIncremented = true;
+    } else if (req.body.profileImage === '' || req.body.profileImage === null) {
+      // حذف الصورة
       updates.profileImage = null;
       updates.cacheBuster = 0;
       cacheBusterIncremented = true;
@@ -68,10 +86,7 @@ router.put('/profile', auth, async (req, res) => {
 
     const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
-      {
-        ...(Object.keys(updates).length && { $set: updates }),
-        ...(Object.keys(inc).length && { $inc: inc }),
-      },
+      updates,
       { new: true, runValidators: true }
     ).select('-password');
 
@@ -87,26 +102,20 @@ router.put('/profile', auth, async (req, res) => {
       profileImage: imageUrl,
     });
 
-    // إرسال تحديث real-time عبر Socket.IO
+    // إرسال تحديث real-time
     if (cacheBusterIncremented) {
       const io = req.app.get('io');
       if (io) {
-        // التحقق أن المستخدم مشترك في الـ room
-        const socketRoom = io.sockets.adapter.rooms.get(req.user.id.toString());
-        if (socketRoom) {
-          io.to(req.user.id.toString()).emit('profileUpdated', {
-            userId: req.user.id,
-            profileImage: imageUrl,
-            cacheBuster: finalCacheBuster,
-          });
-        } else {
-          console.warn('Socket.IO: المستخدم غير مشترك في room profileUpdated');
-        }
+        io.to(req.user.id.toString()).emit('profileUpdated', {
+          userId: req.user.id,
+          profileImage: imageUrl,
+          cacheBuster: finalCacheBuster,
+        });
       }
     }
   } catch (err) {
     console.error('خطأ تحديث البروفايل:', err);
-    res.status(500).json({ msg: 'فشل حفظ البيانات' });
+    res.status(500).json({ msg: 'فشل حفظ التغييرات' });
   }
 });
 
