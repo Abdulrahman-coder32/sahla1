@@ -38,17 +38,16 @@ export class ProfileComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    console.log('ProfileComponent initialized');
     this.loadProfile();
 
-    // ← مهم: الاشتراك في user$ بس بعد loadProfile عشان متعملش override
+    // ✅ اشتراك آمن: مفيش overwrite وقت التعديل أو الحفظ
     this.userSub = this.authService.user$.subscribe(currentUser => {
-      if (currentUser && !this.saving) { // ← منع التحديث أثناء الحفظ
-        console.log('AuthService user$ emitted:', currentUser);
-        this.user = { ...currentUser, bio: currentUser.bio || '' };
-        this.previewUrl = this.user.profileImage || null;
-        this.originalUser = { ...this.user };
-      }
+      if (!currentUser) return;
+      if (this.isEditing || this.saving) return;
+
+      this.user = { ...currentUser, bio: currentUser.bio || '' };
+      this.originalUser = { ...this.user };
+      this.previewUrl = this.user.profileImage || null;
     });
   }
 
@@ -60,15 +59,16 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.api.getProfile().subscribe({
       next: (data: any) => {
-        console.log('Data received from API:', data);
         this.user = { ...data, bio: data.bio || '' };
         this.originalUser = { ...this.user };
         this.previewUrl = this.user.profileImage || null;
+
+        // تحديث AuthService مرة واحدة بعد التحميل
         this.authService.updateCurrentUser(this.user);
+
         this.loading = false;
       },
-      error: (err) => {
-        console.error('Failed to load profile:', err);
+      error: () => {
         this.showMessage('فشل تحميل البيانات، حاول مرة أخرى', 'error');
         this.loading = false;
       }
@@ -107,17 +107,15 @@ export class ProfileComponent implements OnInit, OnDestroy {
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
           this.previewUrl = canvas.toDataURL('image/jpeg', 0.8);
-          console.log('Resized base64 ready for upload');
         }
       };
       img.src = originalDataUrl;
     };
     reader.readAsDataURL(file);
-    this.selectedFile = null;
   }
 
   toggleEdit() {
-    this.isEditing = !this.isEditing;
+    this.isEditing = true;
     this.message = null;
   }
 
@@ -148,23 +146,19 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
     this.api.updateProfile(formData).subscribe({
       next: (updatedUser: any) => {
-        console.log('Profile updated from backend:', updatedUser);
-
-        // ← تحديث محلي كامل من الـ response
-        this.user = { ...updatedUser, bio: updatedUser.bio || this.user.bio || '' };
+        this.user = { ...updatedUser, bio: updatedUser.bio || '' };
         this.originalUser = { ...this.user };
         this.previewUrl = updatedUser.profileImage || null;
-        this.selectedFile = null;
+
         this.isEditing = false;
         this.saving = false;
 
-        // ← تحديث AuthService بالـ user الجديد كامل
-        this.authService.updateCurrentUser(updatedUser); // نرسل updatedUser مباشرة مش this.user
+        // ✅ تحديث المستخدم مرة واحدة وبشكل نهائي
+        this.authService.updateCurrentUser(updatedUser);
 
         this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
       },
-      error: (err) => {
-        console.error('Failed to save profile:', err);
+      error: () => {
         this.showMessage('فشل حفظ التغييرات، حاول مرة أخرى', 'error');
         this.saving = false;
       }
@@ -174,14 +168,13 @@ export class ProfileComponent implements OnInit, OnDestroy {
   cancelEdit() {
     this.user = { ...this.originalUser };
     this.previewUrl = this.originalUser.profileImage || null;
-    this.selectedFile = null;
     this.isEditing = false;
     this.message = null;
   }
 
   showMessage(text: string, type: 'success' | 'error') {
     this.message = { text, type };
-    setTimeout(() => this.message = null, 4000);
+    setTimeout(() => (this.message = null), 4000);
   }
 
   getInitials(name: string | undefined): string {
