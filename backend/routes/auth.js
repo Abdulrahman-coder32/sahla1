@@ -2,17 +2,9 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { getProfileImageUrl } = require('../utils/imageUtils'); // ← الإضافة الجديدة والأهم
+
 const router = express.Router();
-
-// الصورة الديفولت والدالة المساعدة (نفس اللي في users.js)
-const DEFAULT_AVATAR = 'https://res.cloudinary.com/dv48puhaq/image/upload/v1767035882/photo_2025-12-29_21-17-37_irc9se.jpg';
-
-const getProfileImageUrl = (publicId, cacheBuster = 0) => {
-  const url = publicId
-    ? `https://res.cloudinary.com/dv48puhaq/image/upload/v${cacheBuster}/sahla-profiles/${publicId}`
-    : DEFAULT_AVATAR;
-  return `${url}?v=${cacheBuster}`;
-};
 
 // Signup
 router.post('/signup', async (req, res) => {
@@ -34,7 +26,7 @@ router.post('/signup', async (req, res) => {
       email,
       password: hashed,
       role,
-      cacheBuster: 0, // صراحة عشان الكاش يبدأ صح
+      cacheBuster: 0, // عشان الكاش يبدأ من الصفر
       ...profile
     });
 
@@ -55,7 +47,6 @@ router.post('/signup', async (req, res) => {
         email: user.email,
         role: user.role,
         profileImage: imageUrl,
-        cacheBuster: user.cacheBuster || 0,
         name: user.name,
         phone: user.phone,
         bio: user.bio,
@@ -65,7 +56,6 @@ router.post('/signup', async (req, res) => {
         work_experience: user.work_experience,
         desired_job_type: user.desired_job_type,
         shop_name: user.shop_name,
-        ...profile
       }
     });
   } catch (err) {
@@ -108,7 +98,6 @@ router.post('/login', async (req, res) => {
         email: user.email,
         role: user.role,
         profileImage: imageUrl,
-        cacheBuster: user.cacheBuster || 0,
         name: user.name,
         phone: user.phone,
         bio: user.bio,
