@@ -7,55 +7,40 @@ import { FormsModule } from '@angular/forms';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div *ngIf="isOpen"
-         class="fixed inset-0 bg-black bg-opacity-50 z-50
-                flex items-center justify-center p-4 overflow-y-auto">
-
+    <div *ngIf="isOpen" class="modal-overlay">
       <!-- المودال -->
-      <div class="bg-white rounded-2xl shadow-2xl
-                  max-w-lg w-full mx-4 sm:mx-0 p-6 sm:p-8 lg:p-10
-                  relative max-h-[90vh] overflow-y-auto">
-
+      <div class="modal-content">
         <!-- عداد الإشعارات -->
-        <div *ngIf="notificationCount > 0"
-             class="absolute -top-3 -right-3 sm:top-4 sm:right-4
-                    bg-red-500 text-white px-2.5 py-1 rounded-full text-xs sm:text-sm
-                    flex items-center gap-1 shadow-lg z-10">
+        <div *ngIf="notificationCount > 0" class="notification-badge">
           <i class="fas fa-bell"></i>
           <span>{{ notificationCount }}</span>
-          <button (click)="clearNotifications()"
-                  class="ml-1 text-white hover:text-gray-200 active:text-gray-300">
-            ×
-          </button>
+          <button (click)="clearNotifications()" class="close-btn">×</button>
         </div>
 
         <!-- العنوان -->
-        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-3 text-gray-900">
+        <h2 class="modal-title">
           تقديم على وظيفة
         </h2>
 
-        <p class="text-center text-gray-600 mb-6 text-base sm:text-lg px-4">
+        <p class="modal-subtitle">
           {{ jobTitle }}
         </p>
 
         <!-- رسالة التقديم -->
-        <div class="mb-6">
-          <label class="block text-gray-700 font-medium mb-2 text-base sm:text-lg">
+        <div class="modal-form-group">
+          <label class="modal-label">
             رسالة التقديم (اختياري)
           </label>
           <textarea
             [(ngModel)]="message"
             placeholder="اكتب رسالتك هنا... (خبراتك، سبب اهتمامك، إلخ)"
-            class="w-full px-4 py-3 border border-gray-300 rounded-xl
-                   focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20
-                   transition-all text-base resize-none"
+            class="modal-textarea"
             rows="6">
           </textarea>
         </div>
 
         <!-- الأزرار -->
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-
+        <div class="modal-buttons">
           <!-- زر الإرسال -->
           <button
             (click)="submit()"
@@ -73,7 +58,6 @@ import { FormsModule } from '@angular/forms';
             class="modal-btn modal-btn-cancel">
             إلغاء
           </button>
-
         </div>
       </div>
     </div>
@@ -83,13 +67,40 @@ import { FormsModule } from '@angular/forms';
       display: block;
     }
 
-    /* Badge الإشعارات - أحمر ناعم */
+    /* الخلفية الشفافة للمودال */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 9999; /* فوق كل شيء */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+
+    /* المودال نفسه */
+    .modal-content {
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      max-width: 600px; /* زيادة العرض قليلاً للشاشات الكبيرة */
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+      z-index: 10000;
+      padding: 2rem; /* padding أكبر للشاشات الكبيرة */
+    }
+
+    /* عداد الإشعارات */
     .notification-badge {
       position: absolute;
-      top: -12px;
-      right: -12px;
-      background: #FEE2E2;
-      color: #DC2626;
+      top: -0.5rem;
+      right: -0.5rem;
+      background: #fee2e2;
+      color: #dc2626;
       padding: 0.5rem 0.75rem;
       border-radius: 9999px;
       display: flex;
@@ -111,13 +122,44 @@ import { FormsModule } from '@angular/forms';
       padding: 0;
     }
 
+    /* العنوان */
+    .modal-title {
+      font-size: 2rem; /* أكبر قليلاً */
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 0.75rem;
+      color: #111827;
+    }
+
+    /* الوصف */
+    .modal-subtitle {
+      text-align: center;
+      color: #6b7280;
+      margin-bottom: 1.5rem;
+      font-size: 1.125rem;
+      padding: 0 1rem;
+    }
+
+    /* مجموعة النموذج */
+    .modal-form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-label {
+      display: block;
+      color: #374151;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      font-size: 1.125rem;
+    }
+
     /* Textarea */
     .modal-textarea {
       width: 100%;
-      padding: 1rem 1.25rem;
-      border-radius: 1rem;
-      border: 1px solid #D1D5DB;
-      background: #FFFFFF;
+      padding: 1rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.75rem;
+      background: #ffffff;
       font-size: 1rem;
       line-height: 1.6;
       transition: all 0.3s ease;
@@ -127,18 +169,26 @@ import { FormsModule } from '@angular/forms';
 
     .modal-textarea:focus {
       outline: none;
-      border-color: #0EA5E9;
-      box-shadow: 0 0 0 3px #E0F2FE;
+      border-color: #0ea5e9;
+      box-shadow: 0 0 0 3px #e0f2fe;
     }
 
     .modal-textarea::placeholder {
-      color: #9CA3AF;
+      color: #9ca3af;
     }
 
-    /* الأزرار - مطابقة للكود السابق */
+    /* الأزرار */
+    .modal-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      justify-content: center;
+      align-items: center;
+    }
+
     .modal-btn {
       padding: 0.875rem 2rem;
-      border-radius: 1rem;
+      border-radius: 0.75rem;
       font-size: 1.125rem;
       font-weight: 600;
       display: flex;
@@ -162,28 +212,71 @@ import { FormsModule } from '@angular/forms';
     }
 
     .modal-btn-submit {
-      background: #E0F2FE;
-      color: #0EA5E9;
+      background: #e0f2fe;
+      color: #0ea5e9;
     }
 
     .modal-btn-submit:hover:not(:disabled) {
-      background: #B2DDFA;
+      background: #b2ddfa;
     }
 
     .modal-btn-cancel {
-      background: #F3F4F6;
-      color: #6B7280;
+      background: #f3f4f6;
+      color: #6b7280;
     }
 
     .modal-btn-cancel:hover:not(:disabled) {
-      background: #E5E7EB;
+      background: #e5e7eb;
     }
 
-    /* Responsive */
+    /* Responsive للشاشات الصغيرة */
     @media (max-width: 640px) {
+      .modal-content {
+        margin: 1rem;
+        padding: 1.5rem; /* padding أصغر على الهواتف */
+        max-width: 95vw; /* أوسع قليلاً على الهواتف */
+        max-height: 85vh;
+      }
+
+      .modal-title {
+        font-size: 1.5rem; /* أصغر على الهواتف */
+      }
+
+      .modal-subtitle {
+        font-size: 1rem;
+        padding: 0;
+      }
+
+      .modal-label {
+        font-size: 1rem;
+      }
+
+      .modal-textarea {
+        font-size: 0.9rem;
+        padding: 0.75rem;
+      }
+
       .modal-btn {
         font-size: 1rem;
         padding: 0.75rem 1.5rem;
+        min-width: 140px;
+      }
+
+      .modal-buttons {
+        flex-direction: row; /* الأزرار جنب بعض على الهواتف */
+        gap: 0.75rem;
+      }
+    }
+
+    /* للشاشات المتوسطة */
+    @media (min-width: 641px) and (max-width: 1024px) {
+      .modal-content {
+        max-width: 500px;
+        padding: 1.75rem;
+      }
+
+      .modal-buttons {
+        flex-direction: row; /* الأزرار جنب بعض على التابلت */
       }
     }
   `]
