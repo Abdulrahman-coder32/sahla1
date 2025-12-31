@@ -2,38 +2,38 @@ const express = require('express');
 const auth = require('../middleware/auth');
 const User = require('../models/User');
 const cloudinary = require('cloudinary').v2;
-const multer = require('multer'); // تأكد إن multer مثبت: npm i multer
+const multer = require('multer');
 const { getProfileImageUrl } = require('../utils/imageUtils');
 
 const router = express.Router();
 
-// تكوين Cloudinary
+// تكوين Cloudinary (من .env)
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// تكوين Multer لتخزين الملف مؤقتاً في الذاكرة
+// تكوين Multer (في الذاكرة عشان نرفع مباشرة على Cloudinary بدون حفظ محلي)
 const upload = multer({
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
   fileFilter: (req, file, cb) => {
-    if (/image\/(jpeg|jpg|png|gif|webp)/.test(file.mimetype)) {
+    if (/image\/(jpeg|jpg|png|gif|webp)/i.test(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('نوع الملف غير مدعوم'));
+      cb(new Error('نوع الملف غير مدعوم، يجب أن تكون صورة'));
     }
   },
-  storage: multer.memoryStorage(),
 });
 
-// GET /me
+// GET /me - جلب البروفايل
 router.get('/me', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
     if (!user) return res.status(404).json({ msg: 'المستخدم غير موجود' });
 
-    const imageUrl = getProfileImageUrl(user.profileImage, user.cacheBuster || 0);
+    const imageUrl = getProfileImageUrl(user.profileImage, user.cacheBuster);
     res.json({
       ...user.toObject(),
       profileImage: imageUrl,
@@ -44,20 +44,21 @@ router.get('/me', auth, async (req, res) => {
   }
 });
 
-// PUT /profile
+// PUT /profile - تحديث البروفايل
 router.put('/profile', auth, upload.single('profileImage'), async (req, res) => {
   try {
     const { name, phone, bio } = req.body;
     const updates = {};
     let cacheBusterIncremented = false;
 
-    if (name !== undefined) updates.name = name.trim();
+    // تحديث الحقول النصية
+    if (name !== undefined && name.trim()) updates.name = name.trim();
     if (phone !== undefined) updates.phone = phone?.trim();
     if (bio !== undefined) updates.bio = bio?.trim() || '';
 
     // التعامل مع الصورة
     if (req.file) {
-      // رفع الملف من الذاكرة إلى Cloudinary
+      // رفع الصورة الجديدة على Cloudinary من الـ buffer
       const result = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           {
@@ -65,6 +66,8 @@ router.put('/profile', auth, upload.single('profileImage'), async (req, res) => 
             public_id: `user_${req.user.id}`,
             overwrite: true,
             resource_type: 'image',
+            quality: 'auto',
+            fetch_format: 'auto',
           },
           (error, result) => {
             if (error) reject(error);
@@ -75,15 +78,22 @@ router.put('/profile', auth, upload.single('profileImage'), async (req, res) => 
       });
 
       updates.profileImage = result.public_id;
-      updates.cacheBuster = { $inc: 1 };
+      updates.$inc = { cacheBuster: 1 };
       cacheBusterIncremented = true;
-    } else if (req.body.profileImage === '' || req.body.profileImage === null) {
-      // حذف الصورة
+    } 
+    // حذف الصورة إذا أرسل المستخدم profileImage فارغ
+    else if (req.body.profileImage === '' || req.body.profileImage === 'null') {
       updates.profileImage = null;
       updates.cacheBuster = 0;
       cacheBusterIncremented = true;
     }
 
+    // لو مفيش تحديثات خالص
+    if (Object.keys(updates).length === 0 && !req.file && !cacheBusterIncremented) {
+      return res.status(400).json({ msg: 'لا توجد تغييرات لحفظها' });
+    }
+
+    // تحديث المستخدم في الـ DB
     const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
       updates,
@@ -94,28 +104,30 @@ router.put('/profile', auth, upload.single('profileImage'), async (req, res) => 
       return res.status(404).json({ msg: 'المستخدم غير موجود' });
     }
 
-    const finalCacheBuster = updatedUser.cacheBuster || 0;
-    const imageUrl = getProfileImageUrl(updatedUser.profileImage, finalCacheBuster);
+    // توليد الـ URL الجديد مع cache buster
+    const imageUrl = getProfileImageUrl(updatedUser.profileImage, updatedUser.cacheBuster);
 
-    res.json({
+    const responseUser = {
       ...updatedUser.toObject(),
       profileImage: imageUrl,
-    });
+    };
 
-    // إرسال تحديث real-time
+    res.json(responseUser);
+
+    // إرسال تحديث real-time عبر Socket.IO إذا تغيرت الصورة
     if (cacheBusterIncremented) {
       const io = req.app.get('io');
       if (io) {
         io.to(req.user.id.toString()).emit('profileUpdated', {
           userId: req.user.id,
           profileImage: imageUrl,
-          cacheBuster: finalCacheBuster,
+          cacheBuster: updatedUser.cacheBuster,
         });
       }
     }
   } catch (err) {
     console.error('خطأ تحديث البروفايل:', err);
-    res.status(500).json({ msg: 'فشل حفظ التغييرات' });
+    res.status(500).json({ msg: 'فشل حفظ التغييرات، حاول مرة أخرى' });
   }
 });
 
