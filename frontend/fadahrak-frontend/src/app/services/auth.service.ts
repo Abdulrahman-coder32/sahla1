@@ -40,19 +40,23 @@ export class AuthService {
     console.log('تم حفظ التوكن والمستخدم');
   }
 
-  // الحل الرئيسي للمشكلة: تحديث البيانات بعد تعديل البروفايل
-  updateCurrentUser(updatedUser: any) {
-    if (!updatedUser) return;
+updateCurrentUser(updatedUser: any) {
+  if (!updatedUser) return;
 
-    // ضمان صورة افتراضية
-    if (!updatedUser.profileImage) {
-      updatedUser.profileImage = DEFAULT_AVATAR;
-    }
+  // ضمان default avatar
+  updatedUser.profileImage = updatedUser.profileImage || DEFAULT_AVATAR;
 
-    localStorage.setItem('user', JSON.stringify(updatedUser));
-    this.userSubject.next(updatedUser);
-    console.log('تم تحديث بيانات المستخدم محليًا');
-  }
+  // تحديث localStorage
+  localStorage.setItem('user', JSON.stringify(updatedUser));
+
+  // تحديث the subject عشان كل الكومبوننتس تشوف الجديد فورًا
+  this.userSubject.next(updatedUser);
+
+  // تجديد كاش الصورة
+  this.forceRefreshImage();
+
+  console.log('تم تحديث بيانات المستخدم محليًا وفي الـ observable');
+}
 
   // للتحديثات الفورية عبر Socket.io (مثل تغيير الصورة من مكان آخر)
   handleProfileUpdate(data: { userId: string; profileImage: string; cacheBuster?: number }) {
