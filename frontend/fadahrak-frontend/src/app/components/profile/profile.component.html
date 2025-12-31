@@ -5,81 +5,71 @@
       <h1>الملف الشخصي</h1>
       <p>إدارة بياناتك الشخصية بسهولة وأمان</p>
     </div>
-
     <!-- Content -->
     <div class="profile-content">
       <!-- Loading -->
-      <div *ngIf="loading" class="flex justify-center py-24">
-        <div class="w-20 h-20 border-6 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+      <div *ngIf="loading" class="loading-spinner">
+        <div class="spinner"></div>
       </div>
 
       <!-- Main Content -->
       <div *ngIf="!loading">
         <!-- Toast Notification -->
-        <div 
-          *ngIf="message" 
-          class="profile-toast" 
-          [class.profile-toast-success]="message.type === 'success'" 
+        <div
+          *ngIf="message"
+          class="profile-toast"
+          [class.profile-toast-success]="message.type === 'success'"
           [class.profile-toast-error]="message.type === 'error'"
         >
           {{ message.text }}
         </div>
 
         <!-- Avatar -->
-        <div class="profile-avatar-wrapper text-center">
-          <div class="relative inline-block">
-            <div class="avatar-container w-48 h-48 mx-auto">
-              <img
-                [src]="previewUrl || user?.profileImage || 'assets/default-profile.png'"
-                alt="صورة الملف الشخصي لـ {{ user.name || 'المستخدم' }}"
-                class="profile-avatar w-full h-full object-cover rounded-full"
-                loading="lazy"
-                (error)="previewUrl = 'assets/default-profile.png'; user.profileImage = 'assets/default-profile.png'"
+        <div class="profile-avatar-wrapper">
+          <div class="avatar-container">
+            <img
+              [src]="previewUrl || user?.profileImage || 'assets/default-profile.png'"
+              alt="صورة الملف الشخصي لـ {{ user.name || 'المستخدم' }}"
+              class="profile-avatar"
+              loading="lazy"
+              (error)="previewUrl = 'assets/default-profile.png'; user.profileImage = 'assets/default-profile.png'"
+            >
+            <label *ngIf="isEditing" class="profile-camera-btn cursor-pointer">
+              <i class="fas fa-camera"></i>
+              <input
+                type="file"
+                accept="image/*"
+                (change)="onFileSelected($event)"
+                class="hidden"
               >
-              <label *ngIf="isEditing" class="profile-camera-btn cursor-pointer">
-                <i class="fas fa-camera"></i>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  (change)="onFileSelected($event)" 
-                  class="hidden"
-                >
-              </label>
-            </div>
+            </label>
           </div>
 
-          <h2 class="profile-name mt-6 text-3xl font-bold text-gray-900">
+          <h2 class="profile-name">
             {{ user.name || 'المستخدم' }}
           </h2>
 
-          <p 
-            class="profile-role mt-2 text-xl font-semibold flex items-center justify-center gap-3" 
-            [style.color]="user?.role === 'job_seeker' ? 'rgb(38,32,137)' : '#16a34a'"
-          >
-            <i 
-              class="fas" 
-              [class.fa-user-graduate]="user?.role === 'job_seeker'"
-              [class.fa-briefcase]="user?.role !== 'job_seeker'"
-            ></i>
+          <!-- نوع الحساب بدون أيقونة -->
+          <p class="profile-role">
             {{ user.role === 'job_seeker' ? 'باحث عن عمل' : 'صاحب عمل' }}
           </p>
 
-          <p class="profile-email mt-2 text-lg text-gray-600 flex items-center justify-center gap-3">
+          <p class="profile-email">
             <i class="fas fa-envelope"></i> {{ user.email }}
           </p>
         </div>
 
         <!-- Info Card -->
-        <div class="profile-info-card mt-10">
-          <h3 class="profile-info-title text-2xl font-bold text-gray-900 flex items-center gap-3">
+        <div class="profile-info-card">
+          <h3 class="profile-info-title">
             <i class="fas fa-info-circle"></i>
             معلومات الحساب
           </h3>
 
-          <div class="profile-form-grid mt-6">
+          <div class="profile-form-grid">
             <!-- الاسم الكامل -->
             <div>
-              <label for="name" class="profile-label block text-lg font-medium text-gray-700 mb-2">
+              <label for="name" class="profile-label">
                 الاسم الكامل <span class="text-red-500">*</span>
               </label>
               <input
@@ -87,7 +77,7 @@
                 name="name"
                 [(ngModel)]="user.name"
                 [disabled]="!isEditing"
-                class="profile-input w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200"
+                class="profile-input"
                 required
                 placeholder="أدخل اسمك الكامل"
               >
@@ -95,7 +85,7 @@
 
             <!-- رقم الهاتف -->
             <div>
-              <label for="phone" class="profile-label block text-lg font-medium text-gray-700 mb-2">
+              <label for="phone" class="profile-label">
                 رقم الهاتف (اختياري)
               </label>
               <input
@@ -103,14 +93,14 @@
                 name="phone"
                 [(ngModel)]="user.phone"
                 [disabled]="!isEditing"
+                class="profile-input"
                 placeholder="01xxxxxxxxx"
-                class="profile-input w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200"
               >
             </div>
 
             <!-- النبذة -->
-            <div class="col-span-2">
-              <label for="bio" class="profile-label block text-lg font-medium text-gray-700 mb-2">
+            <div class="col-span-full">
+              <label for="bio" class="profile-label">
                 نبذة تعريفية (اختياري)
               </label>
               <textarea
@@ -119,43 +109,43 @@
                 [(ngModel)]="user.bio"
                 [disabled]="!isEditing"
                 rows="6"
-                class="profile-input profile-textarea w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 resize-none"
-                placeholder="اكتب نبذة قصيرة عن نفسك... (مثال: مطور ويب شغوف، خبرة 5 سنوات في Angular وNode.js، أبحث عن فرص جديدة)"
+                class="profile-input profile-textarea"
+                placeholder="اكتب نبذة قصيرة عن نفسك..."
               ></textarea>
             </div>
           </div>
         </div>
 
         <!-- Action Buttons -->
-        <div class="profile-actions mt-12 flex flex-col sm:flex-row gap-6 justify-center">
-          <button 
-            *ngIf="!isEditing" 
-            (click)="toggleEdit()" 
-            class="profile-btn profile-btn-edit px-10 py-4 text-xl font-bold transition-all hover:scale-105"
+        <div class="profile-actions">
+          <button
+            *ngIf="!isEditing"
+            (click)="toggleEdit()"
+            class="profile-btn profile-btn-edit"
           >
-            <i class="fas fa-edit mr-3"></i>
+            <i class="fas fa-edit"></i>
             تعديل الملف الشخصي
           </button>
 
-          <div *ngIf="isEditing" class="flex flex-col sm:flex-row gap-6 w-full max-w-4xl mx-auto">
-            <button 
-              (click)="saveProfile()" 
-              [disabled]="saving || !user.name?.trim()" 
-              class="profile-btn profile-btn-save px-10 py-4 text-xl font-bold transition-all hover:scale-105"
+          <div *ngIf="isEditing" class="editing-buttons">
+            <button
+              (click)="saveProfile()"
+              [disabled]="saving || !user.name?.trim()"
+              class="profile-btn profile-btn-save"
             >
-              <i class="fas fa-save mr-3" *ngIf="!saving"></i>
-              <span *ngIf="saving" class="flex items-center gap-3">
-                <span class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              <i class="fas fa-save" *ngIf="!saving"></i>
+              <span *ngIf="saving" class="saving-text">
+                <span class="spinner-small"></span>
                 جاري الحفظ...
               </span>
               <span *ngIf="!saving">حفظ التغييرات</span>
             </button>
 
-            <button 
-              (click)="cancelEdit()" 
-              class="profile-btn profile-btn-cancel px-10 py-4 text-xl font-bold transition-all hover:scale-105"
+            <button
+              (click)="cancelEdit()"
+              class="profile-btn profile-btn-cancel"
             >
-              <i class="fas fa-times mr-3"></i>
+              <i class="fas fa-times"></i>
               إلغاء
             </button>
           </div>
