@@ -10,106 +10,341 @@ import { Router } from '@angular/router';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="min-h-screen py-16 px-4 sm:py-20 sm:px-6 bg-gradient-to-br from-gray-50 to-indigo-50">
-      <div class="max-w-md sm:max-w-lg lg:max-w-2xl mx-auto">
-        <div class="card p-6 sm:p-8 lg:p-10">
-          <h1 class="text-3xl sm:text-4xl font-bold text-center mb-6 sm:mb-8 flex justify-center items-center">
-            <i class="fas fa-user-plus icon text-primary mr-2"></i>إنشاء حساب جديد
-          </h1>
-          <form (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            <div class="relative">
-              <i class="fas fa-envelope absolute right-4 top-4 text-gray-500"></i>
-              <input [(ngModel)]="form.email" name="email" type="email" placeholder="البريد الإلكتروني" class="input-field pr-12" required aria-label="أدخل البريد الإلكتروني">
+    <div class="signup-container">
+      <div class="max-w-2xl mx-auto">
+        <div class="signup-card">
+          <div class="card-header">
+            <i class="fas fa-user-plus"></i>
+            <h1>إنشاء حساب جديد</h1>
+          </div>
+
+          <form (ngSubmit)="onSubmit()" class="signup-form">
+            <div class="form-grid">
+              <div class="input-group">
+                <i class="fas fa-envelope"></i>
+                <input [(ngModel)]="form.email" name="email" type="email" placeholder="البريد الإلكتروني" class="form-input" required>
+              </div>
+
+              <div class="input-group">
+                <i class="fas fa-key"></i>
+                <input [(ngModel)]="form.password" name="password" type="password" placeholder="كلمة المرور" class="form-input" required>
+              </div>
+
+              <div class="input-group">
+                <i class="fas fa-user"></i>
+                <input [(ngModel)]="form.name" name="name" placeholder="الاسم الكامل" class="form-input" required>
+              </div>
+
+              <div class="input-group">
+                <i class="fas fa-birthday-cake"></i>
+                <input [(ngModel)]="form.age" name="age" type="number" placeholder="العمر" class="form-input" required>
+              </div>
+
+              <div class="input-group">
+                <i class="fas fa-map-marker-alt"></i>
+                <input [(ngModel)]="form.governorate" name="governorate" placeholder="المحافظة" class="form-input" required>
+              </div>
+
+              <div class="input-group">
+                <i class="fas fa-city"></i>
+                <input [(ngModel)]="form.city" name="city" placeholder="المدينة" class="form-input" required>
+              </div>
             </div>
-            <div class="relative">
-              <i class="fas fa-key absolute right-4 top-4 text-gray-500"></i>
-              <input [(ngModel)]="form.password" name="password" type="password" placeholder="كلمة المرور" class="input-field pr-12" required aria-label="أدخل كلمة المرور">
-            </div>
-            <div class="relative">
-              <i class="fas fa-user absolute right-4 top-4 text-gray-500"></i>
-              <input [(ngModel)]="form.name" name="name" placeholder="الاسم الكامل" class="input-field pr-12" required aria-label="أدخل الاسم الكامل">
-            </div>
-            <div class="relative">
-              <i class="fas fa-birthday-cake absolute right-4 top-4 text-gray-500"></i>
-              <input [(ngModel)]="form.age" name="age" type="number" placeholder="العمر" class="input-field pr-12" required aria-label="أدخل العمر">
-            </div>
-            <div class="relative">
-              <i class="fas fa-map-marker-alt absolute right-4 top-4 text-gray-500"></i>
-              <input [(ngModel)]="form.governorate" name="governorate" placeholder="المحافظة" class="input-field pr-12" required aria-label="أدخل المحافظة">
-            </div>
-            <div class="relative">
-              <i class="fas fa-city absolute right-4 top-4 text-gray-500"></i>
-              <input [(ngModel)]="form.city" name="city" placeholder="المدينة" class="input-field pr-12" required aria-label="أدخل المدينة">
-            </div>
-            <div class="md:col-span-2">
-              <label class="block text-gray-700 mb-2 flex items-center">
-                <i class="fas fa-user-tag icon mr-2"></i>نوع الحساب
+
+            <!-- نوع الحساب -->
+            <div class="role-section">
+              <label class="role-label">
+                <i class="fas fa-user-tag"></i>
+                نوع الحساب
               </label>
-              <div class="flex flex-col sm:flex-row gap-4 sm:gap-6">
-                <label class="flex items-center cursor-pointer">
-                  <input type="radio" [(ngModel)]="form.role" name="role" value="job_seeker" class="form-radio text-primary" aria-label="باحث عن عمل">
-                  <span class="mr-2">باحث عن عمل</span>
+              <div class="role-options">
+                <label class="role-option">
+                  <input type="radio" [(ngModel)]="form.role" name="role" value="job_seeker">
+                  <span>باحث عن عمل</span>
                 </label>
-                <label class="flex items-center cursor-pointer">
-                  <input type="radio" [(ngModel)]="form.role" name="role" value="shop_owner" class="form-radio text-primary" aria-label="صاحب محل">
-                  <span class="mr-2">صاحب محل</span>
+                <label class="role-option">
+                  <input type="radio" [(ngModel)]="form.role" name="role" value="shop_owner">
+                  <span>صاحب محل</span>
                 </label>
               </div>
             </div>
 
-            <div *ngIf="form.role === 'job_seeker'" class="md:col-span-2 animate-fade-in">
-              <div class="relative">
-                <i class="fas fa-briefcase absolute right-4 top-4 text-gray-500"></i>
-                <input [(ngModel)]="form.work_experience" name="work_experience" placeholder="الخبرة المهنية" class="input-field pr-12" aria-label="أدخل الخبرة المهنية">
+            <!-- حقول إضافية للباحث عن عمل -->
+            <div *ngIf="form.role === 'job_seeker'" class="extra-fields">
+              <div class="input-group">
+                <i class="fas fa-briefcase"></i>
+                <input [(ngModel)]="form.work_experience" name="work_experience" placeholder="الخبرة المهنية" class="form-input">
               </div>
-              <div class="relative mt-4">
-                <i class="fas fa-tags absolute right-4 top-4 text-gray-500"></i>
-                <input [(ngModel)]="form.desired_job_type" name="desired_job_type" placeholder="نوع الوظيفة المرغوبة" class="input-field pr-12" aria-label="أدخل نوع الوظيفة المرغوبة">
-              </div>
-            </div>
-
-            <div *ngIf="form.role === 'shop_owner'" class="md:col-span-2 animate-fade-in">
-              <div class="relative">
-                <i class="fas fa-store absolute right-4 top-4 text-gray-500"></i>
-                <input [(ngModel)]="form.shop_name" name="shop_name" placeholder="اسم المحل" class="input-field pr-12" aria-label="أدخل اسم المحل">
+              <div class="input-group">
+                <i class="fas fa-tags"></i>
+                <input [(ngModel)]="form.desired_job_type" name="desired_job_type" placeholder="نوع الوظيفة المرغوبة" class="form-input">
               </div>
             </div>
 
-            <div class="md:col-span-2">
-              <button type="submit" [disabled]="loading" class="btn-primary w-full py-3 sm:py-4 ripple flex items-center justify-center" aria-label="إنشاء الحساب">
-                <ng-container *ngIf="!loading; else loadingSpinner">
-                  <i class="fas fa-user-plus icon mr-2"></i>إنشاء الحساب
-                </ng-container>
-                <ng-template #loadingSpinner>
-                  <i class="fas fa-spinner fa-spin icon mr-2"></i>جاري الإنشاء...
-                </ng-template>
+            <!-- حقل إضافي لصاحب المحل -->
+            <div *ngIf="form.role === 'shop_owner'" class="extra-fields">
+              <div class="input-group">
+                <i class="fas fa-store"></i>
+                <input [(ngModel)]="form.shop_name" name="shop_name" placeholder="اسم المحل" class="form-input">
+              </div>
+            </div>
+
+            <!-- زر الإرسال -->
+            <div class="submit-section">
+              <button type="submit" [disabled]="loading" class="submit-btn">
+                <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
+                <i class="fas fa-user-plus" *ngIf="!loading"></i>
+                {{ loading ? 'جاري الإنشاء...' : 'إنشاء الحساب' }}
               </button>
             </div>
+
+            <!-- رسالة خطأ -->
+            <p *ngIf="error" class="error-message">
+              <i class="fas fa-exclamation-triangle"></i>
+              {{ error }}
+            </p>
+
+            <!-- رابط تسجيل الدخول -->
+            <p class="login-prompt">
+              لديك حساب؟
+              <a routerLink="/login" class="login-link">تسجيل الدخول</a>
+            </p>
           </form>
-          <p *ngIf="error" class="text-danger text-center mt-4 flex items-center justify-center md:col-span-2">
-            <i class="fas fa-exclamation-triangle icon mr-2"></i>{{ error }}
-          </p>
-          <p class="text-center mt-4 sm:mt-6 text-gray-600 md:col-span-2">
-            لديك حساب؟ <a routerLink="/login" class="text-primary hover:underline">تسجيل الدخول</a>
-          </p>
         </div>
       </div>
     </div>
-  `
+  `,
+  styles: [`
+    .signup-container {
+      min-height: 100vh;
+      padding: 3rem 1rem;
+      direction: rtl;
+      background: linear-gradient(to bottom, #F9FAFB, #E0F2FE);
+      font-family: 'Tajawal', system-ui, sans-serif;
+      display: flex;
+      align-items: center;
+    }
+
+    .signup-card {
+      background: white;
+      border-radius: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      border: 1px solid #E5E7EB;
+      overflow: hidden;
+    }
+
+    .card-header {
+      text-align: center;
+      padding: 2rem 1.5rem 1.5rem;
+      border-bottom: 1px solid #E5E7EB;
+    }
+
+    .card-header i {
+      font-size: 2.5rem;
+      color: #0EA5E9;
+      margin-bottom: 1rem;
+    }
+
+    .card-header h1 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: #1F2937;
+      margin: 0;
+    }
+
+    .signup-form {
+      padding: 2rem;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .input-group {
+      position: relative;
+    }
+
+    .input-group i {
+      position: absolute;
+      right: 1rem;
+      top: 1.125rem;
+      color: #0EA5E9;
+      font-size: 1.125rem;
+      z-index: 10;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 1rem 1rem 1rem 3rem;
+      border-radius: 1rem;
+      border: 1px solid #D1D5DB;
+      background: #FFFFFF;
+      font-size: 1.0625rem;
+      transition: all 0.3s ease;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #0EA5E9;
+      box-shadow: 0 0 0 3px #E0F2FE;
+    }
+
+    .role-section {
+      margin: 2rem 0;
+    }
+
+    .role-label {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 1rem;
+      font-size: 1.125rem;
+    }
+
+    .role-options {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .role-options {
+        flex-direction: row;
+        gap: 2rem;
+      }
+    }
+
+    .role-option {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      cursor: pointer;
+      padding: 1rem;
+      border-radius: 1rem;
+      background: #F8FAFC;
+      transition: all 0.3s ease;
+    }
+
+    .role-option:hover {
+      background: #E0F2FE;
+    }
+
+    .role-option input[type="radio"] {
+      width: 1.25rem;
+      height: 1.25rem;
+      accent-color: #0EA5E9;
+    }
+
+    .extra-fields {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      margin-top: 1rem;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .submit-section {
+      margin-top: 2rem;
+    }
+
+    .submit-btn {
+      width: 100%;
+      background: #E0F2FE;
+      color: #0EA5E9;
+      font-weight: 600;
+      font-size: 1.25rem;
+      padding: 1rem;
+      border-radius: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      transition: all 0.3s ease;
+      border: none;
+      cursor: pointer;
+    }
+
+    .submit-btn:hover:not(:disabled) {
+      background: #B2DDFA;
+      transform: translateY(-2px);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .error-message {
+      text-align: center;
+      background: #FEE2E2;
+      color: #DC2626;
+      padding: 1rem;
+      border-radius: 1rem;
+      margin-top: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      font-weight: 600;
+    }
+
+    .login-prompt {
+      text-align: center;
+      margin-top: 2rem;
+      color: #6B7280;
+      font-size: 1.125rem;
+    }
+
+    .login-link {
+      color: #0EA5E9;
+      font-weight: 700;
+      text-decoration: underline;
+    }
+
+    .login-link:hover {
+      color: #0284C7;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .signup-container { padding: 1.5rem 1rem; }
+      .card-header { padding: 1.5rem 1rem; }
+      .card-header h1 { font-size: 2rem; }
+      .signup-form { padding: 1.5rem; }
+      .submit-btn { font-size: 1.125rem; }
+    }
+  `]
 })
 export class SignupComponent {
   form = {
     email: '',
     password: '',
-    role: 'job_seeker',
+    role: 'job_seeker' as 'job_seeker' | 'shop_owner',
     name: '',
-    age: null,
+    age: null as number | null,
     governorate: '',
     city: '',
     work_experience: '',
     desired_job_type: '',
     shop_name: ''
   };
+
   loading = false;
   error = '';
 
@@ -122,6 +357,7 @@ export class SignupComponent {
   onSubmit() {
     this.loading = true;
     this.error = '';
+
     this.api.signup(this.form).subscribe({
       next: (res) => {
         this.authService.setUser(res.user, res.token);
