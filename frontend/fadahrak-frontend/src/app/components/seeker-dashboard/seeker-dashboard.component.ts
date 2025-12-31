@@ -69,21 +69,6 @@ import { JobListComponent } from '../job-list/job-list.component';
       text-align: center;
       margin-bottom: 3rem;
     }
-
-    .header-icon {
-      width: 4.5rem;
-      height: 4.5rem;
-      background: #E0F2FE;
-      color: #0EA5E9;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 1.5rem;
-      font-size: 2.25rem;
-      box-shadow: 0 8px 20px rgba(14, 165, 233, 0.15);
-    }
-
     .dashboard-header h1 {
       font-size: 2.75rem;
       font-weight: 800;
