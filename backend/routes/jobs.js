@@ -3,7 +3,7 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const JobListing = require('../models/JobListing');
 
-// === إنشاء وظيفة جديدة (مع auth) - حطيناه الأول عشان يشتغل قبل راوت البحث ===
+// === إنشاء وظيفة جديدة (مع auth) ===
 router.post('/create', auth, async (req, res) => {
   if (req.user.role !== 'shop_owner') {
     return res.status(403).json({ msg: 'غير مصرح - يجب أن تكون صاحب عمل' });
@@ -27,11 +27,11 @@ router.post('/create', auth, async (req, res) => {
     const job = new JobListing(jobData);
     await job.save();
 
+    // تعديل مهم: نجيب profileImage و cacheBuster مع shop_name
     const populatedJob = await JobListing.findById(job._id)
-      .populate('owner_id', 'shop_name');
+      .populate('owner_id', 'shop_name profileImage cacheBuster');
 
-    console.log('تم إنشاء الوظيفة بنجاح وحفظها في الداتابيز:', populatedJob);
-
+    console.log('تم إنشاء الوظيفة بنجاح:', populatedJob);
     res.json(populatedJob);
   } catch (err) {
     console.error('خطأ في إنشاء الوظيفة:', err);
@@ -50,9 +50,10 @@ router.post('/', async (req, res) => {
     if (filters.city) query.city = filters.city;
     if (filters.category) query.category = new RegExp(filters.category, 'i');
 
+    // تعديل مهم: نجيب profileImage و cacheBuster
     const jobs = await JobListing.find(query)
       .sort({ createdAt: -1 })
-      .populate('owner_id', 'shop_name');
+      .populate('owner_id', 'shop_name profileImage cacheBuster');
 
     console.log('عدد الوظائف المرجعة في البحث:', jobs.length);
     res.json(jobs);
@@ -62,16 +63,17 @@ router.post('/', async (req, res) => {
   }
 });
 
-// جلب وظائفي
+// === جلب وظائفي (لصاحب المتجر) ===
 router.get('/my', auth, async (req, res) => {
   if (req.user.role !== 'shop_owner') {
     return res.status(403).json({ msg: 'غير مصرح' });
   }
 
   try {
+    // تعديل مهم: نجيب profileImage و cacheBuster
     const jobs = await JobListing.find({ owner_id: req.user.id })
       .sort({ createdAt: -1 })
-      .populate('owner_id', 'shop_name');
+      .populate('owner_id', 'shop_name profileImage cacheBuster');
 
     console.log('جلب وظائفي للمستخدم:', req.user.id, 'العدد:', jobs.length);
     res.json(jobs);
@@ -81,11 +83,12 @@ router.get('/my', auth, async (req, res) => {
   }
 });
 
-// جلب تفاصيل وظيفة واحدة
+// === جلب تفاصيل وظيفة واحدة ===
 router.get('/:id', async (req, res) => {
   try {
+    // تعديل مهم: نجيب profileImage و cacheBuster
     const job = await JobListing.findById(req.params.id)
-      .populate('owner_id', 'shop_name');
+      .populate('owner_id', 'shop_name profileImage cacheBuster');
 
     if (!job) {
       return res.status(404).json({ msg: 'الوظيفة غير موجودة' });
@@ -98,7 +101,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// حذف وظيفة
+// === حذف وظيفة ===
 router.delete('/:id', auth, async (req, res) => {
   try {
     const job = await JobListing.findById(req.params.id);
