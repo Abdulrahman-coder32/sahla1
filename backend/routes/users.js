@@ -14,7 +14,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// تكوين Multer (في الذاكرة عشان نرفع مباشرة على Cloudinary بدون حفظ محلي)
+// تكوين Multer (في الذاكرة)
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
@@ -58,13 +58,15 @@ router.put('/profile', auth, upload.single('profileImage'), async (req, res) => 
 
     // التعامل مع الصورة
     if (req.file) {
-      // رفع الصورة الجديدة على Cloudinary من الـ buffer
+      // إضافة timestamp للـ public_id عشان نضمن صورة جديدة تمامًا كل مرة
+      const timestamp = Date.now();
+      const publicId = `user_${req.user.id}_${timestamp}`;
+
       const result = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           {
             folder: 'sahla-profiles',
-            public_id: `user_${req.user.id}`,
-            overwrite: true,
+            public_id: publicId,
             resource_type: 'image',
             quality: 'auto',
             fetch_format: 'auto',
@@ -80,20 +82,20 @@ router.put('/profile', auth, upload.single('profileImage'), async (req, res) => 
       updates.profileImage = result.public_id;
       updates.$inc = { cacheBuster: 1 };
       cacheBusterIncremented = true;
-    } 
-    // حذف الصورة إذا أرسل المستخدم profileImage فارغ
+    }
+    // حذف الصورة
     else if (req.body.profileImage === '' || req.body.profileImage === 'null') {
       updates.profileImage = null;
       updates.cacheBuster = 0;
       cacheBusterIncremented = true;
     }
 
-    // لو مفيش تحديثات خالص
-    if (Object.keys(updates).length === 0 && !req.file && !cacheBusterIncremented) {
+    // لو مفيش تغييرات
+    if (Object.keys(updates).length === 0 && !cacheBusterIncremented) {
       return res.status(400).json({ msg: 'لا توجد تغييرات لحفظها' });
     }
 
-    // تحديث المستخدم في الـ DB
+    // تحديث في الداتابيز
     const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
       updates,
@@ -104,7 +106,7 @@ router.put('/profile', auth, upload.single('profileImage'), async (req, res) => 
       return res.status(404).json({ msg: 'المستخدم غير موجود' });
     }
 
-    // توليد الـ URL الجديد مع cache buster
+    // توليد URL مع cache buster
     const imageUrl = getProfileImageUrl(updatedUser.profileImage, updatedUser.cacheBuster);
 
     const responseUser = {
@@ -114,7 +116,7 @@ router.put('/profile', auth, upload.single('profileImage'), async (req, res) => 
 
     res.json(responseUser);
 
-    // إرسال تحديث real-time عبر Socket.IO إذا تغيرت الصورة
+    // إرسال تحديث real-time لو اتغيرت الصورة
     if (cacheBusterIncremented) {
       const io = req.app.get('io');
       if (io) {
