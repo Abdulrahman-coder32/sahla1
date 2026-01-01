@@ -3,7 +3,7 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const Application = require('../models/Application');
 const JobListing = require('../models/JobListing');
-const Notification = require('../models/Notification'); // ← جديد: لحفظ الإشعارات في الـ DB
+const Notification = require('../models/Notification');
 
 router.post('/', auth, async (req, res) => {
   if (req.user.role !== 'job_seeker') return res.status(403).json({ msg: 'غير مصرح' });
@@ -24,12 +24,12 @@ router.post('/', auth, async (req, res) => {
     });
     await application.save();
 
+    // تعديل مهم: نجيب profileImage و cacheBuster مع باقي بيانات المتقدم
     const populatedApp = await Application.findById(application._id)
-      .populate('seeker_id', 'name email governorate city age work_experience')
+      .populate('seeker_id', 'name email governorate city age work_experience profileImage cacheBuster')
       .populate('job_id');
 
     const io = req.app.get('io');
-
     if (io) {
       const notificationData = {
         type: 'new_application',
@@ -39,17 +39,14 @@ router.post('/', auth, async (req, res) => {
         createdAt: new Date()
       };
 
-      // إرسال الإشعار عبر السوكت
       io.to(job.owner_id._id.toString()).emit('newNotification', notificationData);
 
-      // حفظ في الـ database
       const newNotif = new Notification({
         user_id: job.owner_id._id,
         ...notificationData
       });
       await newNotif.save();
 
-      // الإشعار القديم (اختياري)
       io.to(job.owner_id._id.toString()).emit('newApplication', {
         type: 'new_application',
         application: populatedApp,
@@ -73,7 +70,10 @@ router.get('/my', auth, async (req, res) => {
   try {
     const apps = await Application.find({ seeker_id: req.user.id })
       .populate('job_id')
+      // إضافة populate للseeker عشان الصورة تتحدث لو غيرتها أنت
+      .populate('seeker_id', 'profileImage cacheBuster')
       .sort({ createdAt: -1 });
+
     res.json(apps);
   } catch (err) {
     console.error('خطأ في جلب تقديماتي:', err);
@@ -96,7 +96,8 @@ router.get('/my-jobs', auth, async (req, res) => {
     }
 
     const apps = await Application.find({ job_id: { $in: jobIds } })
-      .populate('seeker_id', 'name email governorate city age work_experience')
+      // تعديل مهم جدًا: إضافة profileImage و cacheBuster للمتقدم
+      .populate('seeker_id', 'name email governorate city age work_experience profileImage cacheBuster')
       .populate('job_id', 'shop_name category')
       .sort({ createdAt: -1 });
 
@@ -116,7 +117,8 @@ router.get('/job/:jobId', auth, async (req, res) => {
     }
 
     const apps = await Application.find({ job_id: req.params.jobId })
-      .populate('seeker_id', 'name email governorate city age work_experience')
+      // تعديل مهم: إضافة profileImage و cacheBuster
+      .populate('seeker_id', 'name email governorate city age work_experience profileImage cacheBuster')
       .sort({ createdAt: -1 });
 
     res.json(apps);
@@ -145,11 +147,12 @@ router.patch('/:id', auth, async (req, res) => {
     app.status = status;
     await app.save();
 
+    // تعديل مهم: repopulate مع cacheBuster
     const populatedApp = await Application.findById(app._id)
-      .populate('job_id seeker_id');
+      .populate('seeker_id', 'name profileImage cacheBuster')
+      .populate('job_id');
 
     const io = req.app.get('io');
-
     if (io) {
       const statusMessage = status === 'accepted'
         ? `تم قبول تقديمك على وظيفة "${app.job_id.shop_name}"! يمكنك الآن الدردشة مع صاحب العمل 🎉`
@@ -165,17 +168,14 @@ router.patch('/:id', auth, async (req, res) => {
         createdAt: new Date()
       };
 
-      // إشعار للمتقدم
       io.to(app.seeker_id._id.toString()).emit('newNotification', seekerNotificationData);
 
-      // حفظ في الـ DB للمتقدم
       const seekerNotif = new Notification({
         user_id: app.seeker_id._id,
         ...seekerNotificationData
       });
       await seekerNotif.save();
 
-      // الإشعار القديم
       io.to(app.seeker_id._id.toString()).emit('applicationStatusUpdate', {
         type: 'status_update',
         application_id: app._id,
@@ -183,7 +183,6 @@ router.patch('/:id', auth, async (req, res) => {
         message: statusMessage
       });
 
-      // إشعار لصاحب العمل عند القبول فقط
       if (status === 'accepted') {
         const ownerNotificationData = {
           type: 'application_accepted',
@@ -195,14 +194,12 @@ router.patch('/:id', auth, async (req, res) => {
 
         io.to(app.job_id.owner_id.toString()).emit('newNotification', ownerNotificationData);
 
-        // حفظ في الـ DB لصاحب العمل
         const ownerNotif = new Notification({
           user_id: app.job_id.owner_id,
           ...ownerNotificationData
         });
         await ownerNotif.save();
 
-        // الإشعار القديم
         io.to(app.job_id.owner_id.toString()).emit('chatOpened', {
           type: 'chat_opened',
           application_id: app._id,
