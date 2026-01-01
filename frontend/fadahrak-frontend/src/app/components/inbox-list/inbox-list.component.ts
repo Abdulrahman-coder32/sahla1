@@ -44,8 +44,7 @@ import { SocketService } from '../../services/socket.service';
         <div *ngIf="!loading && chats.length > 0" class="chats-list">
           <div *ngFor="let chat of chats; let i = index; trackBy: trackByChatId"
                class="chat-card"
-               [routerLink]="['/inbox', chat._id]"
-               [@fadeIn]="i">
+               [routerLink]="['/inbox', chat._id]">
             <!-- Unread Badge -->
             <div *ngIf="chat.unreadCount > 0" class="unread-badge">
               {{ chat.unreadCount > 99 ? '99+' : chat.unreadCount }}
@@ -84,9 +83,11 @@ import { SocketService } from '../../services/socket.service';
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    [@fadeIn] {
+
+    .chat-card {
       animation: fadeIn 0.4s ease-out forwards;
     }
+
     .inbox-container {
       min-height: 100vh;
       padding: 3rem 1rem;
@@ -317,17 +318,15 @@ export class InboxListComponent implements OnInit, OnDestroy {
         chat.lastUpdated = new Date(data.lastTimestamp);
         chat.unreadCount = data.unreadCount ?? 0;
 
-        // تحديث الصورة + كسر الكاش دايمًا لضمان التحديث الفوري
         if (data.otherUser) {
           if (data.otherUser.profileImage !== undefined) {
             chat.profileImage = data.otherUser.profileImage;
           }
-          // نجبر cache buster جديد في كل تحديث (حتى لو الصورة ما تغيرتش)
           chat.cacheBuster = Date.now();
         }
 
         this.sortChats();
-        this.cdr.detectChanges(); // إجبار Angular على إعادة رسم القائمة فورًا
+        this.cdr.detectChanges();
       } else {
         this.loadAcceptedChats();
       }
@@ -337,7 +336,7 @@ export class InboxListComponent implements OnInit, OnDestroy {
       const chat = this.chats.find(c => c._id === data.application_id);
       if (chat) {
         chat.unreadCount = data.unreadCount;
-        this.cdr.detectChanges(); // ضمان ظهور الـ badge فورًا حتى في الموبايل
+        this.cdr.detectChanges();
       }
     });
 
@@ -409,7 +408,6 @@ export class InboxListComponent implements OnInit, OnDestroy {
     );
   }
 
-  // تحسين الأداء ومنع إعادة رسم غير ضروري
   trackByChatId(index: number, chat: any): string {
     return chat._id;
   }
