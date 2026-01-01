@@ -63,8 +63,7 @@ import {
           <!-- Messages -->
           <div *ngFor="let msg of messages; let i = index"
                class="message-wrapper"
-               [ngClass]="{'my-message': isMyMessage(msg), 'other-message': !isMyMessage(msg)}"
-               [@fadeIn]>
+               [ngClass]="{'my-message': isMyMessage(msg), 'other-message': !isMyMessage(msg)}">
             <img
               [src]="isMyMessage(msg) ? (currentUser?.profileImage || defaultImage) : getOtherUserImage()"
               alt="{{ isMyMessage(msg) ? 'أنت' : chatName }}"
@@ -141,7 +140,11 @@ import {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    [@fadeIn] { animation: fadeIn 0.4s ease-out; }
+
+    .message-wrapper {
+      animation: fadeIn 0.4s ease-out;
+    }
+
     .inbox-chat-container {
       min-height: 100vh;
       padding: 1rem;
@@ -277,7 +280,7 @@ import {
     }
     .input-wrapper {
       display: flex;
-      align-items: end;
+      align-items: flex-end;
       gap: 0.75rem;
     }
     .input-btn {
@@ -453,7 +456,7 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
   currentUser: any = null;
   chatName = '';
   otherUserImage: string | null = null;
-  otherUserCacheBuster: number = Date.now(); // لكسر الكاش دايمًا عند التحديث
+  otherUserCacheBuster: number = Date.now();
   isJobSeeker = false;
   selectedFiles: { file: File; status: 'uploading' | 'success' | 'error' }[] = [];
   isRecording = false;
@@ -522,12 +525,10 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
           ? this.selectedApp.job_id?.owner_id?.profileImage || null
           : this.selectedApp.seeker_id?.profileImage || null;
 
-        // كسر الكاش من البداية
         this.otherUserCacheBuster = Date.now();
 
         this.socketService.joinChat(this.selectedApp._id);
 
-        // mark as read + تحديث إشعارات الشات
         this.markAsRead();
         this.notificationService.markChatNotificationsAsRead(this.selectedApp._id);
 
@@ -557,7 +558,6 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
                 this.cdr.detectChanges();
               });
 
-              // تحديث إشعارات الشات والـ unread في الـ navbar
               this.notificationService.markChatNotificationsAsRead(this.selectedApp._id);
               this.markAsRead();
             }
@@ -578,7 +578,6 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.mediaRecorder) this.mediaRecorder.stop();
   }
 
-  // دالة جديدة لتحديث صورة الطرف الآخر مع كسر الكاش
   getOtherUserImage(): string {
     if (!this.otherUserImage) {
       return this.defaultImage;
@@ -718,7 +717,6 @@ export class InboxComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.api.markMessagesAsRead(this.selectedApp._id).subscribe({
       next: () => {
-        // بعد mark as read نجبر تحديث الصورة
         this.otherUserCacheBuster = Date.now();
         this.cdr.detectChanges();
       },
