@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
@@ -42,11 +42,11 @@ import { SocketService } from '../../services/socket.service';
         </div>
         <!-- Chats List -->
         <div *ngIf="!loading && chats.length > 0" class="chats-list">
-          <div *ngFor="let chat of chats; let i = index"
+          <div *ngFor="let chat of chats; let i = index; trackBy: trackByChatId"
                class="chat-card"
                [routerLink]="['/inbox', chat._id]"
                [@fadeIn]="i">
-            <!-- Unread Badge (حي دايمًا + نبض قوي) -->
+            <!-- Unread Badge -->
             <div *ngIf="chat.unreadCount > 0" class="unread-badge">
               {{ chat.unreadCount > 99 ? '99+' : chat.unreadCount }}
             </div>
@@ -203,18 +203,9 @@ import { SocketService } from '../../services/socket.service';
       pointer-events: none;
     }
     @keyframes pulse {
-      0% {
-        transform: scale(1);
-        opacity: 1;
-      }
-      50% {
-        transform: scale(1.2);
-        opacity: 0.8;
-      }
-      100% {
-        transform: scale(1);
-        opacity: 1;
-      }
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.2); opacity: 0.8; }
+      100% { transform: scale(1); opacity: 1; }
     }
     .chat-content {
       display: flex;
@@ -298,7 +289,8 @@ export class InboxListComponent implements OnInit, OnDestroy {
   constructor(
     private api: ApiService,
     private authService: AuthService,
-    private socketService: SocketService
+    private socketService: SocketService,
+    private cdr: ChangeDetectorRef
   ) {
     const user = this.authService.getUser();
     this.isOwner = user?.role === 'shop_owner';
@@ -323,19 +315,19 @@ export class InboxListComponent implements OnInit, OnDestroy {
       if (chat) {
         chat.lastMessage = data.lastMessage || '[ملف مرفق]';
         chat.lastUpdated = new Date(data.lastTimestamp);
-        chat.unreadCount = data.unreadCount || 0;
+        chat.unreadCount = data.unreadCount ?? 0;
 
+        // تحديث الصورة + كسر الكاش دايمًا لضمان التحديث الفوري
         if (data.otherUser) {
-          if (data.otherUser.profileImage) {
+          if (data.otherUser.profileImage !== undefined) {
             chat.profileImage = data.otherUser.profileImage;
-            chat.cacheBuster = data.otherUser.cacheBuster ?? Date.now();
-          } else if (chat.profileImage) {
-            // قسري لكسر الكاش لو مفيش صورة جديدة
-            chat.cacheBuster = Date.now();
           }
+          // نجبر cache buster جديد في كل تحديث (حتى لو الصورة ما تغيرتش)
+          chat.cacheBuster = Date.now();
         }
 
         this.sortChats();
+        this.cdr.detectChanges(); // إجبار Angular على إعادة رسم القائمة فورًا
       } else {
         this.loadAcceptedChats();
       }
@@ -345,6 +337,7 @@ export class InboxListComponent implements OnInit, OnDestroy {
       const chat = this.chats.find(c => c._id === data.application_id);
       if (chat) {
         chat.unreadCount = data.unreadCount;
+        this.cdr.detectChanges(); // ضمان ظهور الـ badge فورًا حتى في الموبايل
       }
     });
 
@@ -368,7 +361,6 @@ export class InboxListComponent implements OnInit, OnDestroy {
     apiCall.subscribe({
       next: (applications: any[]) => {
         const accepted = applications.filter(app => app.status === 'accepted');
-
         this.chats = accepted.map(app => {
           let unreadCount = 0;
           if (this.isOwner) {
@@ -376,11 +368,9 @@ export class InboxListComponent implements OnInit, OnDestroy {
           } else {
             unreadCount = app.unreadCounts?.seeker || 0;
           }
-
           const otherUser = this.isOwner ? app.seeker_id : app.job_id?.owner_id;
-
           const baseProfileImage = otherUser?.profileImage || null;
-          const cacheBuster = otherUser?.cacheBuster;
+          const cacheBuster = otherUser?.cacheBuster || Date.now();
 
           return {
             _id: app._id,
@@ -394,7 +384,6 @@ export class InboxListComponent implements OnInit, OnDestroy {
             cacheBuster: cacheBuster
           };
         });
-
         this.sortChats();
         this.loading = false;
       },
@@ -409,9 +398,8 @@ export class InboxListComponent implements OnInit, OnDestroy {
     if (!chat.profileImage) {
       return this.defaultImage;
     }
-
     const separator = chat.profileImage.includes('?') ? '&' : '?';
-    const cacheVersion = chat.cacheBuster > 0 ? chat.cacheBuster : Date.now();
+    const cacheVersion = chat.cacheBuster || Date.now();
     return `${chat.profileImage}${separator}v=${cacheVersion}`;
   }
 
@@ -419,6 +407,11 @@ export class InboxListComponent implements OnInit, OnDestroy {
     this.chats.sort((a, b) =>
       new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
     );
+  }
+
+  // تحسين الأداء ومنع إعادة رسم غير ضروري
+  trackByChatId(index: number, chat: any): string {
+    return chat._id;
   }
 
   onImageError(event: Event) {
