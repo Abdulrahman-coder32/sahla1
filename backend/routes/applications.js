@@ -66,14 +66,14 @@ router.get('/my', auth, async (req, res) => {
   if (req.user.role !== 'job_seeker') {
     return res.status(403).json({ msg: 'غير مصرح - يجب أن تكون باحثًا عن عمل' });
   }
-
   try {
     const apps = await Application.find({ seeker_id: req.user.id })
-      .populate('job_id')
-      // إضافة populate للseeker عشان الصورة تتحدث لو غيرتها أنت
+      .populate({
+        path: 'job_id',
+        populate: { path: 'owner_id', select: 'shop_name profileImage cacheBuster' }
+      })
       .populate('seeker_id', 'profileImage cacheBuster')
       .sort({ createdAt: -1 });
-
     res.json(apps);
   } catch (err) {
     console.error('خطأ في جلب تقديماتي:', err);
