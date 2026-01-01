@@ -79,21 +79,37 @@ async function handleChatListUpdate(io, application_id, userId, triggerForBoth =
       lastTimestamp: app.lastTimestamp || app.updatedAt,
       unreadCount: senderUnread,
       otherUser: isOwner
-        ? { name: app.seeker_id.name, profileImage: app.seeker_id.profileImage, cacheBuster: Date.now() }
-        : { name: app.job_id.owner_id.name, profileImage: app.job_id.owner_id.profileImage, cacheBuster: Date.now() }
+        ? { 
+            name: app.seeker_id.name, 
+            profileImage: app.seeker_id.profileImage, 
+            cacheBuster: Date.now()  // دايمًا جديد حتى لو الصورة ما تغيرتش
+          }
+        : { 
+            name: app.job_id.owner_id.name, 
+            profileImage: app.job_id.owner_id.profileImage, 
+            cacheBuster: Date.now()  // دايمًا جديد
+          }
     };
 
-    // تحديث للمستخدم الحالي (المرسل أو اللي فتح الشات)
+    // تحديث للمستخدم الحالي
     io.to(userId).emit('chatListUpdate', basePayload);
 
-    // تحديث للطرف الآخر (إما دائمًا أو فقط لو triggerForBoth = true)
+    // تحديث للطرف الآخر
     if (recipientId && (triggerForBoth || userId !== recipientId)) {
       io.to(recipientId).emit('chatListUpdate', {
         ...basePayload,
         unreadCount: recipientUnread,
         otherUser: isOwner
-          ? { name: app.job_id.owner_id.name, profileImage: app.job_id.owner_id.profileImage, cacheBuster: Date.now() }
-          : { name: app.seeker_id.name, profileImage: app.seeker_id.profileImage, cacheBuster: Date.now() }
+          ? { 
+              name: app.job_id.owner_id.name, 
+              profileImage: app.job_id.owner_id.profileImage, 
+              cacheBuster: Date.now() 
+            }
+          : { 
+              name: app.seeker_id.name, 
+              profileImage: app.seeker_id.profileImage, 
+              cacheBuster: Date.now() 
+            }
       });
     }
   } catch (err) {
@@ -138,7 +154,7 @@ async function handleNewMessage(req, res, populatedMessage, messagePreview) {
 
     const recipientUnread = isOwner ? updatedApp.unreadCounts.seeker : updatedApp.unreadCounts.owner;
 
-    // تحديث قائمة الشات للطرفين مع cacheBuster جديد
+    // تحديث قائمة الشات للطرفين مع cacheBuster جديد دائمًا
     await handleChatListUpdate(io, application_id, req.user.id, true);
 
     // unreadUpdate للمستقبل فقط
@@ -271,10 +287,10 @@ router.patch('/:applicationId/mark-read', auth, async (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      // تحديث قائمة الشات للطرفين مع cacheBuster جديد
+      // تحديث قائمة الشات للطرفين مع cacheBuster جديد دائمًا
       await handleChatListUpdate(io, req.params.applicationId, req.user.id, true);
 
-      // unreadUpdate للمرسل (اللي عمل mark read)
+      // unreadUpdate للمرسل
       io.to(req.user.id).emit('unreadUpdate', {
         application_id: req.params.applicationId,
         unreadCount: 0
