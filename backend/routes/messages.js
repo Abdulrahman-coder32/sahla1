@@ -48,9 +48,7 @@ router.get('/:applicationId', auth, async (req, res) => {
   try {
     const messages = await Message.find({ application_id: req.params.applicationId })
       .sort({ timestamp: 1 })
-      // تعديل مهم: نجيب الصورة و cacheBuster مع الاسم
       .populate('sender_id', 'name profileImage cacheBuster');
-
     res.json(messages);
   } catch (err) {
     console.error(err);
@@ -64,7 +62,6 @@ async function handleNewMessage(req, res, populatedMessage, messagePreview) {
   const io = req.app.get('io');
 
   try {
-    // تعديل مهم جدًا: populate للseeker_id و owner_id مع الصور و cacheBuster
     const app = await Application.findById(application_id)
       .populate({
         path: 'job_id',
@@ -79,13 +76,11 @@ async function handleNewMessage(req, res, populatedMessage, messagePreview) {
     const isOwner = req.user.id === app.job_id.owner_id._id.toString();
     const recipientId = isOwner ? app.seeker_id._id.toString() : app.job_id.owner_id._id.toString();
 
-    // تحديث lastMessage و lastTimestamp
     const updateData = {
       lastMessage: messagePreview,
       lastTimestamp: new Date()
     };
 
-    // زد unreadCount فقط للمستقبل
     if (req.user.id !== recipientId) {
       const recipientRole = isOwner ? 'seeker' : 'owner';
       updateData.$inc = { [`unreadCounts.${recipientRole}`]: 1 };
@@ -99,19 +94,18 @@ async function handleNewMessage(req, res, populatedMessage, messagePreview) {
     const senderUnread = 0;
     const recipientUnread = isOwner ? updatedApp.unreadCounts.seeker : updatedApp.unreadCounts.owner;
 
-    // تحديث للمرسل (unread = 0)
+    // تحديث للمرسل (دائمًا يبعت otherUser عشان الصورة تتحدث للطرفين)
     io.to(req.user.id).emit('chatListUpdate', {
       application_id,
       lastMessage: messagePreview,
       lastTimestamp: updatedApp.lastTimestamp,
       unreadCount: senderUnread,
-      // إضافة بيانات الطرف التاني مع الصورة
       otherUser: isOwner
         ? { name: app.seeker_id.name, profileImage: app.seeker_id.profileImage, cacheBuster: app.seeker_id.cacheBuster }
         : { name: app.job_id.owner_id.name, profileImage: app.job_id.owner_id.profileImage, cacheBuster: app.job_id.owner_id.cacheBuster }
     });
 
-    // تحديث للمستقبل
+    // تحديث للمستقبل (مع otherUser كمان)
     if (req.user.id !== recipientId) {
       io.to(recipientId).emit('chatListUpdate', {
         application_id,
@@ -135,7 +129,13 @@ async function handleNewMessage(req, res, populatedMessage, messagePreview) {
       };
 
       io.to(recipientId).emit('newNotification', notificationData);
-      io.to(recipientId).emit('unreadUpdate', { application_id, unreadCount: recipientUnread });
+
+      // تحديث unreadCount مع application_id
+      io.to(recipientId).emit('unreadUpdate', {
+        application_id,
+        unreadCount: recipientUnread
+      });
+
       io.to(recipientId).emit('newMessageNotification', {
         type: 'new_message',
         application_id,
@@ -174,7 +174,6 @@ router.post('/', auth, async (req, res) => {
     });
     await newMessage.save();
 
-    // تعديل: populate مع الصورة و cacheBuster
     const populatedMessage = await Message.findById(newMessage._id)
       .populate('sender_id', 'name profileImage cacheBuster');
 
@@ -209,7 +208,6 @@ router.post('/media', auth, upload.single('file'), async (req, res) => {
     });
     await newMessage.save();
 
-    // تعديل: populate مع الصورة و cacheBuster
     const populatedMessage = await Message.findById(newMessage._id)
       .populate('sender_id', 'name profileImage cacheBuster');
 
@@ -221,7 +219,7 @@ router.post('/media', auth, upload.single('file'), async (req, res) => {
   }
 });
 
-// وضع علامة قراءة – بدون تغيير كبير (بس عدلنا الpopulate في handleNewMessage فوق)
+// وضع علامة قراءة
 router.patch('/:applicationId/mark-read', auth, async (req, res) => {
   try {
     const application = await Application.findById(req.params.applicationId)
@@ -277,6 +275,11 @@ router.patch('/:applicationId/mark-read', auth, async (req, res) => {
           otherUser: isOwner
             ? { name: application.job_id.owner_id.name, profileImage: application.job_id.owner_id.profileImage, cacheBuster: application.job_id.owner_id.cacheBuster }
             : { name: application.seeker_id.name, profileImage: application.seeker_id.profileImage, cacheBuster: application.seeker_id.cacheBuster }
+        });
+
+        io.to(recipientId).emit('unreadUpdate', {
+          application_id: req.params.applicationId,
+          unreadCount: recipientUnread
         });
       }
     }
