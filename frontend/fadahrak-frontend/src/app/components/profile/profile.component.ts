@@ -41,11 +41,8 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.loadProfile();
 
     // اشتراك آمن في تغييرات المستخدم من AuthService
-    // يمنع الكتابة فوق البيانات أثناء التعديل أو الحفظ
     this.userSub = this.authService.user$.subscribe(currentUser => {
-      if (!currentUser) return;
-      if (this.isEditing || this.saving) return;
-
+      if (!currentUser || this.isEditing || this.saving) return;
       this.user = { ...currentUser, bio: currentUser.bio || '' };
       this.originalUser = { ...this.user };
       this.previewUrl = this.user.profileImage || null;
@@ -63,13 +60,8 @@ export class ProfileComponent implements OnInit, OnDestroy {
         this.user = { ...data, bio: data.bio || '' };
         this.originalUser = { ...this.user };
         this.previewUrl = this.user.profileImage || null;
-
-        // تحديث AuthService لضمان تزامن البيانات عبر التطبيق
         this.authService.updateCurrentUser(this.user);
-
-        // تجديد كاش الصورة لتجنب عرض نسخة قديمة من CDN
         this.authService.forceRefreshImage();
-
         this.loading = false;
       },
       error: () => {
@@ -83,14 +75,12 @@ export class ProfileComponent implements OnInit, OnDestroy {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // التحقق من حجم الصورة (حد أقصى 10 ميجا)
     if (file.size > 10 * 1024 * 1024) {
       this.showMessage('الصورة كبيرة جدًا، اختر أصغر من 10 ميجا', 'error');
       return;
     }
 
-    this.selectedFile = file; // حفظ الملف الأصلي (أفضل للرفع)
-
+    this.selectedFile = file;
     const reader = new FileReader();
     reader.onload = (e: any) => {
       const originalDataUrl = e.target.result as string;
@@ -147,33 +137,30 @@ export class ProfileComponent implements OnInit, OnDestroy {
       formData.append('phone', this.user.phone.trim());
     }
 
-    // دائمًا نرسل bio حتى لو فارغ (عشان الباك يقدر يمسحه)
     formData.append('bio', this.user.bio?.trim() || '');
 
-    // إرسال الصورة فقط إذا تم اختيار ملف جديد
     if (this.selectedFile) {
       formData.append('profileImage', this.selectedFile, this.selectedFile.name);
     } else if (this.previewUrl === null) {
-      // المستخدم حذف الصورة
       formData.append('profileImage', '');
     }
-    // إذا كان previewUrl موجود ومش null ومش ملف جديد → لا نرسل شيء (يبقى كما هو)
 
     this.api.updateProfile(formData).subscribe({
-     next: (updatedUser: any) => {
-  // تحديث الـ form محليًا
-  this.user = { ...updatedUser, bio: updatedUser.bio || '' };
-  this.originalUser = { ...this.user };
-  this.previewUrl = updatedUser.profileImage || null;
+      next: (updatedUser: any) => {
+        // تحديث محلي
+        this.user = { ...updatedUser, bio: updatedUser.bio || '' };
+        this.originalUser = { ...this.user };
+        this.previewUrl = updatedUser.profileImage || null;
 
-  this.isEditing = false;
-  this.saving = false;
+        // مهم جدًا: إعادة تحميل البروفايل من الـ API عشان نجيب cacheBuster جديد
+        this.loadProfile();
 
-  // الحل الرئيسي: تحديث the AuthService
-  this.authService.updateCurrentUser(updatedUser);
+        this.selectedFile = null; // السماح برفع صورة جديدة تاني
+        this.isEditing = false;
+        this.saving = false;
 
-  this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
-},
+        this.showMessage('تم تحديث الملف الشخصي بنجاح!', 'success');
+      },
       error: (err) => {
         console.error('خطأ في حفظ البروفايل:', err);
         this.showMessage('فشل حفظ التغييرات، حاول مرة أخرى', 'error');
