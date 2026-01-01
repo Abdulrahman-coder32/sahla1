@@ -38,20 +38,16 @@ export class ApiService {
   // معالجة الصور + إضافة cache buster قسري
   private processProfileImages(data: any): any {
     if (!data) return data;
-
     if (Array.isArray(data)) {
       return data.map(item => this.processProfileImages(item));
     }
-
     if (typeof data === 'object') {
       if (data.profileImage !== undefined) {
         let imageUrl = data.profileImage;
-
         // لو public_id (مش URL كامل)
         if (imageUrl && !imageUrl.startsWith('http')) {
           imageUrl = this.getCloudinaryUrl(imageUrl);
         }
-
         // لو URL كامل من Cloudinary أو ديفولت
         if (imageUrl && imageUrl.startsWith('http')) {
           const separator = imageUrl.includes('?') ? '&' : '?';
@@ -61,12 +57,10 @@ export class ApiService {
         } else {
           imageUrl = DEFAULT_AVATAR;
         }
-
         data.profileImage = imageUrl;
       } else {
         data.profileImage = DEFAULT_AVATAR;
       }
-
       // معالجة كل object داخلي (owner_id, seeker_id, sender_id, etc.)
       Object.keys(data).forEach(key => {
         if (data[key] && typeof data[key] === 'object') {
@@ -74,7 +68,6 @@ export class ApiService {
         }
       });
     }
-
     return data;
   }
 
@@ -197,6 +190,7 @@ export class ApiService {
     formData.append('file', file);
     formData.append('type', type);
     if (filename) formData.append('filename', filename);
+
     return this.http.post(`${this.apiUrl}/messages/media`, formData, { headers: this.getHeaders(true, true) }).pipe(
       catchError(this.handleError)
     );
@@ -228,6 +222,13 @@ export class ApiService {
 
   markChatNotificationsAsRead(applicationId: string): Observable<any> {
     return this.http.patch(`${this.apiUrl}/notifications/mark-chat-read/${applicationId}`, {}, { headers: this.getHeaders() }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // جديد: وضع علامة قراءة على كل الإشعارات
+  markAllNotificationsAsRead(): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/notifications/mark-all-read`, {}, { headers: this.getHeaders() }).pipe(
       catchError(this.handleError)
     );
   }
