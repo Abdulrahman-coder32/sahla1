@@ -10,7 +10,6 @@ const fs = require('fs');
 
 // إعداد مجلد رفع الملفات
 const UPLOAD_DIR = path.join(__dirname, '..', '..', 'uploads', 'messages');
-
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
@@ -31,7 +30,6 @@ const fileFilter = (req, file, cb) => {
     'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg'
   ];
-
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
@@ -50,7 +48,9 @@ router.get('/:applicationId', auth, async (req, res) => {
   try {
     const messages = await Message.find({ application_id: req.params.applicationId })
       .sort({ timestamp: 1 })
-      .populate('sender_id', 'name');
+      // تعديل مهم: نجيب الصورة و cacheBuster مع الاسم
+      .populate('sender_id', 'name profileImage cacheBuster');
+
     res.json(messages);
   } catch (err) {
     console.error(err);
@@ -64,16 +64,20 @@ async function handleNewMessage(req, res, populatedMessage, messagePreview) {
   const io = req.app.get('io');
 
   try {
+    // تعديل مهم جدًا: populate للseeker_id و owner_id مع الصور و cacheBuster
     const app = await Application.findById(application_id)
-      .populate('job_id', 'owner_id')
-      .populate('seeker_id');
+      .populate({
+        path: 'job_id',
+        populate: { path: 'owner_id', select: 'name profileImage cacheBuster' }
+      })
+      .populate('seeker_id', 'name profileImage cacheBuster');
 
     if (!app) {
       return res.status(404).json({ msg: 'المحادثة غير موجودة' });
     }
 
-    const isOwner = req.user.id === app.job_id.owner_id.toString();
-    const recipientId = isOwner ? app.seeker_id._id.toString() : app.job_id.owner_id.toString();
+    const isOwner = req.user.id === app.job_id.owner_id._id.toString();
+    const recipientId = isOwner ? app.seeker_id._id.toString() : app.job_id.owner_id._id.toString();
 
     // تحديث lastMessage و lastTimestamp
     const updateData = {
@@ -92,17 +96,19 @@ async function handleNewMessage(req, res, populatedMessage, messagePreview) {
     // إرسال الرسالة الجديدة للروم
     io.to(application_id).emit('newMessage', populatedMessage);
 
-    // ← الحل النهائي: المرسل دائمًا يستقبل unreadCount = 0
-    // والمستقبل يستقبل القيمة الحقيقية بتاعته بعد الزيادة
-    const senderUnread = 0; // المرسل ما يشوفش unread أبدًا لأنه هو اللي بعت
+    const senderUnread = 0;
     const recipientUnread = isOwner ? updatedApp.unreadCounts.seeker : updatedApp.unreadCounts.owner;
 
-    // تحديث للمرسل
+    // تحديث للمرسل (unread = 0)
     io.to(req.user.id).emit('chatListUpdate', {
       application_id,
       lastMessage: messagePreview,
       lastTimestamp: updatedApp.lastTimestamp,
-      unreadCount: senderUnread  // ← دائمًا 0
+      unreadCount: senderUnread,
+      // إضافة بيانات الطرف التاني مع الصورة
+      otherUser: isOwner
+        ? { name: app.seeker_id.name, profileImage: app.seeker_id.profileImage, cacheBuster: app.seeker_id.cacheBuster }
+        : { name: app.job_id.owner_id.name, profileImage: app.job_id.owner_id.profileImage, cacheBuster: app.job_id.owner_id.cacheBuster }
     });
 
     // تحديث للمستقبل
@@ -111,11 +117,14 @@ async function handleNewMessage(req, res, populatedMessage, messagePreview) {
         application_id,
         lastMessage: messagePreview,
         lastTimestamp: updatedApp.lastTimestamp,
-        unreadCount: recipientUnread
+        unreadCount: recipientUnread,
+        otherUser: isOwner
+          ? { name: app.job_id.owner_id.name, profileImage: app.job_id.owner_id.profileImage, cacheBuster: app.job_id.owner_id.cacheBuster }
+          : { name: app.seeker_id.name, profileImage: app.seeker_id.profileImage, cacheBuster: app.seeker_id.cacheBuster }
       });
     }
 
-    // إشعارات وتحديثات للمستقبل فقط
+    // إشعارات للمستقبل فقط
     if (req.user.id !== recipientId) {
       const notificationData = {
         type: 'new_message',
@@ -126,10 +135,7 @@ async function handleNewMessage(req, res, populatedMessage, messagePreview) {
       };
 
       io.to(recipientId).emit('newNotification', notificationData);
-      io.to(recipientId).emit('unreadUpdate', {
-        application_id,
-        unreadCount: recipientUnread
-      });
+      io.to(recipientId).emit('unreadUpdate', { application_id, unreadCount: recipientUnread });
       io.to(recipientId).emit('newMessageNotification', {
         type: 'new_message',
         application_id,
@@ -154,7 +160,6 @@ async function handleNewMessage(req, res, populatedMessage, messagePreview) {
 // إرسال رسالة نصية
 router.post('/', auth, async (req, res) => {
   const { application_id, message } = req.body;
-
   if (!application_id || !message?.trim()) {
     return res.status(400).json({ msg: 'بيانات ناقصة' });
   }
@@ -167,11 +172,11 @@ router.post('/', auth, async (req, res) => {
       message: message.trim(),
       timestamp: new Date()
     });
-
     await newMessage.save();
 
+    // تعديل: populate مع الصورة و cacheBuster
     const populatedMessage = await Message.findById(newMessage._id)
-      .populate('sender_id', 'name');
+      .populate('sender_id', 'name profileImage cacheBuster');
 
     await handleNewMessage(req, res, populatedMessage, message.trim());
   } catch (err) {
@@ -202,14 +207,13 @@ router.post('/media', auth, upload.single('file'), async (req, res) => {
       size: file.size,
       timestamp: new Date()
     });
-
     await newMessage.save();
 
+    // تعديل: populate مع الصورة و cacheBuster
     const populatedMessage = await Message.findById(newMessage._id)
-      .populate('sender_id', 'name');
+      .populate('sender_id', 'name profileImage cacheBuster');
 
     const preview = `[${messageType === 'image' ? 'صورة' : messageType === 'audio' ? 'رسالة صوتية' : 'ملف'}]`;
-
     await handleNewMessage(req, res, populatedMessage, preview);
   } catch (err) {
     console.error('خطأ في رفع الميديا:', err);
@@ -217,18 +221,21 @@ router.post('/media', auth, upload.single('file'), async (req, res) => {
   }
 });
 
-// وضع علامة قراءة – بدون تغيير (لأنه شغال صح)
+// وضع علامة قراءة – بدون تغيير كبير (بس عدلنا الpopulate في handleNewMessage فوق)
 router.patch('/:applicationId/mark-read', auth, async (req, res) => {
   try {
     const application = await Application.findById(req.params.applicationId)
-      .populate('job_id', 'owner_id')
-      .populate('seeker_id');
+      .populate({
+        path: 'job_id',
+        populate: { path: 'owner_id', select: 'name profileImage cacheBuster' }
+      })
+      .populate('seeker_id', 'name profileImage cacheBuster');
 
     if (!application) {
       return res.status(404).json({ msg: 'الدردشة غير موجودة' });
     }
 
-    const isOwner = req.user.id === application.job_id.owner_id?.toString();
+    const isOwner = req.user.id === application.job_id.owner_id?._id.toString();
     const fieldToReset = isOwner ? 'unreadCounts.owner' : 'unreadCounts.seeker';
 
     const updatedApp = await Application.findByIdAndUpdate(
@@ -239,18 +246,21 @@ router.patch('/:applicationId/mark-read', auth, async (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      const recipientId = isOwner 
-        ? application.seeker_id?._id.toString() 
-        : application.job_id.owner_id?.toString();
+      const recipientId = isOwner
+        ? application.seeker_id?._id.toString()
+        : application.job_id.owner_id?._id.toString();
 
-      const senderUnread = 0; // اللي عمل mark read يشوف 0
+      const senderUnread = 0;
       const recipientUnread = isOwner ? updatedApp.unreadCounts.seeker : updatedApp.unreadCounts.owner;
 
       io.to(req.user.id).emit('chatListUpdate', {
         application_id: req.params.applicationId,
         lastMessage: updatedApp.lastMessage,
         lastTimestamp: updatedApp.lastTimestamp,
-        unreadCount: senderUnread
+        unreadCount: senderUnread,
+        otherUser: isOwner
+          ? { name: application.seeker_id.name, profileImage: application.seeker_id.profileImage, cacheBuster: application.seeker_id.cacheBuster }
+          : { name: application.job_id.owner_id.name, profileImage: application.job_id.owner_id.profileImage, cacheBuster: application.job_id.owner_id.cacheBuster }
       });
 
       io.to(req.user.id).emit('unreadUpdate', {
@@ -263,7 +273,10 @@ router.patch('/:applicationId/mark-read', auth, async (req, res) => {
           application_id: req.params.applicationId,
           lastMessage: updatedApp.lastMessage,
           lastTimestamp: updatedApp.lastTimestamp,
-          unreadCount: recipientUnread
+          unreadCount: recipientUnread,
+          otherUser: isOwner
+            ? { name: application.job_id.owner_id.name, profileImage: application.job_id.owner_id.profileImage, cacheBuster: application.job_id.owner_id.cacheBuster }
+            : { name: application.seeker_id.name, profileImage: application.seeker_id.profileImage, cacheBuster: application.seeker_id.cacheBuster }
         });
       }
     }
