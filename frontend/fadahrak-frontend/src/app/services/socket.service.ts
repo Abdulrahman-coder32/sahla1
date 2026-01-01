@@ -51,9 +51,15 @@ export class SocketService {
     });
 
     // استقبال تحديث صورة البروفايل real-time
-    this.socket.on('profileUpdated', (data: { userId: string; profileImage?: string; cacheBuster?: number }) => {
+    // profileImage ممكن يكون undefined أو null، فبنعمل fallback للـ handleProfileUpdate
+    this.socket.on('profileUpdated', (data: { userId: string; profileImage?: string | null; cacheBuster?: number }) => {
       console.log('تحديث صورة بروفايل وصل عبر السوكت:', data);
-      this.authService.handleProfileUpdate(data);
+
+      this.authService.handleProfileUpdate({
+        userId: data.userId,
+        profileImage: data.profileImage || '', // fallback لstring فاضي لو undefined أو null
+        cacheBuster: data.cacheBuster
+      });
     });
   }
 
@@ -126,7 +132,7 @@ export class SocketService {
     }
   }
 
-  // إضافة listener جديد لتحديث الصورة في قائمة الشات مباشرة (بدون الاعتماد على profileUpdated فقط)
+  // إضافة listener جديد لتحديث الصورة في قائمة الشات مباشرة
   onProfileImageUpdateInChat(callback: (data: {
     application_id: string;
     otherUser: {
