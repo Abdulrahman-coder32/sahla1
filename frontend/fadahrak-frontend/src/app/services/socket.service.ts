@@ -50,10 +50,8 @@ export class SocketService {
       console.error('❌ خطأ في الاتصال بالسوكت:', err.message);
     });
 
-    // ──────────────────────────────
     // استقبال تحديث صورة البروفايل real-time
-    // ──────────────────────────────
-    this.socket.on('profileUpdated', (data: { userId: string; profileImage: string; cacheBuster: number }) => {
+    this.socket.on('profileUpdated', (data: { userId: string; profileImage?: string; cacheBuster?: number }) => {
       console.log('تحديث صورة بروفايل وصل عبر السوكت:', data);
       this.authService.handleProfileUpdate(data);
     });
@@ -111,10 +109,34 @@ export class SocketService {
     }
   }
 
-  onChatListUpdate(callback: (data: { application_id: string; lastMessage: string; lastTimestamp: Date; unreadCount: number }) => void) {
+  onChatListUpdate(callback: (data: {
+    application_id: string;
+    lastMessage?: string;
+    lastTimestamp?: Date | string;
+    unreadCount?: number;
+    otherUser?: {
+      name?: string;
+      profileImage?: string | null;
+      cacheBuster?: number;
+    }
+  }) => void) {
     if (this.socket) {
       this.socket.off('chatListUpdate');
       this.socket.on('chatListUpdate', callback);
+    }
+  }
+
+  // إضافة listener جديد لتحديث الصورة في قائمة الشات مباشرة (بدون الاعتماد على profileUpdated فقط)
+  onProfileImageUpdateInChat(callback: (data: {
+    application_id: string;
+    otherUser: {
+      profileImage?: string | null;
+      cacheBuster?: number;
+    }
+  }) => void) {
+    if (this.socket) {
+      this.socket.off('profileImageUpdateInChat');
+      this.socket.on('profileImageUpdateInChat', callback);
     }
   }
 
