@@ -16,10 +16,14 @@ export class NotificationService implements OnDestroy {
   private initialized = false;
   private subscriptions: Subscription[] = [];
 
-  constructor(private api: ApiService, private socketService: SocketService) {}
+  constructor(
+    private api: ApiService,
+    private socketService: SocketService
+  ) {}
 
   init() {
     if (this.initialized) return;
+
     this.initialized = true;
     console.log('NotificationService: بدء التهيئة...');
 
@@ -53,13 +57,18 @@ export class NotificationService implements OnDestroy {
       (n._id && notification._id && n._id === notification._id) ||
       (n.application_id === notification.application_id &&
         n.type === notification.type &&
-        n.message === notification.message)
+        n.message === notification.message &&
+        new Date(n.createdAt).getTime() === new Date(notification.createdAt).getTime())
     );
 
     if (!exists) {
       const updated = [notification, ...current];
       this.notificationsSubject.next(updated);
-      if (!notification.read) this.incrementUnreadCount();
+
+      if (!notification.read) {
+        this.incrementUnreadCount();
+      }
+
       console.log('✨ إشعار جديد وصل:', notification.message || notification);
     }
   }
@@ -91,6 +100,7 @@ export class NotificationService implements OnDestroy {
         const sorted = notifications.sort(
           (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
+
         this.notificationsSubject.next(sorted);
       },
       error: (err: any) => {
@@ -101,11 +111,18 @@ export class NotificationService implements OnDestroy {
     this.subscriptions.push(sub);
   }
 
+  // تم تحسينها: نمسح العداد ونحدث القائمة + نرسل طلب للـ backend لو في API
   markAllAsRead() {
     const current = this.notificationsSubject.value;
     const allRead = current.map(n => ({ ...n, read: true }));
     this.notificationsSubject.next(allRead);
     this.unreadCountSubject.next(0);
+
+    // لو في API لتحديث كل الإشعارات كمقروءة، نستدعيه (موجود في الـ backend)
+    this.api.markAllNotificationsAsRead?.()?.subscribe({
+      next: () => console.log('تم تحديث كل الإشعارات كمقروءة في الـ backend'),
+      error: (err) => console.error('خطأ في mark all as read في الـ backend:', err)
+    });
   }
 
   markAsReadAndUpdate(notificationId: string) {
@@ -115,7 +132,7 @@ export class NotificationService implements OnDestroy {
           n._id === notificationId ? { ...n, read: true } : n
         );
         this.notificationsSubject.next(updated);
-        this.loadUnreadCount();
+        this.loadUnreadCount(); // تحديث العداد من الـ backend للدقة
       },
       error: (err: any) => {
         console.error('خطأ في تحديث حالة القراءة:', err);
@@ -127,6 +144,7 @@ export class NotificationService implements OnDestroy {
   markChatNotificationsAsRead(applicationId: string) {
     const current = this.notificationsSubject.value;
     let unreadDecreased = 0;
+
     const updated = current.map(n => {
       if (n.type === 'new_message' && n.application_id === applicationId && !n.read) {
         unreadDecreased++;
@@ -142,6 +160,7 @@ export class NotificationService implements OnDestroy {
     const sub = this.api.markChatNotificationsAsRead(applicationId).subscribe({
       next: () => {
         console.log('تم تحديث إشعارات الشات في الداتابيز بنجاح:', applicationId);
+        this.loadUnreadCount(); // تحديث العداد من الـ backend بعد التغيير
       },
       error: (err: any) => {
         console.error('خطأ في تحديث إشعارات الشات في الـ backend:', err);
