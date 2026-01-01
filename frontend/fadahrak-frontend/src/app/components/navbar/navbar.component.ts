@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
-import { Observable, Subject, takeUntil } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 
 @Component({
   selector: 'app-navbar',
@@ -19,18 +19,16 @@ import { Observable, Subject, takeUntil } from 'rxjs';
               <img src="assets/logo.png" alt="سَهلة" class="logo">
             </a>
           </div>
-
           <!-- Desktop Navigation -->
           <div class="desktop-nav">
             <a routerLink="/" class="nav-link" routerLinkActive="active-link">الرئيسية</a>
             <a routerLink="/jobs" class="nav-link" routerLinkActive="active-link">الوظائف</a>
             <a routerLink="/about" class="nav-link" routerLinkActive="active-link">عننا</a>
             <a routerLink="/contact" class="nav-link" routerLinkActive="active-link">اتصل بنا</a>
-
             <ng-container *ngIf="currentUser$ | async as user; else guestDesktop">
               <!-- Notifications -->
               <div class="dropdown-wrapper">
-                <button class="nav-link notifications-btn">
+                <button class="nav-link notifications-btn" (click)="markNotificationsAsRead()">
                   الإشعارات
                   <ng-container *ngIf="notificationCount$ | async as count">
                     <span *ngIf="count > 0" class="notification-badge">
@@ -65,11 +63,9 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                   </a>
                 </div>
               </div>
-
               <a routerLink="/inbox" class="nav-link" routerLinkActive="active-link">الرسائل</a>
               <a [routerLink]="user.role === 'shop_owner' ? '/owner-dashboard' : '/seeker-dashboard'"
                  class="nav-link" routerLinkActive="active-link">لوحة التحكم</a>
-
               <!-- Profile Dropdown -->
               <div class="dropdown-wrapper">
                 <button class="profile-btn">
@@ -90,13 +86,11 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                 </div>
               </div>
             </ng-container>
-
             <ng-template #guestDesktop>
               <a routerLink="/login" class="nav-link" routerLinkActive="active-link">دخول</a>
               <a routerLink="/signup" class="btn-signup">إنشاء حساب</a>
             </ng-template>
           </div>
-
           <!-- Mobile Buttons -->
           <div class="mobile-buttons">
             <ng-container *ngIf="currentUser$ | async">
@@ -119,7 +113,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
           </div>
         </div>
       </div>
-
       <!-- Mobile Sidebar -->
       <div *ngIf="mobileMenuOpen || mobileNotificationsOpen" class="mobile-overlay" (click)="closeMobileMenu()"></div>
       <div class="mobile-sidebar" [class.open]="mobileMenuOpen || mobileNotificationsOpen">
@@ -134,9 +127,7 @@ import { Observable, Subject, takeUntil } from 'rxjs';
               <p class="mobile-user-email">{{ user.email || '' }}</p>
             </div>
           </ng-container>
-         
         </div>
-
         <div class="mobile-content">
           <div *ngIf="mobileNotificationsOpen" class="mobile-notifications">
             <ng-container *ngIf="notifications$ | async as notifications; else loadingMobileNotifications">
@@ -158,7 +149,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
               <div class="mobile-loading-notifications">جاري التحميل...</div>
             </ng-template>
           </div>
-
           <div *ngIf="mobileMenuOpen && !mobileNotificationsOpen" class="mobile-menu">
             <ng-container *ngIf="currentUser$ | async as user; else guestMobileMenu">
               <a routerLink="/inbox" (click)="closeMobileMenu()" class="mobile-menu-link">الرسائل</a>
@@ -170,12 +160,10 @@ import { Observable, Subject, takeUntil } from 'rxjs';
                 تسجيل الخروج
               </button>
             </ng-container>
-
             <ng-template #guestMobileMenu>
               <a routerLink="/login" (click)="closeMobileMenu()" class="mobile-menu-link">دخول</a>
               <a routerLink="/signup" (click)="closeMobileMenu()" class="mobile-menu-link signup">إنشاء حساب</a>
             </ng-template>
-
             <hr class="menu-divider">
             <div class="mobile-common-links">
               <a routerLink="/" (click)="closeMobileMenu()" class="mobile-menu-link">الرئيسية</a>
@@ -185,7 +173,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
             </div>
           </div>
         </div>
-
         <div *ngIf="mobileNotificationsOpen" class="mobile-footer">
           <a routerLink="/notifications" (click)="closeMobileMenu()" class="mobile-footer-link">
             عرض جميع الإشعارات
@@ -203,47 +190,39 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       z-index: 50;
       border-bottom: 1px solid #E5E7EB;
     }
-
     .navbar-container {
       max-width: 1200px;
       margin: 0 auto;
       padding: 0 1rem;
     }
-
     .navbar-content {
       display: flex;
       justify-content: space-between;
       align-items: center;
       height: 4.5rem;
     }
-
     .logo-wrapper {
       display: flex;
       align-items: center;
     }
-
     .logo {
       height: 2.75rem;
       width: auto;
       transition: transform 0.3s ease;
     }
-
     .logo:hover {
       transform: scale(1.05);
     }
-
     .desktop-nav {
       display: none;
       align-items: center;
       gap: 2rem;
     }
-
     @media (min-width: 768px) {
       .desktop-nav {
         display: flex;
       }
     }
-
     .nav-link {
       color: #374151;
       font-weight: 600;
@@ -252,16 +231,13 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       transition: color 0.3s ease;
       padding: 0.5rem 0;
     }
-
     .nav-link:hover {
       color: #0EA5E9;
     }
-
     .active-link {
       color: #0EA5E9;
       font-weight: 700;
     }
-
     .active-link::after {
       content: '';
       position: absolute;
@@ -272,17 +248,17 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       background: #0EA5E9;
       border-radius: 2px;
     }
-
     .dropdown-wrapper {
       position: relative;
     }
-
     .notifications-btn {
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      background: none;
+      border: none;
+      cursor: pointer;
     }
-
     .notification-badge {
       position: absolute;
       top: -8px;
@@ -299,7 +275,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       justify-content: center;
       box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
     }
-
     .dropdown-menu {
       position: absolute;
       top: 100%;
@@ -315,12 +290,10 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       transition: all 0.3s ease;
       z-index: 50;
     }
-
     .dropdown-wrapper:hover .dropdown-menu {
       opacity: 1;
       visibility: visible;
     }
-
     .dropdown-header {
       padding: 1rem;
       border-bottom: 1px solid #E5E7EB;
@@ -328,12 +301,10 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       font-size: 1.125rem;
       color: #1F2937;
     }
-
     .dropdown-body {
       max-height: 400px;
       overflow-y: auto;
     }
-
     .notification-item {
       width: 100%;
       padding: 1rem;
@@ -344,16 +315,13 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       transition: background 0.3s ease;
       border-bottom: 1px solid #F3F4F6;
     }
-
     .notification-item:hover {
       background: #F8FAFC;
     }
-
     .notification-item.unread {
       background: #F0F9FF;
       font-weight: 600;
     }
-
     .unread-dot {
       width: 0.5rem;
       height: 0.5rem;
@@ -363,33 +331,27 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       flex-shrink: 0;
       opacity: 0;
     }
-
     .unread-dot.visible {
       opacity: 1;
     }
-
     .notification-content {
       flex: 1;
     }
-
     .notification-message {
       color: #374151;
       margin: 0;
       line-height: 1.5;
     }
-
     .notification-time {
       font-size: 0.875rem;
       color: #9CA3AF;
       margin-top: 0.25rem;
     }
-
     .no-notifications, .loading-notifications {
       padding: 2rem;
       text-align: center;
       color: #9CA3AF;
     }
-
     .dropdown-footer {
       display: block;
       padding: 1rem;
@@ -400,11 +362,9 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       border-radius: 0 0 1rem 1rem;
       transition: background 0.3s ease;
     }
-
     .dropdown-footer:hover {
       background: #E0F2FE;
     }
-
     .profile-btn {
       display: flex;
       align-items: center;
@@ -416,11 +376,9 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       border-radius: 9999px;
       transition: all 0.3s ease;
     }
-
     .profile-btn:hover {
       background: #F0F9FF;
     }
-
     .profile-avatar {
       width: 2.5rem;
       height: 2.5rem;
@@ -428,34 +386,28 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       object-fit: cover;
       border: 2px solid #E0F2FE;
     }
-
     .profile-info {
       display: none;
       text-align: right;
     }
-
     @media (min-width: 1024px) {
       .profile-info {
         display: block;
       }
-
       .profile-name {
         font-weight: 600;
         color: #374151;
         font-size: 1rem;
       }
-
       .profile-email {
         font-size: 0.875rem;
         color: #6B7280;
         margin-top: 0.25rem;
       }
     }
-
     .profile-dropdown {
       width: 220px;
     }
-
     .dropdown-item {
       width: 100%;
       padding: 1rem;
@@ -465,19 +417,15 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       transition: background 0.3s ease;
       border-bottom: 1px solid #F3F4F6;
     }
-
     .dropdown-item:hover {
       background: #F8FAFC;
     }
-
     .logout-btn {
       color: #DC2626;
     }
-
     .logout-btn:hover {
       background: #FEE2E2;
     }
-
     .btn-signup {
       background: #E0F2FE;
       color: #0EA5E9;
@@ -486,23 +434,19 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       border-radius: 9999px;
       transition: all 0.3s ease;
     }
-
     .btn-signup:hover {
       background: #B2DDFA;
     }
-
     .mobile-buttons {
       display: flex;
       align-items: center;
       gap: 1rem;
     }
-
     @media (min-width: 768px) {
       .mobile-buttons {
         display: none;
       }
     }
-
     .mobile-btn {
       background: transparent;
       border: none;
@@ -514,11 +458,9 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       border-radius: 0.5rem;
       transition: background 0.3s ease;
     }
-
     .mobile-btn:hover {
       background: #F3F4F6;
     }
-
     .mobile-notification-badge {
       position: absolute;
       top: 0;
@@ -534,20 +476,17 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       align-items: center;
       justify-content: center;
     }
-
     .hamburger {
       display: flex;
       flex-direction: column;
       gap: 0.375rem;
     }
-
     .hamburger-lines {
       display: flex;
       flex-direction: column;
       gap: 0.375rem;
       transition: all 0.3s ease;
     }
-
     .hamburger-lines span {
       width: 1.75rem;
       height: 0.1875rem;
@@ -555,26 +494,21 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       border-radius: 9999px;
       transition: all 0.3s ease;
     }
-
     .hamburger-lines.open span:nth-child(1) {
       transform: rotate(45deg) translate(0.375rem, 0.375rem);
     }
-
     .hamburger-lines.open span:nth-child(2) {
       opacity: 0;
     }
-
     .hamburger-lines.open span:nth-child(3) {
       transform: rotate(-45deg) translate(0.375rem, -0.375rem);
     }
-
     .mobile-overlay {
       position: fixed;
       inset: 0;
       background: rgba(0, 0, 0, 0.5);
       z-index: 40;
     }
-
     .mobile-sidebar {
       position: fixed;
       top: 0;
@@ -590,11 +524,9 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       display: flex;
       flex-direction: column;
     }
-
     .mobile-sidebar.open {
       transform: translateX(0);
     }
-
     .mobile-header {
       padding: 1.5rem;
       border-bottom: 1px solid #E5E7EB;
@@ -603,7 +535,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       gap: 1rem;
       background: white;
     }
-
     .mobile-avatar {
       width: 3.5rem;
       height: 3.5rem;
@@ -611,49 +542,28 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       object-fit: cover;
       border: 3px solid #E0F2FE;
     }
-
     .mobile-user-info {
       flex: 1;
     }
-
     .mobile-user-name {
       font-size: 1.25rem;
       font-weight: 700;
       color: #1F2937;
       margin: 0;
     }
-
     .mobile-user-email {
       font-size: 0.9375rem;
       color: #6B7280;
       margin: 0.25rem 0 0;
     }
-
-    .close-sidebar-btn {
-      background: transparent;
-      border: none;
-      color: #6B7280;
-      font-size: 1.5rem;
-      cursor: pointer;
-      padding: 0.5rem;
-      border-radius: 0.5rem;
-      transition: background 0.3s ease;
-    }
-
-    .close-sidebar-btn:hover {
-      background: #F3F4F6;
-    }
-
     .mobile-content {
       flex: 1;
       overflow-y: auto;
       padding: 1rem 0;
     }
-
     .mobile-notifications {
       padding: 0 1rem;
     }
-
     .mobile-notification-item {
       display: flex;
       align-items: flex-start;
@@ -662,16 +572,13 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       border-bottom: 1px solid #F3F4F6;
       transition: background 0.3s ease;
     }
-
     .mobile-notification-item:hover {
       background: #F8FAFC;
     }
-
     .mobile-notification-item.unread {
       background: #F0F9FF;
       font-weight: 600;
     }
-
     .mobile-unread-dot {
       width: 0.5rem;
       height: 0.5rem;
@@ -681,37 +588,30 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       flex-shrink: 0;
       opacity: 0;
     }
-
     .mobile-unread-dot.visible {
       opacity: 1;
     }
-
     .mobile-notification-content {
       flex: 1;
     }
-
     .mobile-notification-message {
       color: #374151;
       margin: 0;
       line-height: 1.5;
     }
-
     .mobile-notification-time {
       font-size: 0.875rem;
       color: #9CA3AF;
       margin-top: 0.25rem;
     }
-
     .mobile-no-notifications, .mobile-loading-notifications {
       padding: 2rem;
       text-align: center;
       color: #9CA3AF;
     }
-
     .mobile-menu {
       padding: 0 1rem;
     }
-
     .mobile-menu-link {
       display: block;
       padding: 1rem;
@@ -721,26 +621,21 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       border-bottom: 1px solid #F3F4F6;
       transition: background 0.3s ease;
     }
-
     .mobile-menu-link:hover {
       background: #F8FAFC;
     }
-
     .mobile-menu-link.signup {
       background: #E0F2FE;
       color: #0EA5E9;
       font-weight: 600;
     }
-
     .mobile-menu-link.signup:hover {
       background: #B2DDFA;
     }
-
     .menu-divider {
       margin: 1rem 0;
       border-color: #E5E7EB;
     }
-
     .mobile-logout-btn {
       display: block;
       width: 100%;
@@ -753,17 +648,14 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       cursor: pointer;
       transition: background 0.3s ease;
     }
-
     .mobile-logout-btn:hover {
       background: #FEE2E2;
     }
-
     .mobile-footer {
       padding: 1rem;
       border-top: 1px solid #E5E7EB;
       background: white;
     }
-
     .mobile-footer-link {
       display: block;
       text-align: center;
@@ -774,7 +666,6 @@ import { Observable, Subject, takeUntil } from 'rxjs';
       border-radius: 1rem;
       transition: background 0.3s ease;
     }
-
     .mobile-footer-link:hover {
       background: #B2DDFA;
     }
@@ -797,7 +688,22 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.notifications$ = this.notificationService.notifications$;
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.notificationService.init();
+  }
+
+  markNotificationsAsRead(): void {
+    this.notificationService.markAllAsRead();
+  }
+
+  toggleNotifications(): void {
+    this.mobileNotificationsOpen = !this.mobileNotificationsOpen;
+    this.mobileMenuOpen = false;
+
+    if (this.mobileNotificationsOpen) {
+      this.notificationService.markAllAsRead();
+    }
+  }
 
   getProfileImage(user: any): string {
     if (user?.profileImage) {
@@ -813,11 +719,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
   toggleMenu(): void {
     this.mobileMenuOpen = !this.mobileMenuOpen;
     this.mobileNotificationsOpen = false;
-  }
-
-  toggleNotifications(): void {
-    this.mobileNotificationsOpen = !this.mobileNotificationsOpen;
-    this.mobileMenuOpen = false;
   }
 
   closeMobileMenu(): void {
@@ -836,6 +737,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.closeMobileMenu();
     let route: string[] = ['/notifications'];
     const appId = notification.application_id || null;
+
     switch (notification.type) {
       case 'new_message':
         if (appId) route = ['/inbox', appId];
@@ -846,7 +748,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
         if (appId) route = ['/applications', appId];
         break;
     }
+
     this.router.navigate(route);
+
     if (!notification.read) {
       this.notificationService.markAsReadAndUpdate(notification._id);
     }
