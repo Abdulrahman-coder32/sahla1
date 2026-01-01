@@ -10,12 +10,11 @@ const DEFAULT_AVATAR = 'https://res.cloudinary.com/dv48puhaq/image/upload/v17670
 })
 export class ApiService {
   private apiUrl: string;
-  private imageBaseUrl: string;
+  private cloudinaryBase = 'https://res.cloudinary.com/dv48puhaq/image/upload';
 
   constructor(private http: HttpClient) {
     const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     this.apiUrl = '/api';
-    this.imageBaseUrl = isDev ? '' : 'https://positive-christiana-sahla-18a86cd2.koyeb.app';
   }
 
   private getHeaders(includeToken: boolean = true, isMultipart: boolean = false): HttpHeaders {
@@ -30,14 +29,13 @@ export class ApiService {
     return headers;
   }
 
-  private prependBaseUrl(path: string): string {
-    if (!path) return '';
-    if (path.startsWith('http')) return path;
-    if (path.startsWith('/')) path = path.substring(1);
-    return this.imageBaseUrl === '' ? `/${path}` : `${this.imageBaseUrl}/${path}`;
+  // تحويل public_id إلى URL كامل من Cloudinary
+  private getCloudinaryUrl(publicId: string): string {
+    if (!publicId) return DEFAULT_AVATAR;
+    return `${this.cloudinaryBase}/${publicId}`;
   }
 
-  // === التعديل الرئيسي: إضافة cache buster لكل الصور ===
+  // معالجة الصور + إضافة cache buster قسري
   private processProfileImages(data: any): any {
     if (!data) return data;
 
@@ -46,20 +44,20 @@ export class ApiService {
     }
 
     if (typeof data === 'object') {
-      // معالجة profileImage لليوزر نفسه أو أي يوزر تاني
       if (data.profileImage !== undefined) {
         let imageUrl = data.profileImage;
 
         // لو public_id (مش URL كامل)
         if (imageUrl && !imageUrl.startsWith('http')) {
-          imageUrl = this.prependBaseUrl(imageUrl);
+          imageUrl = this.getCloudinaryUrl(imageUrl);
         }
 
-        // إضافة cache buster
+        // لو URL كامل من Cloudinary أو ديفولت
         if (imageUrl && imageUrl.startsWith('http')) {
           const separator = imageUrl.includes('?') ? '&' : '?';
-          const cacheBuster = data.cacheBuster ?? Date.now(); // استخدم cacheBuster من الـ DB، لو مش موجود استخدم timestamp
-          imageUrl = `${imageUrl}${separator}v=${cacheBuster}`;
+          // استخدم cacheBuster من الداتابيز، لو مش موجود أو 0 → استخدم timestamp عشوائي
+          const cacheVersion = data.cacheBuster > 0 ? data.cacheBuster : Date.now();
+          imageUrl = `${imageUrl}${separator}v=${cacheVersion}`;
         } else {
           imageUrl = DEFAULT_AVATAR;
         }
@@ -69,7 +67,7 @@ export class ApiService {
         data.profileImage = DEFAULT_AVATAR;
       }
 
-      // تكرار العملية على كل object داخلي (مثل owner في job، applicant في application...)
+      // معالجة كل object داخلي (owner_id, seeker_id, sender_id, etc.)
       Object.keys(data).forEach(key => {
         if (data[key] && typeof data[key] === 'object') {
           data[key] = this.processProfileImages(data[key]);
@@ -85,7 +83,7 @@ export class ApiService {
     return throwError(() => new Error(error.error?.msg || error.message || 'خطأ في الاتصال بالسيرفر'));
   }
 
-  // باقي الدوال زي ما هي (مع map للـ processProfileImages)
+  // باقي الدوال مع map للـ processProfileImages
   login(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/auth/login`, data).pipe(
       map(res => this.processProfileImages(res)),
