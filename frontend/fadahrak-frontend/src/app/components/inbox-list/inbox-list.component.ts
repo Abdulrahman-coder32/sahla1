@@ -358,18 +358,16 @@ export class InboxListComponent implements OnInit, OnDestroy {
           const baseProfileImage = otherUser?.profileImage || null;
           const cacheBuster = otherUser?.cacheBuster;
 
-          return {
-            _id: app._id,
-            name: this.isOwner
-              ? (otherUser?.name || 'باحث عن عمل')
-              : (otherUser?.shop_name || app.job_id?.shop_name || 'صاحب العمل'),
-            lastMessage: app.lastMessage || 'ابدأ المحادثة',
-            lastUpdated: app.lastTimestamp || app.updatedAt || app.createdAt || new Date(),
-            unreadCount,
-            profileImage: baseProfileImage, // الأساسي بدون cache
-            cacheBuster: cacheBuster // نحفظه للاستخدام في الدالة
-          };
-        });
+        return {
+  _id: app._id,
+  name: this.isOwner
+    ? (otherUser?.name || 'باحث عن عمل')
+    : (app.job_id?.shop_name || 'صاحب العمل'), // التعديل هنا
+  lastMessage: app.lastMessage || 'ابدأ المحادثة',
+  lastUpdated: app.lastTimestamp || app.updatedAt || app.createdAt || new Date(),
+  unreadCount,
+  profileImage
+};
 
         this.sortChats();
         this.loading = false;
