@@ -308,6 +308,7 @@ export class InboxListComponent implements OnInit, OnDestroy {
           const separator = data.otherUser.profileImage.includes('?') ? '&' : '?';
           const cacheVersion = data.otherUser.cacheBuster ?? Date.now();
           chat.profileImage = `${data.otherUser.profileImage}${separator}v=${cacheVersion}`;
+          chat.cacheBuster = data.otherUser.cacheBuster;
         }
 
         this.sortChats();
@@ -354,20 +355,21 @@ export class InboxListComponent implements OnInit, OnDestroy {
 
           const otherUser = this.isOwner ? app.seeker_id : app.job_id?.owner_id;
 
-          // نخزن الـ profileImage الأساسي بدون cache buster (للاستخدام في getChatAvatar)
           const baseProfileImage = otherUser?.profileImage || null;
           const cacheBuster = otherUser?.cacheBuster;
 
-        return {
-  _id: app._id,
-  name: this.isOwner
-    ? (otherUser?.name || 'باحث عن عمل')
-    : (app.job_id?.shop_name || 'صاحب العمل'), // التعديل هنا
-  lastMessage: app.lastMessage || 'ابدأ المحادثة',
-  lastUpdated: app.lastTimestamp || app.updatedAt || app.createdAt || new Date(),
-  unreadCount,
-  profileImage
-};
+          return {
+            _id: app._id,
+            name: this.isOwner
+              ? (otherUser?.name || 'باحث عن عمل')
+              : (app.job_id?.shop_name || 'صاحب العمل'), // هيرجع "c" دايمًا
+            lastMessage: app.lastMessage || 'ابدأ المحادثة',
+            lastUpdated: app.lastTimestamp || app.updatedAt || app.createdAt || new Date(),
+            unreadCount,
+            profileImage: baseProfileImage, // الأساسي
+            cacheBuster: cacheBuster // للدالة
+          };
+        });
 
         this.sortChats();
         this.loading = false;
@@ -379,7 +381,7 @@ export class InboxListComponent implements OnInit, OnDestroy {
     });
   }
 
-  // دالة جديدة لإرجاع الصورة مع cache buster قسري
+  // دالة لإرجاع الصورة مع cache buster
   getChatAvatar(chat: any): string {
     if (!chat.profileImage) {
       return this.defaultImage;
