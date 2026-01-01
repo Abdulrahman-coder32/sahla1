@@ -46,7 +46,7 @@ import { SocketService } from '../../services/socket.service';
                class="chat-card"
                [routerLink]="['/inbox', chat._id]"
                [@fadeIn]="i">
-            <!-- Unread Badge -->
+            <!-- Unread Badge (حي دايمًا + نبض) -->
             <div *ngIf="chat.unreadCount > 0" class="unread-badge">
               {{ chat.unreadCount > 99 ? '99+' : chat.unreadCount }}
             </div>
@@ -80,7 +80,6 @@ import { SocketService } from '../../services/socket.service';
     </div>
   `,
   styles: [`
-    /* نفس الستايلات القديمة بدون تغيير */
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
@@ -187,8 +186,8 @@ import { SocketService } from '../../services/socket.service';
       position: absolute;
       top: 1rem;
       right: 1rem;
-      background: #FEE2E2;
-      color: #DC2626;
+      background: #DC2626;
+      color: white;
       min-width: 2rem;
       height: 2rem;
       border-radius: 9999px;
@@ -197,8 +196,14 @@ import { SocketService } from '../../services/socket.service';
       justify-content: center;
       font-size: 0.875rem;
       font-weight: 700;
-      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
       z-index: 10;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); }
     }
     .chat-content {
       display: flex;
@@ -253,7 +258,6 @@ import { SocketService } from '../../services/socket.service';
       display: block;
       margin-top: 0.25rem;
     }
-    /* Responsive */
     @media (max-width: 640px) {
       .inbox-container { padding: 2rem 1rem; }
       .inbox-header h1 { font-size: 2.25rem; }
@@ -301,13 +305,17 @@ export class InboxListComponent implements OnInit, OnDestroy {
       if (chat) {
         chat.lastMessage = data.lastMessage || '[ملف مرفق]';
         chat.lastUpdated = new Date(data.lastTimestamp);
-        chat.unreadCount = data.unreadCount;
+        chat.unreadCount = data.unreadCount || 0;
 
-     // تحديث الصورة real-time لو وصلت من السوكت
-if (data.otherUser?.profileImage) {
-  chat.profileImage = data.otherUser.profileImage; // الأساسي
-  chat.cacheBuster = data.otherUser.cacheBuster ?? Date.now(); // مهم جدًا: تحديث cacheBuster
-}
+        // تحديث الصورة و cacheBuster دائمًا
+        if (data.otherUser) {
+          chat.profileImage = data.otherUser.profileImage || null;
+          chat.cacheBuster = data.otherUser.cacheBuster ?? Date.now();
+          // قسري: لو مفيش cacheBuster جديد، نستخدم timestamp
+          if (!data.otherUser.cacheBuster) {
+            chat.cacheBuster = Date.now();
+          }
+        }
 
         this.sortChats();
       } else {
@@ -360,12 +368,12 @@ if (data.otherUser?.profileImage) {
             _id: app._id,
             name: this.isOwner
               ? (otherUser?.name || 'باحث عن عمل')
-              : (app.job_id?.shop_name || 'صاحب العمل'), // هيرجع "c" دايمًا
+              : (app.job_id?.shop_name || 'صاحب العمل'),
             lastMessage: app.lastMessage || 'ابدأ المحادثة',
             lastUpdated: app.lastTimestamp || app.updatedAt || app.createdAt || new Date(),
             unreadCount,
-            profileImage: baseProfileImage, // الأساسي
-            cacheBuster: cacheBuster // للدالة
+            profileImage: baseProfileImage,
+            cacheBuster: cacheBuster
           };
         });
 
@@ -379,7 +387,6 @@ if (data.otherUser?.profileImage) {
     });
   }
 
-  // دالة لإرجاع الصورة مع cache buster
   getChatAvatar(chat: any): string {
     if (!chat.profileImage) {
       return this.defaultImage;
