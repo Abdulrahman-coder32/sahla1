@@ -303,13 +303,11 @@ export class InboxListComponent implements OnInit, OnDestroy {
         chat.lastUpdated = new Date(data.lastTimestamp);
         chat.unreadCount = data.unreadCount;
 
-        // تحديث الصورة real-time لو وصلت من السوكت
-        if (data.otherUser?.profileImage) {
-          const separator = data.otherUser.profileImage.includes('?') ? '&' : '?';
-          const cacheVersion = data.otherUser.cacheBuster ?? Date.now();
-          chat.profileImage = `${data.otherUser.profileImage}${separator}v=${cacheVersion}`;
-          chat.cacheBuster = data.otherUser.cacheBuster;
-        }
+     // تحديث الصورة real-time لو وصلت من السوكت
+if (data.otherUser?.profileImage) {
+  chat.profileImage = data.otherUser.profileImage; // الأساسي
+  chat.cacheBuster = data.otherUser.cacheBuster ?? Date.now(); // مهم جدًا: تحديث cacheBuster
+}
 
         this.sortChats();
       } else {
