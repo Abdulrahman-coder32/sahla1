@@ -1,8 +1,11 @@
-// backend/models/JobListing.js
 const mongoose = require('mongoose');
 
 const jobSchema = new mongoose.Schema({
-  owner_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  owner_id: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true 
+  },
   shop_name: { type: String, required: true },
   category: { type: String, required: true },
   governorate: { type: String, required: true },
