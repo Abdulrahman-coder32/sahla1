@@ -56,7 +56,52 @@ router.get('/:applicationId', auth, async (req, res) => {
   }
 });
 
-// دالة مساعدة لتحديث الـ Application وإرسال الإيفنتات
+// دالة مساعدة لتحديث قائمة الشات مع ضمان إرسال otherUser + cacheBuster جديد دائمًا
+async function handleChatListUpdate(io, application_id, userId, triggerForBoth = false) {
+  try {
+    const app = await Application.findById(application_id)
+      .populate({
+        path: 'job_id',
+        populate: { path: 'owner_id', select: 'name profileImage cacheBuster' }
+      })
+      .populate('seeker_id', 'name profileImage cacheBuster');
+
+    if (!app) return;
+
+    const isOwner = userId === app.job_id.owner_id._id.toString();
+    const senderUnread = isOwner ? app.unreadCounts.owner || 0 : app.unreadCounts.seeker || 0;
+    const recipientUnread = isOwner ? app.unreadCounts.seeker || 0 : app.unreadCounts.owner || 0;
+    const recipientId = isOwner ? app.seeker_id._id.toString() : app.job_id.owner_id._id.toString();
+
+    const basePayload = {
+      application_id,
+      lastMessage: app.lastMessage || 'ابدأ المحادثة',
+      lastTimestamp: app.lastTimestamp || app.updatedAt,
+      unreadCount: senderUnread,
+      otherUser: isOwner
+        ? { name: app.seeker_id.name, profileImage: app.seeker_id.profileImage, cacheBuster: Date.now() }
+        : { name: app.job_id.owner_id.name, profileImage: app.job_id.owner_id.profileImage, cacheBuster: Date.now() }
+    };
+
+    // تحديث للمستخدم الحالي (المرسل أو اللي فتح الشات)
+    io.to(userId).emit('chatListUpdate', basePayload);
+
+    // تحديث للطرف الآخر (إما دائمًا أو فقط لو triggerForBoth = true)
+    if (recipientId && (triggerForBoth || userId !== recipientId)) {
+      io.to(recipientId).emit('chatListUpdate', {
+        ...basePayload,
+        unreadCount: recipientUnread,
+        otherUser: isOwner
+          ? { name: app.job_id.owner_id.name, profileImage: app.job_id.owner_id.profileImage, cacheBuster: Date.now() }
+          : { name: app.seeker_id.name, profileImage: app.seeker_id.profileImage, cacheBuster: Date.now() }
+      });
+    }
+  } catch (err) {
+    console.error('خطأ في handleChatListUpdate:', err);
+  }
+}
+
+// دالة مساعدة للرسائل الجديدة
 async function handleNewMessage(req, res, populatedMessage, messagePreview) {
   const { application_id } = req.body;
   const io = req.app.get('io');
@@ -91,30 +136,16 @@ async function handleNewMessage(req, res, populatedMessage, messagePreview) {
     // إرسال الرسالة الجديدة للروم
     io.to(application_id).emit('newMessage', populatedMessage);
 
-    const senderUnread = 0;
     const recipientUnread = isOwner ? updatedApp.unreadCounts.seeker : updatedApp.unreadCounts.owner;
 
-    // تحديث للمرسل (دائمًا يبعت otherUser عشان الصورة تتحدث للطرفين)
-    io.to(req.user.id).emit('chatListUpdate', {
-      application_id,
-      lastMessage: messagePreview,
-      lastTimestamp: updatedApp.lastTimestamp,
-      unreadCount: senderUnread,
-      otherUser: isOwner
-        ? { name: app.seeker_id.name, profileImage: app.seeker_id.profileImage, cacheBuster: app.seeker_id.cacheBuster }
-        : { name: app.job_id.owner_id.name, profileImage: app.job_id.owner_id.profileImage, cacheBuster: app.job_id.owner_id.cacheBuster }
-    });
+    // تحديث قائمة الشات للطرفين مع cacheBuster جديد
+    await handleChatListUpdate(io, application_id, req.user.id, true);
 
-    // تحديث للمستقبل (مع otherUser كمان)
+    // unreadUpdate للمستقبل فقط
     if (req.user.id !== recipientId) {
-      io.to(recipientId).emit('chatListUpdate', {
+      io.to(recipientId).emit('unreadUpdate', {
         application_id,
-        lastMessage: messagePreview,
-        lastTimestamp: updatedApp.lastTimestamp,
-        unreadCount: recipientUnread,
-        otherUser: isOwner
-          ? { name: app.job_id.owner_id.name, profileImage: app.job_id.owner_id.profileImage, cacheBuster: app.job_id.owner_id.cacheBuster }
-          : { name: app.seeker_id.name, profileImage: app.seeker_id.profileImage, cacheBuster: app.seeker_id.cacheBuster }
+        unreadCount: recipientUnread
       });
     }
 
@@ -129,13 +160,6 @@ async function handleNewMessage(req, res, populatedMessage, messagePreview) {
       };
 
       io.to(recipientId).emit('newNotification', notificationData);
-
-      // تحديث unreadCount مع application_id
-      io.to(recipientId).emit('unreadUpdate', {
-        application_id,
-        unreadCount: recipientUnread
-      });
-
       io.to(recipientId).emit('newMessageNotification', {
         type: 'new_message',
         application_id,
@@ -172,6 +196,7 @@ router.post('/', auth, async (req, res) => {
       message: message.trim(),
       timestamp: new Date()
     });
+
     await newMessage.save();
 
     const populatedMessage = await Message.findById(newMessage._id)
@@ -206,12 +231,14 @@ router.post('/media', auth, upload.single('file'), async (req, res) => {
       size: file.size,
       timestamp: new Date()
     });
+
     await newMessage.save();
 
     const populatedMessage = await Message.findById(newMessage._id)
       .populate('sender_id', 'name profileImage cacheBuster');
 
     const preview = `[${messageType === 'image' ? 'صورة' : messageType === 'audio' ? 'رسالة صوتية' : 'ملف'}]`;
+
     await handleNewMessage(req, res, populatedMessage, preview);
   } catch (err) {
     console.error('خطأ في رفع الميديا:', err);
@@ -219,7 +246,7 @@ router.post('/media', auth, upload.single('file'), async (req, res) => {
   }
 });
 
-// وضع علامة قراءة
+// وضع علامة قراءة + تحديث قائمة الشات للطرفين
 router.patch('/:applicationId/mark-read', auth, async (req, res) => {
   try {
     const application = await Application.findById(req.params.applicationId)
@@ -244,39 +271,19 @@ router.patch('/:applicationId/mark-read', auth, async (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      const recipientId = isOwner
-        ? application.seeker_id?._id.toString()
-        : application.job_id.owner_id?._id.toString();
+      // تحديث قائمة الشات للطرفين مع cacheBuster جديد
+      await handleChatListUpdate(io, req.params.applicationId, req.user.id, true);
 
-      const senderUnread = 0;
-      const recipientUnread = isOwner ? updatedApp.unreadCounts.seeker : updatedApp.unreadCounts.owner;
-
-      io.to(req.user.id).emit('chatListUpdate', {
-        application_id: req.params.applicationId,
-        lastMessage: updatedApp.lastMessage,
-        lastTimestamp: updatedApp.lastTimestamp,
-        unreadCount: senderUnread,
-        otherUser: isOwner
-          ? { name: application.seeker_id.name, profileImage: application.seeker_id.profileImage, cacheBuster: application.seeker_id.cacheBuster }
-          : { name: application.job_id.owner_id.name, profileImage: application.job_id.owner_id.profileImage, cacheBuster: application.job_id.owner_id.cacheBuster }
-      });
-
+      // unreadUpdate للمرسل (اللي عمل mark read)
       io.to(req.user.id).emit('unreadUpdate', {
         application_id: req.params.applicationId,
-        unreadCount: senderUnread
+        unreadCount: 0
       });
 
+      // unreadUpdate للطرف الآخر
+      const recipientId = isOwner ? application.seeker_id?._id.toString() : application.job_id.owner_id?._id.toString();
       if (recipientId && recipientId !== req.user.id) {
-        io.to(recipientId).emit('chatListUpdate', {
-          application_id: req.params.applicationId,
-          lastMessage: updatedApp.lastMessage,
-          lastTimestamp: updatedApp.lastTimestamp,
-          unreadCount: recipientUnread,
-          otherUser: isOwner
-            ? { name: application.job_id.owner_id.name, profileImage: application.job_id.owner_id.profileImage, cacheBuster: application.job_id.owner_id.cacheBuster }
-            : { name: application.seeker_id.name, profileImage: application.seeker_id.profileImage, cacheBuster: application.seeker_id.cacheBuster }
-        });
-
+        const recipientUnread = isOwner ? updatedApp.unreadCounts.seeker : updatedApp.unreadCounts.owner;
         io.to(recipientId).emit('unreadUpdate', {
           application_id: req.params.applicationId,
           unreadCount: recipientUnread
