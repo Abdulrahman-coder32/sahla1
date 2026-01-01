@@ -54,7 +54,7 @@ import { SocketService } from '../../services/socket.service';
               <!-- Avatar -->
               <div class="chat-avatar">
                 <img
-                  [src]="chat.profileImage || defaultImage"
+                  [src]="getChatAvatar(chat)"
                   [alt]="chat.name"
                   class="avatar-image"
                   loading="lazy"
@@ -312,7 +312,7 @@ export class InboxListComponent implements OnInit, OnDestroy {
 
         this.sortChats();
       } else {
-        this.loadAcceptedChats(); // دردشة جديدة
+        this.loadAcceptedChats();
       }
     });
 
@@ -354,13 +354,9 @@ export class InboxListComponent implements OnInit, OnDestroy {
 
           const otherUser = this.isOwner ? app.seeker_id : app.job_id?.owner_id;
 
-          // التعديل الرئيسي: إضافة cache buster قسري لكسر الكاش
-          let profileImage: string | null = null;
-          if (otherUser?.profileImage) {
-            const separator = otherUser.profileImage.includes('?') ? '&' : '?';
-            const cacheVersion = otherUser.cacheBuster ?? Date.now();
-            profileImage = `${otherUser.profileImage}${separator}v=${cacheVersion}`;
-          }
+          // نخزن الـ profileImage الأساسي بدون cache buster (للاستخدام في getChatAvatar)
+          const baseProfileImage = otherUser?.profileImage || null;
+          const cacheBuster = otherUser?.cacheBuster;
 
           return {
             _id: app._id,
@@ -370,7 +366,8 @@ export class InboxListComponent implements OnInit, OnDestroy {
             lastMessage: app.lastMessage || 'ابدأ المحادثة',
             lastUpdated: app.lastTimestamp || app.updatedAt || app.createdAt || new Date(),
             unreadCount,
-            profileImage
+            profileImage: baseProfileImage, // الأساسي بدون cache
+            cacheBuster: cacheBuster // نحفظه للاستخدام في الدالة
           };
         });
 
@@ -382,6 +379,17 @@ export class InboxListComponent implements OnInit, OnDestroy {
         this.loading = false;
       }
     });
+  }
+
+  // دالة جديدة لإرجاع الصورة مع cache buster قسري
+  getChatAvatar(chat: any): string {
+    if (!chat.profileImage) {
+      return this.defaultImage;
+    }
+
+    const separator = chat.profileImage.includes('?') ? '&' : '?';
+    const cacheVersion = chat.cacheBuster > 0 ? chat.cacheBuster : Date.now();
+    return `${chat.profileImage}${separator}v=${cacheVersion}`;
   }
 
   private sortChats() {
