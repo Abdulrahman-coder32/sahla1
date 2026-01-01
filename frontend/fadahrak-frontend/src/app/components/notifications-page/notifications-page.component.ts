@@ -28,7 +28,7 @@ export class NotificationsPageComponent implements OnInit {
     this.notifications$ = this.notificationService.notifications$;
     this.unreadCount$ = this.notificationService.unreadCount$;
 
-    // صفر العداد لما نفتح الصفحة
+    // صفر العداد فورًا عند فتح الصفحة
     this.notificationService.markAllAsRead();
   }
 
@@ -40,6 +40,7 @@ export class NotificationsPageComponent implements OnInit {
     const now = new Date();
     const notifDate = new Date(date);
     const diffMs = now.getTime() - notifDate.getTime();
+
     const minutes = Math.floor(diffMs / (1000 * 60));
     const hours = Math.floor(diffMs / (1000 * 60 * 60));
     const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
