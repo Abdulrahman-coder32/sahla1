@@ -1,4 +1,3 @@
-// models/Application.js
 const mongoose = require('mongoose');
 
 const applicationSchema = new mongoose.Schema({
@@ -39,7 +38,7 @@ const applicationSchema = new mongoose.Schema({
   }
 });
 
-// Indexes
+// Indexes لتحسين الأداء
 applicationSchema.index({ seeker_id: 1, status: 1 });
 applicationSchema.index({ job_id: 1, seeker_id: 1 });
 applicationSchema.index({ lastTimestamp: -1 });
