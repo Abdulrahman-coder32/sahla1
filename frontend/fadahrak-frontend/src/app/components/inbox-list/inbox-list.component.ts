@@ -22,13 +22,11 @@ import { SocketService } from '../../services/socket.service';
             تواصل مع {{ isOwner ? 'المتقدمين لوظائفك' : 'أصحاب العمل' }} بسهولة وأمان
           </p>
         </div>
-
         <!-- Loading -->
         <div *ngIf="loading" class="loading-state">
           <div class="spinner"></div>
           <p>جاري تحميل الدردشات...</p>
         </div>
-
         <!-- Empty State -->
         <div *ngIf="!loading && chats.length === 0" class="empty-state">
           <div class="empty-icon">
@@ -36,13 +34,12 @@ import { SocketService } from '../../services/socket.service';
           </div>
           <h2>لا توجد دردشات حاليًا</h2>
           <p>
-            {{ isOwner 
-              ? 'عندما يتقدم أحد على وظائفك وتقبله، ستظهر الدردشة هنا.' 
+            {{ isOwner
+              ? 'عندما يتقدم أحد على وظائفك وتقبله، ستظهر الدردشة هنا.'
               : 'عندما يقبل صاحب العمل تقديمك، ستتمكن من بدء المحادثة.'
             }}
           </p>
         </div>
-
         <!-- Chats List -->
         <div *ngIf="!loading && chats.length > 0" class="chats-list">
           <div *ngFor="let chat of chats; let i = index"
@@ -53,7 +50,6 @@ import { SocketService } from '../../services/socket.service';
             <div *ngIf="chat.unreadCount > 0" class="unread-badge">
               {{ chat.unreadCount > 99 ? '99+' : chat.unreadCount }}
             </div>
-
             <div class="chat-content">
               <!-- Avatar -->
               <div class="chat-avatar">
@@ -65,7 +61,6 @@ import { SocketService } from '../../services/socket.service';
                   (error)="onImageError($event)"
                 >
               </div>
-
               <!-- Details -->
               <div class="chat-details">
                 <h3 class="chat-name">{{ chat.name }}</h3>
@@ -73,7 +68,6 @@ import { SocketService } from '../../services/socket.service';
                   {{ chat.lastMessage || 'ابدأ المحادثة الآن' }}
                 </p>
               </div>
-
               <!-- Timestamp -->
               <div class="chat-time">
                 <span class="time">{{ chat.lastUpdated | date:'shortTime' }}</span>
@@ -86,15 +80,14 @@ import { SocketService } from '../../services/socket.service';
     </div>
   `,
   styles: [`
+    /* نفس الستايلات القديمة بدون تغيير */
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
-
     [@fadeIn] {
       animation: fadeIn 0.4s ease-out forwards;
     }
-
     .inbox-container {
       min-height: 100vh;
       padding: 3rem 1rem;
@@ -102,12 +95,10 @@ import { SocketService } from '../../services/socket.service';
       background: linear-gradient(to bottom, #F9FAFB, #E0F2FE);
       font-family: 'Tajawal', system-ui, sans-serif;
     }
-
     .inbox-header {
       text-align: center;
       margin-bottom: 3rem;
     }
-
     .header-icon {
       width: 5rem;
       height: 5rem;
@@ -121,14 +112,12 @@ import { SocketService } from '../../services/socket.service';
       font-size: 2.5rem;
       box-shadow: 0 8px 20px rgba(14, 165, 233, 0.15);
     }
-
     .inbox-header h1 {
       font-size: 2.75rem;
       font-weight: 800;
       color: #1F2937;
       margin: 0 0 1rem;
     }
-
     .inbox-header p {
       font-size: 1.125rem;
       color: #6B7280;
@@ -136,12 +125,10 @@ import { SocketService } from '../../services/socket.service';
       margin: 0 auto;
       line-height: 1.7;
     }
-
     .loading-state, .empty-state {
       text-align: center;
       padding: 5rem 2rem;
     }
-
     .spinner {
       width: 4.5rem;
       height: 4.5rem;
@@ -151,11 +138,9 @@ import { SocketService } from '../../services/socket.service';
       animation: spin 1s linear infinite;
       margin: 0 auto 2rem;
     }
-
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
-
     .empty-icon {
       width: 6rem;
       height: 6rem;
@@ -168,14 +153,12 @@ import { SocketService } from '../../services/socket.service';
       margin: 0 auto 2rem;
       font-size: 3rem;
     }
-
     .empty-state h2 {
       font-size: 2rem;
       font-weight: 700;
       color: #374151;
       margin-bottom: 1rem;
     }
-
     .empty-state p {
       font-size: 1.125rem;
       color: #6B7280;
@@ -183,12 +166,10 @@ import { SocketService } from '../../services/socket.service';
       max-width: 36rem;
       margin: 0 auto;
     }
-
     .chats-list {
       display: grid;
       gap: 1.5rem;
     }
-
     .chat-card {
       background: white;
       border-radius: 1.5rem;
@@ -198,12 +179,10 @@ import { SocketService } from '../../services/socket.service';
       transition: all 0.3s ease;
       cursor: pointer;
     }
-
     .chat-card:hover {
       transform: translateY(-4px);
       box-shadow: 0 16px 35px rgba(0, 0, 0, 0.12);
     }
-
     .unread-badge {
       position: absolute;
       top: 1rem;
@@ -221,18 +200,15 @@ import { SocketService } from '../../services/socket.service';
       box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
       z-index: 10;
     }
-
     .chat-content {
       display: flex;
       align-items: center;
       gap: 1.5rem;
       padding: 1.5rem;
     }
-
     .chat-avatar {
       flex-shrink: 0;
     }
-
     .avatar-image {
       width: 4.5rem;
       height: 4.5rem;
@@ -241,12 +217,10 @@ import { SocketService } from '../../services/socket.service';
       border: 4px solid #E0F2FE;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
-
     .chat-details {
       flex: 1;
       min-width: 0;
     }
-
     .chat-name {
       font-size: 1.375rem;
       font-weight: 700;
@@ -256,7 +230,6 @@ import { SocketService } from '../../services/socket.service';
       overflow: hidden;
       text-overflow: ellipsis;
     }
-
     .chat-last-message {
       font-size: 1rem;
       color: #6B7280;
@@ -267,23 +240,19 @@ import { SocketService } from '../../services/socket.service';
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
-
     .chat-time {
       text-align: left;
       font-size: 0.875rem;
       color: #9CA3AF;
     }
-
     .chat-time .time {
       font-weight: 600;
       color: #374151;
     }
-
     .chat-time .date {
       display: block;
       margin-top: 0.25rem;
     }
-
     /* Responsive */
     @media (max-width: 640px) {
       .inbox-container { padding: 2rem 1rem; }
@@ -327,20 +296,23 @@ export class InboxListComponent implements OnInit, OnDestroy {
   }
 
   private setupSocketListeners() {
-    this.socketService.onChatListUpdate((data: {
-      application_id: string;
-      lastMessage: string;
-      lastTimestamp: Date;
-      unreadCount: number;
-    }) => {
+    this.socketService.onChatListUpdate((data: any) => {
       const chat = this.chats.find(c => c._id === data.application_id);
       if (chat) {
         chat.lastMessage = data.lastMessage || '[ملف مرفق]';
         chat.lastUpdated = new Date(data.lastTimestamp);
         chat.unreadCount = data.unreadCount;
+
+        // تحديث الصورة real-time لو وصلت من السوكت
+        if (data.otherUser?.profileImage) {
+          const separator = data.otherUser.profileImage.includes('?') ? '&' : '?';
+          const cacheVersion = data.otherUser.cacheBuster ?? Date.now();
+          chat.profileImage = `${data.otherUser.profileImage}${separator}v=${cacheVersion}`;
+        }
+
         this.sortChats();
       } else {
-        this.loadAcceptedChats();
+        this.loadAcceptedChats(); // دردشة جديدة
       }
     });
 
@@ -371,6 +343,7 @@ export class InboxListComponent implements OnInit, OnDestroy {
     apiCall.subscribe({
       next: (applications: any[]) => {
         const accepted = applications.filter(app => app.status === 'accepted');
+
         this.chats = accepted.map(app => {
           let unreadCount = 0;
           if (this.isOwner) {
@@ -381,6 +354,14 @@ export class InboxListComponent implements OnInit, OnDestroy {
 
           const otherUser = this.isOwner ? app.seeker_id : app.job_id?.owner_id;
 
+          // التعديل الرئيسي: إضافة cache buster قسري لكسر الكاش
+          let profileImage: string | null = null;
+          if (otherUser?.profileImage) {
+            const separator = otherUser.profileImage.includes('?') ? '&' : '?';
+            const cacheVersion = otherUser.cacheBuster ?? Date.now();
+            profileImage = `${otherUser.profileImage}${separator}v=${cacheVersion}`;
+          }
+
           return {
             _id: app._id,
             name: this.isOwner
@@ -389,9 +370,10 @@ export class InboxListComponent implements OnInit, OnDestroy {
             lastMessage: app.lastMessage || 'ابدأ المحادثة',
             lastUpdated: app.lastTimestamp || app.updatedAt || app.createdAt || new Date(),
             unreadCount,
-            profileImage: otherUser?.profileImage || null
+            profileImage
           };
         });
+
         this.sortChats();
         this.loading = false;
       },
