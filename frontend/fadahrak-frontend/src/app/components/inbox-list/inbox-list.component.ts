@@ -182,29 +182,39 @@ import { SocketService } from '../../services/socket.service';
       transform: translateY(-4px);
       box-shadow: 0 16px 35px rgba(0, 0, 0, 0.12);
     }
-    .unread-badge {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      background: #DC2626;
-      color: white;
-      min-width: 2rem;
-      height: 2rem;
-      border-radius: 9999px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.875rem;
-      font-weight: 700;
-      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
-      z-index: 10;
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.15); }
-      100% { transform: scale(1); }
-    }
+   .unread-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: #DC2626;
+  color: white;
+  min-width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.5);
+  z-index: 10;
+  animation: pulse 1.8s infinite;
+  pointer-events: none; /* مهم عشان ميأثرش على الكليك في الكارد */
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
     .chat-content {
       display: flex;
       align-items: center;
@@ -266,7 +276,14 @@ import { SocketService } from '../../services/socket.service';
       .avatar-image { width: 4rem; height: 4rem; }
       .chat-name { font-size: 1.25rem; }
       .chat-last-message { font-size: 0.9375rem; }
-      .unread-badge { top: 0.75rem; right: 0.75rem; font-size: 0.75rem; min-width: 1.75rem; height: 1.75rem; }
+     .unread-badge { 
+    top: 0.75rem; 
+    right: 0.75rem; 
+    min-width: 1.75rem; 
+    height: 1.75rem; 
+    font-size: 0.75rem;
+    animation: pulse 1.8s infinite; /* يفضل ينبض في الموبايل كمان */
+  }
     }
   `]
 })
@@ -307,15 +324,17 @@ export class InboxListComponent implements OnInit, OnDestroy {
         chat.lastUpdated = new Date(data.lastTimestamp);
         chat.unreadCount = data.unreadCount || 0;
 
-        // تحديث الصورة و cacheBuster دائمًا
-        if (data.otherUser) {
-          chat.profileImage = data.otherUser.profileImage || null;
-          chat.cacheBuster = data.otherUser.cacheBuster ?? Date.now();
-          // قسري: لو مفيش cacheBuster جديد، نستخدم timestamp
-          if (!data.otherUser.cacheBuster) {
-            chat.cacheBuster = Date.now();
-          }
-        }
+      if (data.otherUser) {
+  // لو في صورة جديدة، نحدثها
+  if (data.otherUser.profileImage) {
+    chat.profileImage = data.otherUser.profileImage;
+    chat.cacheBuster = data.otherUser.cacheBuster ?? Date.now();
+  }
+  // لو مفيش صورة جديدة، نجبر cache buster عشان الصورة القديمة تتحمل تاني (تكسر الكاش)
+  else if (chat.profileImage) {
+    chat.cacheBuster = Date.now(); // قسري عشان الصورة تتحدث
+  }
+}
 
         this.sortChats();
       } else {
