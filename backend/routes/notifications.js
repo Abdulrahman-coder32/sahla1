@@ -41,7 +41,7 @@ router.get('/unread-count', auth, async (req, res) => {
       user_id: req.user.id,
       read: false
     });
-    
+
     res.json({ count });
   } catch (err) {
     console.error('خطأ في حساب عدد الإشعارات الغير مقروءة:', err);
@@ -49,7 +49,7 @@ router.get('/unread-count', auth, async (req, res) => {
   }
 });
 
-// وضع علامة قراءة على كل الإشعارات
+// وضع علامة قراءة على كل الإشعارات (محسن ليكون موجود وشغال)
 router.patch('/mark-all-read', auth, async (req, res) => {
   try {
     const result = await Notification.updateMany(
@@ -59,21 +59,21 @@ router.patch('/mark-all-read', auth, async (req, res) => {
 
     res.json({
       success: true,
-      modifiedCount: result.modifiedCount
+      modifiedCount: result.modifiedCount || result.nModified // دعم الإصدارات القديمة والجديدة من MongoDB
     });
   } catch (err) {
-    console.error('خطأ في وضع علامة قراءة:', err);
+    console.error('خطأ في وضع علامة قراءة على كل الإشعارات:', err);
     res.status(500).json({ msg: 'خطأ في السيرفر أثناء تحديث حالة القراءة' });
   }
 });
 
-// (اختياري) وضع علامة قراءة على إشعار واحد معين
+// وضع علامة قراءة على إشعار واحد
 router.patch('/:id/read', auth, async (req, res) => {
   try {
     const notification = await Notification.findOneAndUpdate(
-      { 
+      {
         _id: req.params.id,
-        user_id: req.user.id 
+        user_id: req.user.id
       },
       { read: true },
       { new: true }
@@ -90,7 +90,7 @@ router.patch('/:id/read', auth, async (req, res) => {
   }
 });
 
-// ← جديد: وضع علامة قراءة على كل إشعارات الشات المحدد (عشان لما نفتح الشات الإشعار ما يرجعش بعد ريفريش)
+// وضع علامة قراءة على كل إشعارات الشات المحدد (لما نفتح الشات)
 router.patch('/mark-chat-read/:applicationId', auth, async (req, res) => {
   try {
     const result = await Notification.updateMany(
@@ -104,7 +104,7 @@ router.patch('/mark-chat-read/:applicationId', auth, async (req, res) => {
 
     res.json({
       success: true,
-      modifiedCount: result.modifiedCount,
+      modifiedCount: result.modifiedCount || result.nModified,
       message: 'تم تحديث إشعارات الشات بنجاح'
     });
   } catch (err) {
