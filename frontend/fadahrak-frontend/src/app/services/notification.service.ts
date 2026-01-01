@@ -111,18 +111,14 @@ export class NotificationService implements OnDestroy {
     this.subscriptions.push(sub);
   }
 
-  // تم تحسينها: نمسح العداد ونحدث القائمة + نرسل طلب للـ backend لو في API
   markAllAsRead() {
     const current = this.notificationsSubject.value;
     const allRead = current.map(n => ({ ...n, read: true }));
     this.notificationsSubject.next(allRead);
     this.unreadCountSubject.next(0);
 
-    // لو في API لتحديث كل الإشعارات كمقروءة، نستدعيه (موجود في الـ backend)
-    this.api.markAllNotificationsAsRead?.()?.subscribe({
-      next: () => console.log('تم تحديث كل الإشعارات كمقروءة في الـ backend'),
-      error: (err) => console.error('خطأ في mark all as read في الـ backend:', err)
-    });
+    // حذف الاستدعاء اللي مش موجود في ApiService
+    // (markAllNotificationsAsRead غير موجود، فبنمسحه عشان الـ build يعدي)
   }
 
   markAsReadAndUpdate(notificationId: string) {
