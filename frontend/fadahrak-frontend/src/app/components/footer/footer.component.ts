@@ -12,7 +12,7 @@ import { CommonModule } from '@angular/common';
         <!-- قسم اللوجو والوصف -->
         <div class="footer-section">
           <div class="logo-wrapper">
-            <img src="assets/photo_2026-01-02_12-52-45.png" alt="سَهلة Logo" class="logo">
+            <img src="assets/photo_2026-01-02_13-12-30.png" alt="سَهلة Logo" class="logo">
           </div>
           <p class="footer-description">منصة التوظيف المحلي الأولى في مصر</p>
         </div>
