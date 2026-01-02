@@ -16,7 +16,7 @@ import { Observable, Subject } from 'rxjs';
           <!-- Logo -->
           <div class="logo-wrapper">
             <a routerLink="/" (click)="closeMobileMenu()">
-              <img src="assets/photo_2026-01-02_12-52-42.png" alt="سَهلة" class="logo">
+              <img src="assets/logo.png" alt="سَهلة" class="logo">
             </a>
           </div>
           <!-- Desktop Navigation -->
